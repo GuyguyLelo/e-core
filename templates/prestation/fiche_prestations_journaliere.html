@@ -1,0 +1,146 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Fiche des prestations journalières - e-Core{% endblock %}
+
+{% block page_title %}Fiche des prestations journalières{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item active">Fiche des prestations journalières</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Paramètres de la fiche</h5>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Jour</label>
+                        {{ form.jour }}
+                        {{ form.jour.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Année académique</label>
+                        {{ form.annee_academique }}
+                        {{ form.annee_academique.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Semestre</label>
+                        {{ form.semestre }}
+                        {{ form.semestre.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Section</label>
+                        {{ form.section }}
+                        {{ form.section.errors }}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-search"></i> Générer la fiche
+                        </button>
+                        {% if fiche %}
+                        <a class="btn btn-outline-danger" href="{% url 'prestation:fiche_prestations_journaliere_pdf' %}?{{ download_query }}">
+                            <i class="fa fa-file-pdf-o"></i> Télécharger en PDF
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if fiche %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Jour</div>
+                            <div class="fw-bold">{{ fiche.jour_label }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Semestre</div>
+                            <div class="fw-bold">{{ fiche.semestre }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Section</div>
+                            <div class="fw-bold">{{ fiche.section_label }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Lignes</div>
+                            <div class="fw-bold">{{ fiche.total_lignes }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Détail des prestations</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 55px;">N°</th>
+                                <th>Nom</th>
+                                <th>Prénom</th>
+                                <th>Catégorie</th>
+                                <th>UE</th>
+                                <th>Début</th>
+                                <th>Fin</th>
+                                <th>Classe</th>
+                                <th>Local</th>
+                                <th style="width: 120px;">Signature</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in fiche.rows %}
+                            <tr>
+                                <td>{{ row.numero }}</td>
+                                <td>{{ row.nom }}</td>
+                                <td>{{ row.prenom }}</td>
+                                <td>{{ row.categorie }}</td>
+                                <td>{{ row.ue }}</td>
+                                <td>{{ row.heure_debut }}</td>
+                                <td>{{ row.heure_fin }}</td>
+                                <td>{{ row.classe }}</td>
+                                <td>{{ row.local }}</td>
+                                <td class="text-center">________________</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center text-muted">Aucune prestation trouvée.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="alert alert-info mb-0">
+                    Sélectionnez un jour, une année académique, un semestre et une section pour générer la fiche des prestations journalières.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

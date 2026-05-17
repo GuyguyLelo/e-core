@@ -1,0 +1,152 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Statistiques des prestations d'enseignement - e-Core{% endblock %}
+
+{% block page_title %}Statistiques des prestations d'enseignement{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item active">Statistiques des prestations d'enseignement</li>
+{% endblock %}
+
+{% block content %}
+<style>
+  .stats-scroll { max-height: 460px; overflow-y: auto; }
+  .stats-scroll thead th { position: sticky; top: 0; z-index: 2; }
+</style>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Paramètres des statistiques</h5>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Du</label>
+                        {{ form.date_debut }}
+                        {{ form.date_debut.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Au</label>
+                        {{ form.date_fin }}
+                        {{ form.date_fin.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Année académique</label>
+                        {{ form.annee_academique }}
+                        {{ form.annee_academique.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Semestre</label>
+                        {{ form.semestre }}
+                        {{ form.semestre.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Section</label>
+                        {{ form.section }}
+                        {{ form.section.errors }}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-bar-chart"></i> Générer les statistiques
+                        </button>
+                        {% if statistiques %}
+                        <a class="btn btn-outline-danger" href="{% url 'prestation:statistiques_prestations_enseignement_pdf' %}?{{ download_query }}">
+                            <i class="fa fa-file-pdf-o"></i> Télécharger en PDF
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if statistiques %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Période</div>
+                            <div class="fw-bold">{{ statistiques.date_range_label }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Section</div>
+                            <div class="fw-bold">{{ statistiques.section }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Prestations cumulées</div>
+                            <div class="fw-bold text-primary">{{ statistiques.total_lignes_stats }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0">Tableau statistique</h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <small class="text-muted">{{ statistiques.rows|length }} ligne(s)</small>
+                        <div class="btn-group btn-group-sm" data-pagination-controls>
+                            <button type="button" class="btn btn-outline-secondary" data-pagination-prev>Préc.</button>
+                            <span class="btn btn-light disabled" data-pagination-info>Page 1 / 1</span>
+                            <button type="button" class="btn btn-outline-secondary" data-pagination-next>Suiv.</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted mb-3" data-pagination-total></div>
+                <div class="table-responsive stats-scroll" data-pagination-group data-page-size="10" data-scroll-top="false">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 70px;">N°</th>
+                                <th>Nom</th>
+                                <th>UE</th>
+                                <th class="text-end">Nombre de prestations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ligne in statistiques.rows %}
+                            <tr data-pagination-item>
+                                <td>{{ ligne.numero }}</td>
+                                <td>{{ ligne.nom_prenom }}</td>
+                                <td>{{ ligne.ue }}</td>
+                                <td class="text-end">{{ ligne.nombre_prestations }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Aucune statistique à afficher.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="alert alert-info mb-0">
+                    Sélectionnez une année académique, un semestre et une section pour générer les statistiques.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/payroll-pagination.js' %}"></script>
+{% endblock %}

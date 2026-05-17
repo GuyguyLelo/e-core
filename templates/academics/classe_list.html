@@ -1,0 +1,99 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Classes - e-Core{% endblock %}
+
+{% block page_title %}Classes{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="#">Structure Académique</a></li>
+<li class="breadcrumb-item f-w-400 active">Classes</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Liste des Classes</h5>
+        <a href="{% url 'academics:classe_create' %}" class="btn btn-primary">
+          <i class="fa fa-plus"></i> Nouvelle Classe
+        </a>
+      </div>
+      <div class="card-body">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Classe</th>
+                <!-- <th>Section</th>
+                <th>Filière</th> -->
+                <th>Promotion</th>
+                <th>Local</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for classe in classes %}
+              <tr>
+                <td><strong>{{ classe.code }}</strong></td>
+                <td>{{ classe.promotion.filiere.section.nom }}</td>
+                <td>{{ classe.promotion.filiere.nom }}</td>
+                <td>{{ classe.promotion.nom }}</td>
+                <td>{{ classe.local.nom }}</td>
+                <td>
+                  {% if classe.active %}
+                    <span class="badge badge-light-success">Active</span>
+                  {% else %}
+                    <span class="badge badge-light-danger">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <a href="{% url 'academics:classe_update' classe.pk %}" class="btn btn-sm btn-warning" title="Modifier">
+                      <i class="fa fa-edit"></i>
+                    </a>
+                    <a href="{% url 'academics:classe_delete' classe.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
+                      <i class="fa fa-trash"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted">Aucune classe enregistrée</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if classes.has_other_pages %}
+        <nav aria-label="Page navigation">
+          <ul class="pagination justify-content-center">
+            {% if classes.has_previous %}
+              <li class="page-item"><a class="page-link" href="?page={{ classes.previous_page_number }}">Précédent</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">Page {{ classes.number }} sur {{ classes.paginator.num_pages }}</span></li>
+            {% if classes.has_next %}
+              <li class="page-item"><a class="page-link" href="?page={{ classes.next_page_number }}">Suivant</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,251 @@
+{% extends "layout/master.html" %}
+
+{% block content %}
+<div class="container-fluid h-100" style="min-height: 80vh;">
+    <div class="row h-100">
+        <!-- Colonne Formulaire -->
+        <div class="col-md-7">
+            <div class="card shadow mb-4 h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        {% if form.instance.pk %}Modifier le personnel{% else %}Nouveau personnel{% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            Veuillez corriger les erreurs ci-dessous.
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" id="personnel-form">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.first_name.label_tag }}
+                                {{ form.first_name }}
+                                {{ form.first_name.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.last_name.label_tag }}
+                                {{ form.last_name }}
+                                {{ form.last_name.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.position.label_tag }}
+                                {{ form.position }}
+                                {{ form.position.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.category.label_tag }}
+                                {{ form.category }}
+                                {{ form.category.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.education_level.label_tag }}
+                                {{ form.education_level }}
+                                {{ form.education_level.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.matricule.label_tag }}
+                                {{ form.matricule }}
+                                {{ form.matricule.errors }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Photo (Upload manuel ou Capture auto)</label>
+                            {{ form.photo }}
+                            {{ form.photo.errors }}
+                            {% if form.instance.photo %}
+                            <div class="mt-2 text-muted small">
+                                Photo actuelle : <a href="{{ form.instance.photo.url }}" target="_blank">Voir</a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <a href="{% url 'cards:personnel_list' %}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-success">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne Caméra -->
+        <div class="col-md-5">
+            <div class="card shadow mb-4 h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-camera"></i> Capture Caméra
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="start-camera">
+                        <i class="fas fa-power-off"></i> Allumer Caméra
+                    </button>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center bg-light" style="min-height: 400px;">
+                    
+                    <!-- Sélection de la caméra -->
+                    <div id="camera-controls" style="display: none; width: 100%; margin-bottom: 10px;">
+                        <select id="camera-select" class="form-select form-select-sm"></select>
+                    </div>
+                    
+                    <!-- Zone Vidéo -->
+                    <video id="video" style="width: 100%; max-height: 400px; background: #000; border-radius: 8px; display: none;" autoplay playsinline></video>
+                    
+                    <!-- Canevas (caché) -->
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    
+                    <!-- Aperçu Photo -->
+                    <img id="photo-preview" src="" style="width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; display: none; background: #fff;" />
+                    
+                    <!-- État initial -->
+                    <div id="camera-placeholder" class="text-muted text-center p-5">
+                        <i class="fas fa-video fa-3x mb-3"></i>
+                        <p>Cliquez sur "Allumer Caméra" pour prendre une photo depuis cet appareil.</p>
+                    </div>
+
+                    <!-- Boutons d'action Caméra -->
+                    <div class="mt-4">
+                        <button type="button" class="btn btn-success btn-lg shadow-sm" id="take-photo" style="display: none;">
+                            <i class="fas fa-camera"></i> Capturer la photo
+                        </button>
+                        <button type="button" class="btn btn-warning" id="retake-photo" style="display: none;">
+                            <i class="fas fa-redo"></i> Reprendre
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photoPreview = document.getElementById('photo-preview');
+    const placeholder = document.getElementById('camera-placeholder');
+    
+    const btnStart = document.getElementById('start-camera');
+    const btnTake = document.getElementById('take-photo');
+    const btnRetake = document.getElementById('retake-photo');
+    const fileInput = document.querySelector('input[type="file"][name="photo"]');
+    
+    let stream = null;
+
+    // Allumer la caméra
+    btnStart.addEventListener('click', async function() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+            video.srcObject = stream;
+            
+            // Affichage
+            video.style.display = 'block';
+            btnTake.style.display = 'inline-block';
+            
+            // Masquer les autres
+            placeholder.style.display = 'none';
+            photoPreview.style.display = 'none';
+            btnStart.style.display = 'none';
+            btnRetake.style.display = 'none';
+        } catch (err) {
+            alert("Erreur lors de l'accès à la caméra : " + err.message);
+            console.error(err);
+        }
+    });
+
+    // Capturer la photo
+    btnTake.addEventListener('click', function() {
+        if (!stream) return;
+
+        // Préparer le canvas à la taille de la vidéo
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convertir en Blob pour le mettre dans l'input file
+        canvas.toBlob(function(blob) {
+            // Créer un objet File
+            const file = new File([blob], "capture_" + Date.now() + ".png", { type: "image/png", lastModified: new Date().getTime() });
+            
+            // L'assigner à l'input file existant de Django via DataTransfer
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            
+            // Afficher l'aperçu
+            const imageUrl = URL.createObjectURL(blob);
+            photoPreview.src = imageUrl;
+            photoPreview.style.display = 'block';
+            
+            // Masquer la vidéo
+            video.style.display = 'none';
+            btnTake.style.display = 'none';
+            btnRetake.style.display = 'inline-block';
+            
+            // Arrêter le flux vidéo pour économiser les ressources
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+            btnStart.style.display = 'none'; 
+
+        }, 'image/png');
+    });
+
+    // Reprendre une photo
+    btnRetake.addEventListener('click', async function() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+            video.srcObject = stream;
+            
+            video.style.display = 'block';
+            btnTake.style.display = 'inline-block';
+            
+            photoPreview.style.display = 'none';
+            btnRetake.style.display = 'none';
+            
+            // Vider l'input file
+            fileInput.value = '';
+        } catch (err) {
+            alert("Erreur lors de la réactivation de la caméra : " + err.message);
+        }
+    });
+    
+    // Si l'utilisateur choisit un fichier manuellement
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                photoPreview.src = e.target.result;
+                photoPreview.style.display = 'block';
+                
+                video.style.display = 'none';
+                placeholder.style.display = 'none';
+                if(stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                const cameraControls = document.getElementById('camera-controls');
+                if (cameraControls) cameraControls.style.display = 'none';
+                btnTake.style.display = 'none';
+                btnStart.style.display = 'inline-block';
+                btnStart.textContent = "Caméra";
+                btnStart.classList.replace('btn-outline-primary', 'btn-secondary');
+                btnRetake.style.display = 'none';
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+});
+</script>
+{% endblock %}

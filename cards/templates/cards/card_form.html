@@ -1,0 +1,76 @@
+{% extends "layout/master.html" %}
+
+{% block extra_css %}
+<!-- Include Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="min-height: 80vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        {% if form.instance.pk %}Modifier la carte{% else %}Nouvelle carte{% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            Veuillez corriger les erreurs ci-dessous.
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" id="card-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Sélectionner le personnel</label>
+                            {{ form.personnel }}
+                            {{ form.personnel.errors }}
+                            <div class="form-text">Tapez le nom ou prénom pour rechercher dans la liste.</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.issue_date.label_tag }}
+                                {{ form.issue_date }}
+                                {{ form.issue_date.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.expiry_date.label_tag }}
+                                {{ form.expiry_date }}
+                                {{ form.expiry_date.errors }}
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <a href="{% url 'cards:card_list' %}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-success">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 on the personnel dropdown
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            placeholder: "Rechercher un personnel...",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
+{% endblock %}

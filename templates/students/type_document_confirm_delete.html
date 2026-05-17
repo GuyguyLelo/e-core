@@ -1,0 +1,51 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Supprimer Type de Document - e-Core{% endblock %}
+
+{% block page_title %}Supprimer Type de Document{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:type_document_list' %}">Types de Documents</a></li>
+<li class="breadcrumb-item f-w-400 active">Supprimer</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Confirmer la suppression</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <strong>Attention !</strong> Vous êtes sur le point de supprimer le type de document suivant :
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Informations du type :</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Code :</strong> {{ type_doc.code }}</li>
+                        <li><strong>Nom :</strong> {{ type_doc.nom }}</li>
+                        <li><strong>Obligatoire :</strong> {% if type_doc.obligatoire %}Oui{% else %}Non{% endif %}</li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'students:type_document_list' %}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-trash"></i> Confirmer la suppression
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

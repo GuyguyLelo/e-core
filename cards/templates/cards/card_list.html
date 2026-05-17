@@ -1,0 +1,82 @@
+{% extends "layout/master.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Cartes PVC</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'cards:card_create' %}" class="btn btn-primary">Nouvelle Carte</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Nom & Prénom</th>
+                            <th>Fonction</th>
+                            <th>Matricule</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for card in cards %}
+                        <tr>
+                            <td>
+                                {% if card.personnel.photo %}
+                                    <img src="{{ card.personnel.photo.url }}" alt="Photo" width="50" height="50" style="object-fit: cover; border-radius: 50%;">
+                                {% else %}
+                                    <span class="text-muted">Pas de photo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ card.personnel.first_name }} {{ card.personnel.last_name }}</td>
+                            <td>{{ card.personnel.position }}</td>
+                            <td>{{ card.personnel.matricule|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'cards:card_detail' card.pk %}" class="btn btn-sm btn-info">Voir</a>
+                                <a href="{% url 'cards:card_edit' card.pk %}" class="btn btn-sm btn-warning">Éditer</a>
+                                <a href="{% url 'cards:card_delete' card.pk %}" class="btn btn-sm btn-danger">Supprimer</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Aucune carte trouvée.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if is_paginated %}
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
+                    {% endif %}
+                    
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "layout/master.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Détails du personnel</h1>
+        <div>
+            <a href="{% url 'cards:personnel_list' %}" class="btn btn-sm btn-secondary">Retour à la liste</a>
+            <a href="{% url 'cards:personnel_edit' personnel.pk %}" class="btn btn-sm btn-warning">Éditer</a>
+            <a href="{% url 'cards:personnel_delete' personnel.pk %}" class="btn btn-sm btn-danger">Supprimer</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Infos Détails -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Informations</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr><th>Nom</th><td>{{ personnel.last_name }}</td></tr>
+                            <tr><th>Prénom</th><td>{{ personnel.first_name }}</td></tr>
+                            <tr><th>Fonction</th><td>{{ personnel.position|default:"-" }}</td></tr>
+                            <tr><th>Catégorie</th><td>{{ personnel.category|default:"-" }}</td></tr>
+                            <tr><th>Niveau d'études</th><td>{{ personnel.education_level|default:"-" }}</td></tr>
+                            <tr><th>Matricule</th><td>{{ personnel.matricule|default:"-" }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photo -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Photo de profil</h6>
+                </div>
+                <div class="card-body text-center bg-light">
+                    {% if personnel.photo %}
+                        <img src="{{ personnel.photo.url }}" alt="Photo" class="img-fluid border mt-2" style="max-width: 100%; max-height: 250px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); object-fit: cover;">
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>Aucune photo disponible.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

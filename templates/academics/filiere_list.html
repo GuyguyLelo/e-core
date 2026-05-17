@@ -1,0 +1,95 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Filières - e-Core{% endblock %}
+
+{% block page_title %}Filières{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="#">Structure Académique</a></li>
+<li class="breadcrumb-item f-w-400 active">Filières</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Liste des Filières</h5>
+                <a href="{% url 'academics:filiere_create' %}" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> Nouvelle Filière
+                </a>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Nom</th>
+                                <th>Section</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for filiere in filieres %}
+                            <tr>
+                                <td><strong>{{ filiere.code }}</strong></td>
+                                <td>{{ filiere.nom }}</td>
+                                <td>{{ filiere.section.nom }}</td>
+                                <td>
+                                    {% if filiere.active %}
+                                        <span class="badge badge-light-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-light-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'academics:filiere_update' filiere.pk %}" class="btn btn-sm btn-warning" title="Modifier">
+                                            <i class="fa fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'academics:filiere_delete' filiere.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Aucune filière enregistrée</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if filieres.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if filieres.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ filieres.previous_page_number }}">Précédent</a></li>
+                        {% endif %}
+                        <li class="page-item active"><span class="page-link">Page {{ filieres.number }} sur {{ filieres.paginator.num_pages }}</span></li>
+                        {% if filieres.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ filieres.next_page_number }}">Suivant</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

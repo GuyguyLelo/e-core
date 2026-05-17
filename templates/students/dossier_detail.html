@@ -1,0 +1,85 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Détail Dossier - {{ dossier.inscription.etudiant.numero_etudiant }}{% endblock %}
+
+{% block page_title %}Détail Dossier{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:dossier_list' %}">Dossiers</a></li>
+<li class="breadcrumb-item f-w-400 active">Détail</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Informations du Dossier</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Étudiant :</strong> {{ dossier.inscription.etudiant.nom_complet }}</p>
+                <p><strong>N° Étudiant :</strong> {{ dossier.inscription.etudiant.numero_etudiant }}</p>
+                <p><strong>Promotion :</strong> {{ dossier.inscription.promotion.code }}</p>
+                <p><strong>Année académique :</strong> {{ dossier.inscription.annee_academique.code }}</p>
+                <p><strong>Date ouverture :</strong> {{ dossier.date_ouverture|date:"d/m/Y" }}</p>
+                <p><strong>Statut :</strong> 
+                    <span class="badge badge-{% if dossier.statut == 'complet' %}success{% elif dossier.statut == 'valide' %}info{% else %}warning{% endif %}">
+                        {{ dossier.get_statut_display }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Documents du Dossier</h5>
+                <a href="{% url 'students:document_create' %}" class="btn btn-sm btn-primary">
+                    <i class="fa fa-plus"></i> Ajouter Document
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Type de document</th>
+                                <th>Date dépôt</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for document in documents %}
+                            <tr>
+                                <td>{{ document.type_document.nom }}</td>
+                                <td>{{ document.date_depot|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if document.valide %}
+                                        <span class="badge badge-light-success">Validé</span>
+                                    {% else %}
+                                        <span class="badge badge-light-warning">En attente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ document.fichier.url }}" class="btn btn-sm btn-info" target="_blank" title="Voir">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Aucun document</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

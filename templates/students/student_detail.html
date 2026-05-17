@@ -1,0 +1,99 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Détail Étudiant - {{ student.numero_etudiant }}{% endblock %}
+
+{% block page_title %}Détail Étudiant{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
+<li class="breadcrumb-item f-w-400 active">Détail</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if student.photo %}
+                    <img src="{{ student.photo.url }}" alt="Photo" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
+                        <i class="fa fa-user fa-4x text-muted"></i>
+                    </div>
+                {% endif %}
+                <h5>{{ student.nom_complet }}</h5>
+                <p class="text-muted">{{ student.numero_etudiant }}</p>
+                <span class="badge badge-{% if student.statut == 'actif' %}success{% elif student.statut == 'diplome' %}info{% else %}danger{% endif %}">
+                    {{ student.get_statut_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Informations Personnelles</h5>
+                <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning">
+                    <i class="fa fa-edit"></i> Modifier
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Date de naissance :</strong> {{ student.date_naissance|date:"d/m/Y" }}</p>
+                        <p><strong>Lieu de naissance :</strong> {{ student.lieu_naissance }}</p>
+                        <p><strong>Nationalité :</strong> {{ student.nationalite }}</p>
+                        <p><strong>Sexe :</strong> {{ student.get_sexe_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Email :</strong> {{ student.email }}</p>
+                        <p><strong>Téléphone :</strong> {{ student.telephone|default:"-" }}</p>
+                        <p><strong>Adresse :</strong> {{ student.adresse|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Inscriptions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Année académique</th>
+                                <th>Classe</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inscription in inscriptions %}
+                            <tr>
+                                <td>{{ inscription.annee_academique.code }}</td>
+                                <td>{{ inscription.classe }}</td>
+                                <td>
+                                    <span class="badge badge-{% if inscription.statut == 'inscrit' %}success{% else %}warning{% endif %}">
+                                        {{ inscription.get_statut_display }}
+                                    </span>
+                                </td>
+                                <td>{{ inscription.date_inscription|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Aucune inscription</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

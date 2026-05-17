@@ -1,0 +1,78 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Horaires - e-Core{% endblock %}
+
+{% block page_title %}Horaires{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item active">Horaires</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Liste des horaires</h5>
+                <a href="{% url 'prestation:horaire_create' %}" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> Nouvel horaire
+                </a>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Titre</th>
+                                <th>Classe</th>
+                                <th>Année académique</th>
+                                <th>Semestre</th>
+                                <th>État</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for horaire in horaires %}
+                            <tr>
+                                <td>{{ horaire.titre }}</td>
+                                <td>{{ horaire.classe }}</td>
+                                <td>{{ horaire.annee_academique }}</td>
+                                <td>{{ horaire.semestre|default:"-" }}</td>
+                                <td>
+                                    <span class="badge badge-{% if horaire.active %}success{% else %}secondary{% endif %}">
+                                        {% if horaire.active %}Actif{% else %}Inactif{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'prestation:horaire_detail' horaire.pk %}" class="btn btn-sm btn-info"><i class="fa fa-eye"></i></a>
+                                        <a href="{% url 'prestation:horaire_update' horaire.pk %}" class="btn btn-sm btn-warning"><i class="fa fa-edit"></i></a>
+                                        <a href="{% url 'prestation:horaire_pdf' horaire.pk %}" class="btn btn-sm btn-success"><i class="fa fa-file-pdf-o"></i></a>
+                                        <a href="{% url 'prestation:horaire_delete' horaire.pk %}" class="btn btn-sm btn-danger"><i class="fa fa-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Aucun horaire enregistré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

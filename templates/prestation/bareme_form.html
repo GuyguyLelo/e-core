@@ -1,0 +1,67 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:bareme_list' %}">Barèmes</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Code</label>
+                            {{ form.code }}
+                            {{ form.code.errors }}
+                        </div>
+                        <div class="col-md-9 mb-3">
+                            <label class="form-label">Catégorie</label>
+                            {{ form.categorie }}
+                            {{ form.categorie.errors }}
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Intitulé</label>
+                            {{ form.intitule }}
+                            {{ form.intitule.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Montant (CDF)</label>
+                            {{ form.montant }}
+                            {{ form.montant.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Ordre</label>
+                            {{ form.ordre }}
+                            {{ form.ordre.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-center">
+                            <div class="form-check mt-4">
+                                {{ form.active }}
+                                <label class="form-check-label ms-2" for="{{ form.active.id_for_label }}">Actif</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'prestation:bareme_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

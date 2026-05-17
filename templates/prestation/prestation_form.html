@@ -1,0 +1,145 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:prestation_list' %}">Prestations</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="prestation-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Date</label>
+                            {{ form.date_prestation }}
+                            {{ form.date_prestation.errors }}
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Personnel</label>
+                            {{ form.personnel }}
+                            {{ form.personnel.errors }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Catégorie</label>
+                            {{ form.categorie }}
+                            {{ form.categorie.errors }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Barème</label>
+                            {{ form.bareme }}
+                            {{ form.bareme.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Montant (CDF)</label>
+                            <input type="text" class="form-control" id="id_montant_affiche" readonly>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Horaire (facultatif)</label>
+                            {{ form.horaire }}
+                            {{ form.horaire.errors }}
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Observation</label>
+                            {{ form.observation }}
+                            {{ form.observation.errors }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'prestation:prestation_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Aide</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">1. Choisissez une catégorie.</p>
+                <p class="mb-2">2. Sélectionnez le barème correspondant.</p>
+                <p class="mb-2">3. Le montant est repris automatiquement.</p>
+                <p class="mb-0 text-muted">Le montant enregistré est figé au moment de la saisie.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+  const categorieEl = document.getElementById('id_categorie');
+  const baremeEl = document.getElementById('id_bareme');
+  const montantEl = document.getElementById('id_montant_affiche');
+  const initialBaremeId = "{{ form.instance.bareme_id|default:'' }}";
+
+  function moneyFormat(value) {
+    if (!value) return '';
+    try {
+      return new Intl.NumberFormat('fr-FR').format(Number(value));
+    } catch (e) {
+      return value;
+    }
+  }
+
+  async function loadBaremes(categorie, selectedId) {
+    baremeEl.innerHTML = '<option value="">---------</option>';
+    montantEl.value = '';
+    if (!categorie) {
+      return;
+    }
+    const response = await fetch('{% url "prestation:api_baremes_by_categorie" %}?categorie=' + encodeURIComponent(categorie));
+    const payload = await response.json();
+    payload.results.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.label;
+      if (String(item.id) === String(selectedId)) {
+        option.selected = true;
+        montantEl.value = moneyFormat(item.montant);
+      }
+      baremeEl.appendChild(option);
+    });
+    if (!selectedId && payload.results.length) {
+      montantEl.value = moneyFormat(payload.results[0].montant);
+    }
+  }
+
+  categorieEl.addEventListener('change', function() {
+    loadBaremes(this.value, '');
+  });
+
+  baremeEl.addEventListener('change', async function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const categorie = categorieEl.value;
+    if (!selectedOption || !selectedOption.value) {
+      montantEl.value = '';
+      return;
+    }
+    const response = await fetch('{% url "prestation:api_baremes_by_categorie" %}?categorie=' + encodeURIComponent(categorie));
+    const payload = await response.json();
+    const found = payload.results.find((item) => String(item.id) === String(selectedOption.value));
+    montantEl.value = found ? moneyFormat(found.montant) : '';
+  });
+
+  if (categorieEl.value) {
+    loadBaremes(categorieEl.value, initialBaremeId);
+  }
+})();
+</script>
+{% endblock %}

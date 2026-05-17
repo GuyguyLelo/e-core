@@ -1,0 +1,120 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:document_list' %}">Documents</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.etudiant.id_for_label }}" class="form-label">
+                                    Étudiant <span class="text-danger">*</span>
+                                </label>
+                                {{ form.etudiant }}
+                                {% if form.etudiant.errors %}
+                                    <div class="text-danger small">{{ form.etudiant.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.type_document.id_for_label }}" class="form-label">
+                                    Type de document <span class="text-danger">*</span>
+                                </label>
+                                {{ form.type_document }}
+                                {% if form.type_document.errors %}
+                                    <div class="text-danger small">{{ form.type_document.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.inscription.id_for_label }}" class="form-label">Inscription</label>
+                        {{ form.inscription }}
+                        {% if form.inscription.errors %}
+                            <div class="text-danger small">{{ form.inscription.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.fichier.id_for_label }}" class="form-label">
+                            Fichier <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fichier }}
+                        {% if object and object.fichier %}
+                            <div class="mt-2">
+                                <a href="{{ object.fichier.url }}" target="_blank">Voir le fichier actuel</a>
+                            </div>
+                        {% endif %}
+                        {% if form.fichier.errors %}
+                            <div class="text-danger small">{{ form.fichier.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.valide }}
+                                    <label class="form-check-label" for="{{ form.valide.id_for_label }}">
+                                        Document validé
+                                    </label>
+                                </div>
+                                {% if form.valide.errors %}
+                                    <div class="text-danger small">{{ form.valide.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'students:document_list' %}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

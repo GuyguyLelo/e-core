@@ -1,0 +1,153 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}État de paie mensuel - e-Core{% endblock %}
+
+{% block page_title %}État de paie mensuel{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item active">État de paie mensuel</li>
+{% endblock %}
+
+{% block content %}
+<style>
+  .payroll-table-scroll { max-height: 460px; overflow-y: auto; }
+  .payroll-table-scroll thead th { position: sticky; top: 0; z-index: 2; }
+</style>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Paramètres de l’état</h5>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Mois</label>
+                        {{ form.mois }}
+                        {{ form.mois.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Section</label>
+                        {{ form.section }}
+                        {{ form.section.errors }}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-calculator"></i> Générer l’état
+                        </button>
+                        {% if etat %}
+                        <a class="btn btn-outline-primary" href="{% url 'prestation:bulletin_paie_pdf' %}?{{ download_query }}">
+                            <i class="fa fa-files-o"></i> Export PDF global
+                        </a>
+                        <a class="btn btn-outline-danger" href="{% url 'prestation:etat_paie_mensuel_pdf' %}?{{ download_query }}">
+                            <i class="fa fa-file-pdf-o"></i> Télécharger en PDF
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if etat %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Mois</div>
+                            <div class="fw-bold">{{ etat.mois }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Section</div>
+                            <div class="fw-bold">{{ etat.section_label }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Total général</div>
+                            <div class="fw-bold text-primary">{{ etat.total_general|floatformat:0 }} CDF</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Détail des net à payer</h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <small class="text-muted">{{ etat.lignes|length }} ligne(s)</small>
+                        <div class="btn-group btn-group-sm" data-pagination-controls>
+                            <button type="button" class="btn btn-outline-secondary" data-pagination-prev>Préc.</button>
+                            <span class="btn btn-light disabled" data-pagination-info>Page 1 / 1</span>
+                            <button type="button" class="btn btn-outline-secondary" data-pagination-next>Suiv.</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted mb-3" data-pagination-total></div>
+                <div class="table-responsive payroll-table-scroll" data-pagination-group data-page-size="8" data-scroll-top="false">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 70px;">N°</th>
+                                <th>Nom</th>
+                                <th>Prénom</th>
+                                <th class="text-end">Net à payer</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ligne in etat.lignes %}
+                            <tr data-pagination-item>
+                                <td>{{ ligne.numero }}</td>
+                                <td>{{ ligne.nom }}</td>
+                                <td>{{ ligne.prenom }}</td>
+                                <td class="text-end">{{ ligne.net|floatformat:0 }} CDF</td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'prestation:bulletin_paie_individuel_pdf' ligne.personnel_id %}?{{ download_query }}">
+                                        <i class="fa fa-print"></i> Bulletin
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Aucune prestation trouvée.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Total général</th>
+                                <th class="text-end">{{ etat.total_general|floatformat:0 }} CDF</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="alert alert-info mb-0">
+                    Choisissez un mois et une section pour générer l’état de paie mensuel.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/payroll-pagination.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Détail horaire - e-Core{% endblock %}
+
+{% block page_title %}Détail horaire{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:horaire_list' %}">Horaires</a></li>
+<li class="breadcrumb-item active">Détail</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    .horaire-paper {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        padding: 24px;
+    }
+    .horaire-header {
+        text-align: center;
+        margin-bottom: 18px;
+    }
+    .horaire-header h4,
+    .horaire-header h5,
+    .horaire-header h6,
+    .horaire-header p {
+        margin: 0;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .horaire-title {
+        margin: 20px 0 18px;
+        text-decoration: underline;
+        font-weight: 700;
+        text-align: left;
+    }
+    .horaire-table th,
+    .horaire-table td {
+        border: 2px solid #1f2937 !important;
+        padding: 4px 6px !important;
+        font-size: 12px;
+        vertical-align: top;
+    }
+    .legend-table th,
+    .legend-table td {
+        border: 1.5px solid #1f2937 !important;
+        padding: 4px 6px !important;
+        font-size: 11px;
+    }
+</style>
+
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4 class="mb-1">{{ horaire.titre }}</h4>
+            <div class="text-muted">{{ horaire.classe }} | {{ horaire.annee_academique }}</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'prestation:horaire_pdf' horaire.pk %}" class="btn btn-success">
+                <i class="fa fa-file-pdf-o"></i> Télécharger PDF
+            </a>
+            <a href="{% url 'prestation:horaire_update' horaire.pk %}" class="btn btn-warning">
+                <i class="fa fa-edit"></i> Modifier
+            </a>
+            <a href="{% url 'prestation:horaire_list' %}" class="btn btn-secondary">Retour</a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="horaire-paper">
+            <div class="horaire-header">
+                <p>{{ horaire.direction|default:"DIRECTION DES SYSTEMES D'INFORMATION" }}</p>
+                <p>{{ horaire.ecole|default:"ECOLE INFORMATIQUE DES FINANCES" }}</p>
+                <p>{{ horaire.systeme_affichage|default:"SYSTEME LMD/RESEAU" }}</p>
+                <p>ANNEE ACADEMIQUE {{ horaire.annee_academique.code }}</p>
+            </div>
+
+            <h5 class="horaire-title">{{ horaire.titre_document }}</h5>
+
+            <div class="table-responsive mb-4">
+                <table class="table horaire-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 14%;">JOURS</th>
+                            <th style="width: 24%;">HEURES</th>
+                            <th style="width: 48%;">UE</th>
+                            <th style="width: 14%;">LOC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day, day_lines in grouped_lines.items %}
+                            {% for line in day_lines %}
+                            <tr>
+                                {% if forloop.first %}
+                                    <td rowspan="{{ day_lines|length }}"><strong>{{ line.get_jour_display|upper }}</strong></td>
+                                {% endif %}
+                                <td><strong>{{ line.heure_debut|time:"H" }}h{{ line.heure_debut|time:"i" }}-{{ line.heure_fin|time:"H" }}h{{ line.heure_fin|time:"i" }}</strong></td>
+                                <td><strong>{{ line.code_affichage }}</strong></td>
+                                <td><strong>{{ line.local_affichage }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <h6 class="mb-2"><u>INTITULES DES UE</u></h6>
+                    <div class="table-responsive">
+                        <table class="table legend-table">
+                            <thead>
+                                <tr>
+                                    <th>INTITULES DES UE</th>
+                                    <th>TITULAIRE</th>
+                                    <th>CODE UE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for title, titulaire, code in legend_items %}
+                                <tr>
+                                    <td>{{ title }}</td>
+                                    <td>{{ titulaire }}</td>
+                                    <td>{{ code }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Aucune ligne d'horaire disponible.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="border p-3">
+                        <div class="mb-2"><strong>Classe :</strong> {{ horaire.classe }}</div>
+                        <div class="mb-2"><strong>Filière :</strong> {{ horaire.filiere|default:"-" }}</div>
+                        <div class="mb-2"><strong>Promotion :</strong> {{ horaire.promotion }}</div>
+                        <div class="mb-2"><strong>Section :</strong> {{ horaire.section|default:"-" }}</div>
+                        <div class="mb-2"><strong>Semestre :</strong> {{ horaire.semestre|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | e-Core</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendors/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/color-1.css' %}">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+    <style>
+        /* Design : fond #2a3650, bouton et e-Core assortis */
+        body.login-page { font-family: 'Outfit', sans-serif; margin: 0; min-height: 100vh; background: #2a3650 !important; }
+        .login-page .login-card {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 12px;
+            background: #2a3650 !important;
+            background-image: none !important;
+        }
+        .login-page .login-main {
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,.25);
+            background-color: #fff;
+            margin: 0 auto;
+        }
+        .login-page .brand-name { color: #2a3650; font-weight: 700; font-size: 1.875rem; letter-spacing: 0.5px; }
+        .login-page .theme-form .text-muted { color: #6c757d !important; }
+        .login-page .theme-form input { background-color: #f8f9fa; border-color: rgba(42, 54, 80, 0.2); }
+        .login-page .theme-form input:hover,
+        .login-page .theme-form input:focus { border-color: #2a3650 !important; box-shadow: 0 0 0 2px rgba(42, 54, 80, 0.15) !important; }
+        .login-page .btn-primary { background-color: #2a3650 !important; border-color: #2a3650 !important; padding: 12px 24px; font-weight: 600; }
+        .login-page .btn-primary:hover { background-color: #1e2a3d !important; border-color: #1e2a3d !important; }
+    </style>
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="login-main">
+            <div class="theme-form">
+                <div class="logo text-center mb-4">
+                    <h2 class="brand-name">e-Core</h2>
+                    <p class="text-muted mb-0" style="font-size: 14px;">Plateforme intégrée de gestion académique</p>
+                </div>
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    <div class="form-group mb-3">
+                        <label class="col-form-label">Nom d'utilisateur</label>
+                        <input type="text" name="username" class="form-control" required autofocus placeholder="Entrez votre identifiant" value="{{ form.username.value|default:'' }}">
+                        {% if form.username.errors %}
+                            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="col-form-label">Mot de passe</label>
+                        <input type="password" name="password" class="form-control" required placeholder="Entrez votre mot de passe">
+                        {% if form.password.errors %}
+                            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group mb-0">
+                        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+                    </div>
+                </form>
+            </div>
+            <p class="text-center text-muted mt-4 mb-0" style="font-size: 13px;">Utilisez vos identifiants de connexion.</p>
+        </div>
+    </div>
+</body>
+</html>
