@@ -38,8 +38,8 @@
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Code</th>
                                     <th>Intitulé</th>
+                                    <th>Période</th>
                                     <th class="text-end">Montant (CDF)</th>
                                     <th>État</th>
                                     <th>Actions</th>
@@ -48,8 +48,8 @@
                             <tbody>
                                 {% for bareme in groupe.list %}
                                 <tr>
-                                    <td><strong>{{ bareme.code }}</strong></td>
-                                    <td>{{ bareme.intitule }}</td>
+                                    <td><strong>{{ bareme.intitule }}</strong></td>
+                                    <td>{{ bareme.get_periode_display }}</td>
                                     <td class="text-end">{{ bareme.montant|floatformat:0 }}</td>
                                     <td>
                                         <span class="badge badge-{% if bareme.active %}success{% else %}secondary{% endif %}">

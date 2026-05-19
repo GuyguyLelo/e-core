@@ -22,15 +22,15 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Code</label>
-                            {{ form.code }}
-                            {{ form.code.errors }}
-                        </div>
-                        <div class="col-md-9 mb-3">
-                            <label class="form-label">Catégorie</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Type prestation</label>
                             {{ form.categorie }}
                             {{ form.categorie.errors }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Période</label>
+                            {{ form.periode }}
+                            {{ form.periode.errors }}
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Intitulé</label>

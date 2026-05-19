@@ -1,14 +1,28 @@
 from django.contrib import admin
 
-from .models import BaremePrestation, Horaire, HoraireLigne
+from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, PaieMensuelle
+
+
+@admin.register(EnveloppeBudgetaire)
+class EnveloppeBudgetaireAdmin(admin.ModelAdmin):
+    list_display = ("annee", "mois", "montant", "created_at")
+    list_filter = ("annee", "mois")
+    ordering = ("-annee", "-mois")
+
+
+@admin.register(PaieMensuelle)
+class PaieMensuelleAdmin(admin.ModelAdmin):
+    list_display = ("enveloppe", "montant_total_valide", "validee_le", "valide_par")
+    list_filter = ("validee_le",)
+    readonly_fields = ("validee_le",)
 
 
 @admin.register(BaremePrestation)
 class BaremePrestationAdmin(admin.ModelAdmin):
-    list_display = ("code", "categorie", "intitule", "montant", "active", "ordre")
-    list_filter = ("categorie", "active")
-    search_fields = ("code", "intitule")
-    ordering = ("categorie", "ordre", "code")
+    list_display = ("intitule", "categorie", "periode", "montant", "active", "ordre")
+    list_filter = ("categorie", "periode", "active")
+    search_fields = ("intitule",)
+    ordering = ("categorie", "ordre", "intitule")
 
 
 class HoraireLigneInline(admin.TabularInline):

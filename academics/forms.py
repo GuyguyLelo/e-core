@@ -2,6 +2,9 @@
 Formulaires pour l'application academics
 """
 from django import forms
+
+from cards.models import Personnel
+
 from .models import (
     Section, Filiere, Promotion, Classe, Local,
     AnneeAcademique, Semestre,
@@ -130,12 +133,13 @@ class ElementConstitutifForm(forms.ModelForm):
     class Meta:
         model = ElementConstitutif
         fields = [
-            'ue', 'code', 'nom', 'description', 'credits_ects',
+            'ue', 'code', 'nom', 'professeur', 'description', 'credits_ects',
             'coefficient', 'volume_horaire', 'seuil_validation',
             'compensation_autorisee', 'capitalisable', 'ordre', 'active'
         ]
         widgets = {
             'ue': forms.Select(attrs={'class': 'form-control'}),
+            'professeur': forms.Select(attrs={'class': 'form-control'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code EC'}),
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de l\'EC'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -148,3 +152,10 @@ class ElementConstitutifForm(forms.ModelForm):
             'ordre': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'value': 1}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["professeur"].queryset = Personnel.objects.select_related(
+            "position", "category"
+        ).order_by("last_name", "first_name")
+        self.fields["professeur"].required = False

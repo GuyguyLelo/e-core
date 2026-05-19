@@ -24,6 +24,11 @@
             <div class="card-body">
                 <form method="get">
                     <div class="mb-3">
+                        <label class="form-label">Année</label>
+                        {{ form.annee }}
+                        {{ form.annee.errors }}
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Mois</label>
                         {{ form.mois }}
                         {{ form.mois.errors }}
@@ -37,29 +42,32 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fa fa-calculator"></i> Générer l’état
                         </button>
-                        {% if etat %}
-                        <a class="btn btn-outline-primary" href="{% url 'prestation:bulletin_paie_pdf' %}?{{ download_query }}">
-                            <i class="fa fa-files-o"></i> Export PDF global
-                        </a>
-                        <a class="btn btn-outline-danger" href="{% url 'prestation:etat_paie_mensuel_pdf' %}?{{ download_query }}">
-                            <i class="fa fa-file-pdf-o"></i> Télécharger en PDF
-                        </a>
-                        {% endif %}
                     </div>
                 </form>
+                {% if etat %}
+                <div class="d-grid gap-2 mt-2">
+                    <a class="btn btn-outline-primary" href="{% url 'prestation:bulletin_paie_pdf' %}?{{ download_query }}">
+                        <i class="fa fa-files-o"></i> Export PDF global
+                    </a>
+                    <a class="btn btn-outline-danger" href="{% url 'prestation:etat_paie_mensuel_pdf' %}?{{ download_query }}">
+                        <i class="fa fa-file-pdf-o"></i> Télécharger en PDF
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <div class="col-lg-8">
         {% if etat %}
+        {% include "prestation/_budget_enveloppe.html" %}
         <div class="card mb-3">
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="border rounded p-3">
-                            <div class="text-muted small">Mois</div>
-                            <div class="fw-bold">{{ etat.mois }}</div>
+                            <div class="text-muted small">Période</div>
+                            <div class="fw-bold">{{ etat.mois }} {{ etat.annee }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">

@@ -80,6 +80,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.professeur.id_for_label }}" class="form-label">Professeur</label>
+                                {{ form.professeur }}
+                                {% if form.professeur.errors %}
+                                    <div class="text-danger small">{{ form.professeur.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Le professeur sera repris automatiquement dans les horaires liés à cet élément constitutif.</div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-3">

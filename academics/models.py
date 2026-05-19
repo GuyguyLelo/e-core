@@ -217,6 +217,14 @@ class UniteEnseignement(models.Model):
 class ElementConstitutif(models.Model):
     """Élément Constitutif (EC) - composant d'une UE"""
     ue = models.ForeignKey(UniteEnseignement, on_delete=models.CASCADE, related_name='ecs', verbose_name="UE")
+    professeur = models.ForeignKey(
+        'cards.Personnel',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='elements_constitutifs',
+        verbose_name="Professeur",
+    )
     code = models.CharField(max_length=20, verbose_name="Code")
     nom = models.CharField(max_length=200, verbose_name="Nom")
     description = models.TextField(blank=True, null=True, verbose_name="Description")

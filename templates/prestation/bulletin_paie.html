@@ -28,6 +28,11 @@
             <div class="card-body">
                 <form method="get">
                     <div class="mb-3">
+                        <label class="form-label">Année</label>
+                        {{ form.annee }}
+                        {{ form.annee.errors }}
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Mois</label>
                         {{ form.mois }}
                         {{ form.mois.errors }}
@@ -54,6 +59,7 @@
 
     <div class="col-lg-8">
         {% if bulletin %}
+        {% include "prestation/_budget_enveloppe.html" %}
         <div class="card mb-3">
             <div class="card-body">
                 <div class="row g-3">
@@ -135,7 +141,7 @@
                                         <tr>
                                             <th>Date</th>
                                             <th>Barème</th>
-                                            <th>Catégorie</th>
+                                            <th>Type prestation</th>
                                             <th class="text-end">Montant</th>
                                         </tr>
                                     </thead>

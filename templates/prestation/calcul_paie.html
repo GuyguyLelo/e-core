@@ -30,6 +30,11 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
+                        <label class="form-label">Année</label>
+                        {{ form.annee }}
+                        {{ form.annee.errors }}
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Mois</label>
                         {{ form.mois }}
                         {{ form.mois.errors }}
@@ -40,24 +45,38 @@
                         {{ form.section.errors }}
                     </div>
                     <div class="d-grid">
+                        {% if budget and budget.deja_cloturee %}
+                        <button type="button" class="btn btn-secondary" disabled>
+                            <i class="fa fa-lock"></i> Mois clôturé — calcul impossible
+                        </button>
+                        {% else %}
                         <button type="submit" class="btn btn-primary">
                             <i class="fa fa-calculator"></i> Calculer la paie
                         </button>
+                        {% endif %}
                     </div>
                 </form>
+                {% if budget and budget.deja_cloturee and not calculation %}
+                <div class="alert alert-warning mt-3 mb-0">
+                    La paie de cette période est clôturée. Consultez la
+                    <a href="{% url 'prestation:cloture_paie_mensuelle' %}?annee={{ budget.annee }}&mois={{ budget.mois }}">clôture de la paie mensuelle</a>
+                    pour le détail.
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <div class="col-lg-8">
         {% if calculation %}
+        {% include "prestation/_budget_enveloppe.html" %}
         <div class="card mb-3 payroll-summary-card">
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="border rounded p-3">
-                            <div class="text-muted small">Mois</div>
-                            <div class="fw-bold">{{ calculation.mois }}</div>
+                            <div class="text-muted small">Période</div>
+                            <div class="fw-bold">{{ calculation.mois }} {{ calculation.annee }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -103,8 +122,7 @@
                     <table class="table table-sm table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Catégorie</th>
-                                <th>Code</th>
+                                <th>Type prestation</th>
                                 <th>Intitulé</th>
                                 <th class="text-end">Nombre</th>
                                 <th class="text-end">Total</th>
@@ -114,14 +132,13 @@
                             {% for ligne in calculation.totals_by_bareme %}
                             <tr>
                                 <td>{{ ligne.bareme__categorie }}</td>
-                                <td>{{ ligne.bareme__code }}</td>
                                 <td>{{ ligne.bareme__intitule }}</td>
                                 <td class="text-end">{{ ligne.nombre }}</td>
                                 <td class="text-end">{{ ligne.total|floatformat:0 }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted">Aucune prestation trouvée pour ce filtre.</td>
+                                <td colspan="4" class="text-center text-muted">Aucune prestation trouvée pour ce filtre.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -163,7 +180,7 @@
                                     <tr>
                                         <th>Date</th>
                                         <th>Barème</th>
-                                        <th>Catégorie</th>
+                                        <th>Type prestation</th>
                                         <th class="text-end">Montant</th>
                                     </tr>
                                 </thead>

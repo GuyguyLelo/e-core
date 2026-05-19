@@ -63,6 +63,6 @@ class UniteEnseignementAdmin(admin.ModelAdmin):
 
 @admin.register(ElementConstitutif)
 class ElementConstitutifAdmin(admin.ModelAdmin):
-    list_display = ['code', 'nom', 'ue', 'credits_ects', 'coefficient', 'seuil_validation', 'active']
+    list_display = ['code', 'nom', 'ue', 'professeur', 'credits_ects', 'coefficient', 'seuil_validation', 'active']
     list_filter = ['ue', 'active', 'compensation_autorisee', 'capitalisable']
     search_fields = ['code', 'nom']

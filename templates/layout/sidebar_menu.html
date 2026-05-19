@@ -126,6 +126,8 @@
     <ul class="sidebar-submenu">
         {% has_perm 'prestation.view_horaire' as p_horaire %}{% if p_horaire %}<li><a href="{% url 'prestation:horaire_list' %}">Horaires</a></li>{% endif %}
         {% has_perm 'prestation.view_baremeprestation' as p_bareme %}{% if p_bareme %}<li><a href="{% url 'prestation:bareme_list' %}">Barèmes</a></li>{% endif %}
+        {% has_perm 'prestation.view_enveloppebudgetaire' as p_enveloppe %}{% if p_enveloppe %}<li><a href="{% url 'prestation:enveloppe_list' %}">Enveloppes budgétaires</a></li>{% endif %}
+        {% has_perm 'prestation.view_enveloppebudgetaire' as p_cloture %}{% if p_cloture %}<li><a href="{% url 'prestation:cloture_paie_mensuelle' %}">Clôture de la paie mensuelle</a></li>{% endif %}
         {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_prestation %}{% if p_prestation %}<li><a href="{% url 'prestation:prestation_list' %}">Prestations</a></li>{% endif %}
         {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_calc %}{% if p_calc %}<li><a href="{% url 'prestation:calcul_paie' %}">Calcul de la paie</a></li>{% endif %}
         {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_bulletin %}{% if p_bulletin %}<li><a href="{% url 'prestation:bulletin_paie' %}">Bulletin de paie</a></li>{% endif %}

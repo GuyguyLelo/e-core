@@ -1,0 +1,47 @@
+{% extends "layout/master.html" %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:enveloppe_list' %}">Enveloppes budgétaires</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Année</label>
+                        {{ form.annee }}
+                        {{ form.annee.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mois</label>
+                        {{ form.mois }}
+                        {{ form.mois.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Montant de l'enveloppe (CDF)</label>
+                        {{ form.montant }}
+                        {{ form.montant.errors }}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'prestation:enveloppe_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

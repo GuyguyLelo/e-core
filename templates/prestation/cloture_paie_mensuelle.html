@@ -1,0 +1,136 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Clôture de la paie mensuelle - e-Core{% endblock %}
+
+{% block page_title %}Clôture de la paie mensuelle{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item active">Clôture de la paie mensuelle</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Période à clôturer</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Année</label>
+                        {{ form.annee }}
+                        {{ form.annee.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mois</label>
+                        {{ form.mois }}
+                        {{ form.mois.errors }}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-search"></i> Afficher le récapitulatif
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if resume %}
+        {% with budget=resume.budget %}
+        <div class="card mb-3 border-{% if budget.deja_cloturee %}success{% elif budget.depasse %}danger{% else %}primary{% endif %}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Récapitulatif — {{ resume.mois_label }} {{ resume.annee }}</h6>
+                {% if budget.deja_cloturee %}
+                    <span class="badge badge-success">Clôturé</span>
+                {% elif budget.depasse %}
+                    <span class="badge badge-danger">Dépassement</span>
+                {% else %}
+                    <span class="badge badge-warning">Ouvert</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Total payé (mois)</div>
+                            <div class="fw-bold fs-5">{{ budget.total_paye|floatformat:0 }} CDF</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Enveloppe budgétaire</div>
+                            <div class="fw-bold fs-5">
+                                {% if budget.enveloppe %}
+                                    {{ budget.montant_enveloppe|floatformat:0 }} CDF
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Solde restant</div>
+                            <div class="fw-bold fs-5 {% if budget.solde_disponible < 0 %}text-danger{% else %}text-success{% endif %}">
+                                {% if budget.enveloppe %}
+                                    {{ budget.solde_disponible|floatformat:0 }} CDF
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="small mb-3 {% if budget.depasse %}text-danger{% else %}text-muted{% endif %}">{{ budget.message }}</p>
+
+                {% if budget.deja_cloturee and budget.paie_validee %}
+                <div class="alert alert-success mb-0">
+                    Clôturé le {{ budget.paie_validee.validee_le|date:"d/m/Y à H:i" }}
+                    {% if budget.paie_validee.valide_par %}par {{ budget.paie_validee.valide_par }}{% endif %}
+                    — Total enregistré : {{ budget.paie_validee.montant_total_valide|floatformat:0 }} CDF
+                </div>
+                {% else %}
+                <form method="post" onsubmit="return confirm('Confirmer la clôture de la paie pour {{ resume.mois_label }} {{ resume.annee }} ?\n\nAprès clôture, aucune prestation ne pourra être ajoutée ou modifiée pour ce mois.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="annee" value="{{ resume.annee }}">
+                    <input type="hidden" name="mois" value="{{ resume.mois }}">
+                    <button type="submit" name="cloturer" value="1" class="btn btn-success btn-lg" {% if not budget.peut_cloturer %}disabled{% endif %}>
+                        <i class="fa fa-lock"></i> Clôturer la paie
+                    </button>
+                </form>
+                {% if not budget.enveloppe %}
+                <p class="small text-muted mt-2 mb-0">
+                    <a href="{% url 'prestation:enveloppe_create' %}">Créer une enveloppe budgétaire</a> pour cette période avant de clôturer.
+                </p>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endwith %}
+        {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="alert alert-info mb-0">
+                    Sélectionnez une année et un mois, puis cliquez sur <strong>Afficher le récapitulatif</strong> pour consulter les montants et clôturer la paie.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

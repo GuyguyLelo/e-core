@@ -1,9 +1,88 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from academics.models import AnneeAcademique, Classe, ElementConstitutif, Local, Semestre
 from cards.models import Personnel
+
+
+class EnveloppeBudgetaire(models.Model):
+    MOIS_CHOICES = [
+        (1, "Janvier"),
+        (2, "Février"),
+        (3, "Mars"),
+        (4, "Avril"),
+        (5, "Mai"),
+        (6, "Juin"),
+        (7, "Juillet"),
+        (8, "Août"),
+        (9, "Septembre"),
+        (10, "Octobre"),
+        (11, "Novembre"),
+        (12, "Décembre"),
+    ]
+
+    annee = models.PositiveIntegerField(verbose_name="Année")
+    mois = models.PositiveSmallIntegerField(
+        choices=MOIS_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        verbose_name="Mois",
+    )
+    montant = models.DecimalField(
+        max_digits=14,
+        decimal_places=0,
+        validators=[MinValueValidator(0)],
+        verbose_name="Montant de l'enveloppe (CDF)",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Enveloppe budgétaire"
+        verbose_name_plural = "Enveloppes budgétaires"
+        ordering = ["-annee", "-mois"]
+        constraints = [
+            models.UniqueConstraint(fields=["annee", "mois"], name="unique_enveloppe_annee_mois"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_mois_display()} {self.annee} — {self.montant:,} CDF".replace(",", " ")
+
+    def clean(self):
+        if self.mois and (self.mois < 1 or self.mois > 12):
+            raise ValidationError({"mois": "Le mois doit être compris entre 1 et 12."})
+
+
+class PaieMensuelle(models.Model):
+    enveloppe = models.OneToOneField(
+        EnveloppeBudgetaire,
+        on_delete=models.CASCADE,
+        related_name="paie_validee",
+        verbose_name="Enveloppe budgétaire",
+    )
+    montant_total_valide = models.DecimalField(
+        max_digits=14,
+        decimal_places=0,
+        verbose_name="Total validé (CDF)",
+    )
+    validee_le = models.DateTimeField(auto_now_add=True, verbose_name="Validée le")
+    valide_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="paies_mensuelles_validees",
+        verbose_name="Validée par",
+    )
+
+    class Meta:
+        verbose_name = "Clôture de paie mensuelle"
+        verbose_name_plural = "Clôtures de paie mensuelle"
+        ordering = ["-validee_le"]
+
+    def __str__(self):
+        return f"Paie {self.enveloppe}"
 
 
 class BaremePrestation(models.Model):
@@ -19,8 +98,26 @@ class BaremePrestation(models.Model):
         (CATEGORIE_LOGISTIQUE, "Avantages logistiques"),
     ]
 
-    code = models.CharField(max_length=10, unique=True, verbose_name="Code")
-    categorie = models.CharField(max_length=30, choices=CATEGORIE_CHOICES, verbose_name="Catégorie")
+    PERIODE_JOUR = "jour"
+    PERIODE_HEURE = "heure"
+    PERIODE_MOIS = "mois"
+    PERIODE_MEMOIRE = "memoire"
+    PERIODE_BAR = "bar"
+    PERIODE_TFC = "tfc"
+    PERIODE_LITRE = "litre"
+
+    PERIODE_CHOICES = [
+        (PERIODE_JOUR, "Jour"),
+        (PERIODE_HEURE, "Heure"),
+        (PERIODE_MOIS, "Mois"),
+        (PERIODE_MEMOIRE, "Mémoire"),
+        (PERIODE_BAR, "Bar"),
+        (PERIODE_TFC, "TFC"),
+        (PERIODE_LITRE, "Litre"),
+    ]
+
+    categorie = models.CharField(max_length=30, choices=CATEGORIE_CHOICES, verbose_name="Type prestation")
+    periode = models.CharField(max_length=20, choices=PERIODE_CHOICES, verbose_name="Période")
     intitule = models.CharField(max_length=255, verbose_name="Intitulé")
     montant = models.DecimalField(max_digits=12, decimal_places=0, verbose_name="Montant (CDF)")
     active = models.BooleanField(default=True, verbose_name="Actif")
@@ -31,10 +128,10 @@ class BaremePrestation(models.Model):
     class Meta:
         verbose_name = "Barème de prestation"
         verbose_name_plural = "Barèmes de prestation"
-        ordering = ["categorie", "ordre", "code"]
+        ordering = ["categorie", "ordre", "intitule"]
 
     def __str__(self):
-        return f"{self.code} - {self.intitule}"
+        return self.intitule
 
 
 class Prestation(models.Model):
@@ -54,7 +151,7 @@ class Prestation(models.Model):
     categorie = models.CharField(
         max_length=30,
         choices=BaremePrestation.CATEGORIE_CHOICES,
-        verbose_name="Catégorie",
+        verbose_name="Type prestation",
     )
     montant = models.DecimalField(max_digits=12, decimal_places=0, verbose_name="Montant (CDF)")
     horaire = models.ForeignKey(
@@ -259,6 +356,21 @@ class HoraireLigne(models.Model):
             raise ValidationError({"heure_fin": "L'heure de fin doit être supérieure à l'heure de début."})
         if not self.ue_code and not self.element_constitutif:
             raise ValidationError("Veuillez renseigner le code UE ou sélectionner un élément constitutif.")
+        if self.element_constitutif_id:
+            ec = self.element_constitutif
+            if ec.professeur_id:
+                self.professeur = ec.professeur
+            elif not self.professeur_id:
+                self.professeur = None
+
+    def save(self, *args, **kwargs):
+        if self.element_constitutif_id:
+            ec = self.element_constitutif
+            if ec.professeur_id:
+                self.professeur = ec.professeur
+            if not self.ue_code and ec.code:
+                self.ue_code = ec.code
+        super().save(*args, **kwargs)
 
     @property
     def code_affichage(self):
@@ -267,10 +379,18 @@ class HoraireLigne(models.Model):
         return self.ue_code or "-"
 
     @property
+    def professeur_affichage(self):
+        professeur = self.professeur
+        if not professeur and self.element_constitutif_id:
+            professeur = self.element_constitutif.professeur
+        return professeur
+
+    @property
     def titulaire_affichage(self):
-        if not self.professeur:
+        professeur = self.professeur_affichage
+        if not professeur:
             return "-"
-        return f"{self.professeur.last_name} {self.professeur.first_name}".strip()
+        return f"{professeur.last_name} {professeur.first_name}".strip()
 
     @property
     def local_affichage(self):

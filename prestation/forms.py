@@ -1,9 +1,11 @@
+from datetime import date
+
 from django import forms
 
 from academics.models import AnneeAcademique, Classe, ElementConstitutif, Local, Section, Semestre
 from cards.models import Personnel
 
-from .models import BaremePrestation, Horaire, HoraireLigne, Prestation
+from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, Prestation
 
 
 MONTH_CHOICES = [
@@ -22,13 +24,35 @@ MONTH_CHOICES = [
 ]
 
 
+def _annee_choices():
+    current = date.today().year
+    return [(year, str(year)) for year in range(current - 5, current + 3)]
+
+
+class EnveloppeBudgetaireForm(forms.ModelForm):
+    class Meta:
+        model = EnveloppeBudgetaire
+        fields = ["annee", "mois", "montant"]
+        widgets = {
+            "annee": forms.NumberInput(attrs={"class": "form-control", "min": 2000, "max": 2100}),
+            "mois": forms.Select(attrs={"class": "form-control"}),
+            "montant": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "1"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk and "annee" not in self.initial:
+            self.initial["annee"] = date.today().year
+        self.fields["mois"].choices = EnveloppeBudgetaire.MOIS_CHOICES
+
+
 class BaremePrestationForm(forms.ModelForm):
     class Meta:
         model = BaremePrestation
-        fields = ["code", "categorie", "intitule", "montant", "ordre", "active"]
+        fields = ["categorie", "periode", "intitule", "montant", "ordre", "active"]
         widgets = {
-            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex: 01"}),
             "categorie": forms.Select(attrs={"class": "form-control"}),
+            "periode": forms.Select(attrs={"class": "form-control"}),
             "intitule": forms.TextInput(attrs={"class": "form-control", "placeholder": "Intitulé du barème"}),
             "montant": forms.NumberInput(attrs={"class": "form-control", "min": 0, "step": "1"}),
             "ordre": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
@@ -40,7 +64,7 @@ class PrestationForm(forms.ModelForm):
     categorie = forms.ChoiceField(
         choices=[("", "---------")] + list(BaremePrestation.CATEGORIE_CHOICES),
         widget=forms.Select(attrs={"class": "form-control", "id": "id_categorie"}),
-        label="Catégorie",
+        label="Type prestation",
     )
 
     class Meta:
@@ -63,23 +87,59 @@ class PrestationForm(forms.ModelForm):
         if selected_categorie:
             self.fields["bareme"].queryset = BaremePrestation.objects.filter(
                 categorie=selected_categorie, active=True
-            ).order_by("ordre", "code")
+            ).order_by("ordre", "intitule")
         elif self.instance and self.instance.pk and self.instance.bareme_id:
             self.fields["categorie"].initial = self.instance.categorie
             self.fields["bareme"].queryset = BaremePrestation.objects.filter(
                 categorie=self.instance.categorie, active=True
-            ).order_by("ordre", "code")
+            ).order_by("ordre", "intitule")
 
     def clean(self):
         cleaned = super().clean()
         bareme = cleaned.get("bareme")
         categorie = cleaned.get("categorie")
         if bareme and categorie and bareme.categorie != categorie:
-            self.add_error("bareme", "Le barème sélectionné ne correspond pas à la catégorie choisie.")
+            self.add_error("bareme", "Le barème sélectionné ne correspond pas au type de prestation choisi.")
+        date_prestation = cleaned.get("date_prestation")
+        if date_prestation:
+            from .services import is_paie_mois_cloturee, get_month_label
+
+            if is_paie_mois_cloturee(date_prestation.year, date_prestation.month):
+                self.add_error(
+                    "date_prestation",
+                    f"La paie de {get_month_label(date_prestation.month)} {date_prestation.year} est clôturée. "
+                    "Aucune prestation ne peut être enregistrée ou modifiée pour ce mois.",
+                )
         return cleaned
 
 
+class CloturePaieForm(forms.Form):
+    annee = forms.TypedChoiceField(
+        choices=[],
+        coerce=int,
+        label="Année",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    mois = forms.ChoiceField(
+        choices=MONTH_CHOICES,
+        label="Mois",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["annee"].choices = _annee_choices()
+        if not self.is_bound:
+            self.fields["annee"].initial = date.today().year
+
+
 class CalculPaieForm(forms.Form):
+    annee = forms.TypedChoiceField(
+        choices=[],
+        coerce=int,
+        label="Année",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
     mois = forms.ChoiceField(
         choices=MONTH_CHOICES,
         label="Mois",
@@ -90,6 +150,12 @@ class CalculPaieForm(forms.Form):
         label="Section",
         widget=forms.Select(attrs={"class": "form-control"}),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["annee"].choices = _annee_choices()
+        if not self.is_bound:
+            self.fields["annee"].initial = date.today().year
 
 
 class FichePrestationJournaliereForm(forms.Form):
@@ -206,10 +272,10 @@ class HoraireLigneForm(forms.ModelForm):
             "jour": forms.Select(attrs={"class": "form-control"}),
             "heure_debut": forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
             "heure_fin": forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
-            "ue_code": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex: RES301/EC1"}),
-            "element_constitutif": forms.Select(attrs={"class": "form-control"}),
+            "ue_code": forms.HiddenInput(),
+            "element_constitutif": forms.Select(attrs={"class": "form-control js-ec-select"}),
             "local": forms.Select(attrs={"class": "form-control"}),
-            "professeur": forms.Select(attrs={"class": "form-control"}),
+            "professeur": forms.HiddenInput(),
             "ordre": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
             "notes": forms.TextInput(attrs={"class": "form-control", "placeholder": "Observation optionnelle"}),
         }
@@ -217,11 +283,24 @@ class HoraireLigneForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["element_constitutif"].queryset = ElementConstitutif.objects.select_related(
-            "ue", "ue__semestre", "ue__semestre__promotion"
+            "ue", "ue__semestre", "ue__semestre__promotion", "professeur"
         ).order_by("ue__semestre__promotion__code", "ue__ordre", "ordre", "code")
         self.fields["local"].queryset = Local.objects.filter(active=True).order_by("code")
-        self.fields["professeur"].queryset = Personnel.objects.select_related("position", "category").order_by("last_name", "first_name")
+        self.fields["professeur"].queryset = Personnel.objects.all()
         self.fields["ue_code"].required = False
         self.fields["element_constitutif"].required = False
         self.fields["local"].required = False
         self.fields["professeur"].required = False
+        if self.instance and self.instance.element_constitutif_id and not self.instance.professeur_id:
+            ec = self.instance.element_constitutif
+            if ec.professeur_id:
+                self.initial["professeur"] = ec.professeur_id
+
+    def clean(self):
+        cleaned = super().clean()
+        ec = cleaned.get("element_constitutif")
+        if ec and ec.professeur_id:
+            cleaned["professeur"] = ec.professeur
+        elif ec:
+            cleaned["professeur"] = None
+        return cleaned

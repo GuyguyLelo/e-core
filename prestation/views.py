@@ -13,6 +13,7 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -29,10 +30,26 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from academics.models import AnneeAcademique
+from academics.models import AnneeAcademique, ElementConstitutif
 from cards.models import CardSettings, Personnel
-from .forms import BaremePrestationForm, CalculPaieForm, FichePrestationJournaliereForm, HoraireForm, HoraireLigneForm, PrestationForm, StatistiquesPrestationEnseignementForm
-from .models import BaremePrestation, Horaire, HoraireLigne, Prestation
+from .forms import (
+    BaremePrestationForm,
+    CalculPaieForm,
+    CloturePaieForm,
+    EnveloppeBudgetaireForm,
+    FichePrestationJournaliereForm,
+    HoraireForm,
+    HoraireLigneForm,
+    PrestationForm,
+    StatistiquesPrestationEnseignementForm,
+)
+from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, PaieMensuelle, Prestation
+from .services import (
+    cloturer_paie_mensuelle,
+    get_budget_context,
+    get_month_label,
+    is_paie_mois_cloturee,
+)
 
 
 HoraireLigneFormSet = inlineformset_factory(
@@ -118,6 +135,7 @@ def _collect_fiche_prestations(section, jour_key, semestre, annee_academique):
         "horaire__classe__promotion__filiere",
         "horaire__classe__promotion__filiere__section",
         "element_constitutif",
+        "element_constitutif__professeur",
         "local",
         "professeur",
         "professeur__category",
@@ -136,7 +154,7 @@ def _collect_fiche_prestations(section, jour_key, semestre, annee_academique):
 
     rows = []
     for index, line in enumerate(lines, start=1):
-        personnel = line.professeur
+        personnel = line.professeur_affichage
         rows.append({
             "numero": index,
             "nom_prenom": f"{personnel.last_name} {personnel.first_name}".strip() if personnel else "-",
@@ -261,7 +279,7 @@ def _collect_statistiques_prestations_enseignement(section, annee_academique, se
     }
 
 
-def _collect_paie_data(mois, section):
+def _collect_paie_data(mois, section, annee):
     prestations_mois = Prestation.objects.select_related(
         "personnel",
         "bareme",
@@ -271,6 +289,7 @@ def _collect_paie_data(mois, section):
         "horaire__classe__promotion__filiere",
         "horaire__classe__promotion__filiere__section",
     ).filter(
+        date_prestation__year=annee,
         date_prestation__month=mois,
     ).order_by("personnel__last_name", "personnel__first_name", "date_prestation")
 
@@ -299,7 +318,7 @@ def _collect_paie_data(mois, section):
     ids = [p.id for p in prestations_filtrees]
     totals_by_bareme = (
         Prestation.objects.filter(id__in=ids)
-        .values("bareme__categorie", "bareme__code", "bareme__intitule")
+        .values("bareme__categorie", "bareme__intitule")
         .annotate(total=Sum("montant"), nombre=Count("id"))
     ) if ids else []
 
@@ -315,7 +334,7 @@ def _collect_paie_data(mois, section):
     }
 
 
-def _collect_individual_bulletin(personnel, mois, section):
+def _collect_individual_bulletin(personnel, mois, section, annee):
     prestations = Prestation.objects.select_related(
         "personnel",
         "bareme",
@@ -326,6 +345,7 @@ def _collect_individual_bulletin(personnel, mois, section):
         "horaire__classe__promotion__filiere__section",
     ).filter(
         personnel=personnel,
+        date_prestation__year=annee,
         date_prestation__month=mois,
     ).order_by("date_prestation")
     prestations = [prestation for prestation in prestations if _section_matches_prestation(prestation, section)]
@@ -423,8 +443,20 @@ def _unique_legend_items(lines):
             continue
         seen.add(key)
         title = line.element_constitutif.nom if line.element_constitutif else code
-        items.append((title, line.titulaire_affichage, code))
+        items.append((title, line.titulaire_affichage))
     return items
+
+
+def _build_ec_professeur_map():
+    mapping = {}
+    for ec in ElementConstitutif.objects.select_related("professeur").filter(active=True):
+        if ec.professeur_id:
+            professeur = ec.professeur
+            mapping[str(ec.pk)] = {
+                "id": professeur.pk,
+                "label": f"{professeur.last_name} {professeur.first_name}".strip(),
+            }
+    return mapping
 
 
 def _asset_path(*parts):
@@ -451,7 +483,7 @@ def _draw_page_number(c, doc):
 
 @login_required
 def bareme_list(request):
-    baremes = BaremePrestation.objects.all().order_by("categorie", "ordre", "code")
+    baremes = BaremePrestation.objects.all().order_by("categorie", "ordre", "intitule")
     return render(request, "prestation/bareme_list.html", {"baremes": baremes})
 
 
@@ -493,6 +525,103 @@ def bareme_delete(request, pk):
 
 
 @login_required
+def enveloppe_list(request):
+    enveloppes = []
+    for enveloppe in EnveloppeBudgetaire.objects.select_related("paie_validee").all():
+        budget = get_budget_context(enveloppe.annee, enveloppe.mois)
+        enveloppe.total_engage = budget["total_engage"]
+        enveloppe.solde_disponible = budget["solde_disponible"]
+        enveloppe.depasse = budget["depasse"]
+        enveloppes.append(enveloppe)
+    return render(request, "prestation/enveloppe_list.html", {"enveloppes": enveloppes})
+
+
+@login_required
+def enveloppe_create(request):
+    if request.method == "POST":
+        form = EnveloppeBudgetaireForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Enveloppe budgétaire enregistrée avec succès.")
+            return redirect("prestation:enveloppe_list")
+    else:
+        form = EnveloppeBudgetaireForm()
+    return render(request, "prestation/enveloppe_form.html", {"form": form, "title": "Nouvelle enveloppe budgétaire"})
+
+
+@login_required
+def enveloppe_update(request, pk):
+    enveloppe = get_object_or_404(EnveloppeBudgetaire, pk=pk)
+    if PaieMensuelle.objects.filter(enveloppe=enveloppe).exists():
+        messages.error(request, "Cette enveloppe est liée à une paie déjà validée et ne peut plus être modifiée.")
+        return redirect("prestation:enveloppe_list")
+    if request.method == "POST":
+        form = EnveloppeBudgetaireForm(request.POST, instance=enveloppe)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Enveloppe budgétaire modifiée avec succès.")
+            return redirect("prestation:enveloppe_list")
+    else:
+        form = EnveloppeBudgetaireForm(instance=enveloppe)
+    return render(
+        request,
+        "prestation/enveloppe_form.html",
+        {"form": form, "title": "Modifier l'enveloppe budgétaire", "enveloppe": enveloppe},
+    )
+
+
+@login_required
+def enveloppe_delete(request, pk):
+    enveloppe = get_object_or_404(EnveloppeBudgetaire, pk=pk)
+    if PaieMensuelle.objects.filter(enveloppe=enveloppe).exists():
+        messages.error(request, "Cette enveloppe est liée à une paie validée et ne peut pas être supprimée.")
+        return redirect("prestation:enveloppe_list")
+    if request.method == "POST":
+        enveloppe.delete()
+        messages.success(request, "Enveloppe budgétaire supprimée avec succès.")
+        return redirect("prestation:enveloppe_list")
+    return render(request, "prestation/enveloppe_confirm_delete.html", {"enveloppe": enveloppe})
+
+
+@login_required
+def cloture_paie_mensuelle(request):
+    resume = None
+    form = CloturePaieForm(request.GET or None)
+
+    if request.method == "POST":
+        form = CloturePaieForm(request.POST)
+        if form.is_valid() and "cloturer" in request.POST:
+            annee = int(form.cleaned_data["annee"])
+            mois = int(form.cleaned_data["mois"])
+            try:
+                cloturer_paie_mensuelle(annee, mois, request.user)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(
+                    request,
+                    f"La paie de {get_month_label(mois)} {annee} a été clôturée avec succès.",
+                )
+            return redirect(f"{reverse('prestation:cloture_paie_mensuelle')}?annee={annee}&mois={mois}")
+
+    if form.is_valid():
+        annee = int(form.cleaned_data["annee"])
+        mois = int(form.cleaned_data["mois"])
+        budget = get_budget_context(annee, mois)
+        resume = {
+            "annee": annee,
+            "mois": mois,
+            "mois_label": budget["mois_label"],
+            "budget": budget,
+        }
+
+    return render(request, "prestation/cloture_paie_mensuelle.html", {
+        "form": form,
+        "resume": resume,
+    })
+
+
+@login_required
 def prestation_list(request):
     prestations = Prestation.objects.select_related(
         "personnel",
@@ -519,6 +648,13 @@ def prestation_create(request):
 @login_required
 def prestation_update(request, pk):
     prestation = get_object_or_404(Prestation, pk=pk)
+    if is_paie_mois_cloturee(prestation.date_prestation.year, prestation.date_prestation.month):
+        messages.error(
+            request,
+            f"La paie de {get_month_label(prestation.date_prestation.month)} "
+            f"{prestation.date_prestation.year} est clôturée. Modification impossible.",
+        )
+        return redirect("prestation:prestation_list")
     if request.method == "POST":
         form = PrestationForm(request.POST, instance=prestation)
         if form.is_valid():
@@ -534,6 +670,13 @@ def prestation_update(request, pk):
 @login_required
 def prestation_delete(request, pk):
     prestation = get_object_or_404(Prestation, pk=pk)
+    if is_paie_mois_cloturee(prestation.date_prestation.year, prestation.date_prestation.month):
+        messages.error(
+            request,
+            f"La paie de {get_month_label(prestation.date_prestation.month)} "
+            f"{prestation.date_prestation.year} est clôturée. Suppression impossible.",
+        )
+        return redirect("prestation:prestation_list")
     if request.method == "POST":
         prestation.delete()
         messages.success(request, "Prestation supprimée avec succès.")
@@ -550,12 +693,11 @@ def api_baremes_by_categorie(request):
     data = [
         {
             "id": bareme.id,
-            "code": bareme.code,
-            "label": f"{bareme.code} - {bareme.intitule}",
+            "label": bareme.intitule,
             "montant": str(bareme.montant),
             "categorie": bareme.categorie,
         }
-        for bareme in baremes.order_by("ordre", "code")
+        for bareme in baremes.order_by("ordre", "intitule")
     ]
     return JsonResponse({"results": data})
 
@@ -569,31 +711,44 @@ def calcul_paie(request):
     total_personnels = 0
     annee_academique = _get_calcul_annee()
 
+    budget = None
     if request.method == "POST":
         form = CalculPaieForm(request.POST)
         if form.is_valid():
+            annee = int(form.cleaned_data["annee"])
             mois = int(form.cleaned_data["mois"])
             section = form.cleaned_data["section"]
-            paie_data = _collect_paie_data(mois, section)
-            resultats = paie_data["resultats"]
-            total_general = paie_data["total_general"]
-            total_prestations = paie_data["total_prestations"]
-            total_personnels = paie_data["total_personnels"]
-            if paie_data["fallback_used"]:
-                messages.warning(
+            budget = get_budget_context(annee, mois)
+            if budget["deja_cloturee"]:
+                messages.error(
                     request,
-                    "Aucune prestation n'est rattachée à cette section dans les données. Le calcul affiche donc toutes les prestations du mois sélectionné.",
+                    f"La paie de {get_month_label(mois)} {annee} est clôturée. "
+                    "Le calcul n'est plus autorisé pour ce mois.",
                 )
-            elif not paie_data["prestations"]:
-                messages.info(request, "Aucune prestation trouvée pour ce mois et cette section.")
-            calculation = {
-                "mois": MONTH_LABELS.get(str(mois), str(mois)),
-                "annee_academique": annee_academique,
-                "section": section,
-                "prestations": paie_data["prestations"],
-                "prestations_trouvees": paie_data["total_prestations"],
-                "totals_by_bareme": paie_data["totals_by_bareme"],
-            }
+            else:
+                paie_data = _collect_paie_data(mois, section, annee)
+                resultats = paie_data["resultats"]
+                total_general = paie_data["total_general"]
+                total_prestations = paie_data["total_prestations"]
+                total_personnels = paie_data["total_personnels"]
+                if paie_data["fallback_used"]:
+                    messages.warning(
+                        request,
+                        "Aucune prestation n'est rattachée à cette section dans les données. Le calcul affiche donc toutes les prestations du mois sélectionné.",
+                    )
+                elif not paie_data["prestations"]:
+                    messages.info(request, "Aucune prestation trouvée pour ce mois et cette section.")
+                if budget["depasse"]:
+                    messages.error(request, budget["message"])
+                calculation = {
+                    "mois": MONTH_LABELS.get(str(mois), str(mois)),
+                    "annee": annee,
+                    "annee_academique": annee_academique,
+                    "section": section,
+                    "prestations": paie_data["prestations"],
+                    "prestations_trouvees": paie_data["total_prestations"],
+                    "totals_by_bareme": paie_data["totals_by_bareme"],
+                }
     else:
         form = CalculPaieForm()
 
@@ -601,6 +756,7 @@ def calcul_paie(request):
         "form": form,
         "calculation": calculation,
         "annee_academique": annee_academique,
+        "budget": budget,
         "resultats": resultats,
         "total_general": total_general,
         "total_prestations": total_prestations,
@@ -615,10 +771,13 @@ def bulletin_paie(request):
     bulletin = None
     download_query = ""
 
+    budget = None
     if form.is_valid():
+        annee = int(form.cleaned_data["annee"])
         mois = int(form.cleaned_data["mois"])
         section = form.cleaned_data["section"]
-        paie_data = _collect_paie_data(mois, section)
+        paie_data = _collect_paie_data(mois, section, annee)
+        budget = get_budget_context(annee, mois)
         if paie_data["fallback_used"]:
             messages.warning(
                 request,
@@ -626,10 +785,13 @@ def bulletin_paie(request):
             )
         elif not paie_data["prestations"]:
             messages.info(request, "Aucune prestation trouvée pour ce mois et cette section.")
+        if budget["depasse"]:
+            messages.error(request, budget["message"])
 
         section_label = section.nom or section.code or "SECTION"
         bulletin = {
             "mois": MONTH_LABELS.get(str(mois), str(mois)),
+            "annee": annee,
             "mois_numero": mois,
             "section": section,
             "section_label": section_label,
@@ -639,12 +801,13 @@ def bulletin_paie(request):
             "total_prestations": paie_data["total_prestations"],
             "total_personnels": paie_data["total_personnels"],
         }
-        download_query = f"mois={mois}&section={section.pk}"
+        download_query = f"annee={annee}&mois={mois}&section={section.pk}"
 
     return render(request, "prestation/bulletin_paie.html", {
         "form": form,
         "bulletin": bulletin,
         "annee_academique": annee_academique,
+        "budget": budget,
         "download_query": download_query,
     })
 
@@ -762,7 +925,7 @@ def _build_bulletin_pdf(bulletin):
         table_data = [[
             Paragraph("<b>Date</b>", center_style),
             Paragraph("<b>Barème</b>", center_style),
-            Paragraph("<b>Catégorie</b>", center_style),
+            Paragraph("<b>Type prestation</b>", center_style),
             Paragraph("<b>Montant</b>", center_style),
         ]]
         for prestation in item["prestations"]:
@@ -813,9 +976,10 @@ def bulletin_paie_pdf(request):
         messages.info(request, "Sélectionnez d'abord un mois et une section pour générer le bulletin de paie.")
         return redirect("prestation:bulletin_paie")
 
+    annee = int(form.cleaned_data["annee"])
     mois = int(form.cleaned_data["mois"])
     section = form.cleaned_data["section"]
-    paie_data = _collect_paie_data(mois, section)
+    paie_data = _collect_paie_data(mois, section, annee)
     bulletin = {
         "mois": MONTH_LABELS.get(str(mois), str(mois)),
         "section": section,
@@ -824,7 +988,7 @@ def bulletin_paie_pdf(request):
         "resultats": paie_data["resultats"],
     }
     pdf_buffer = _build_bulletin_pdf(bulletin)
-    filename = f"bulletin_paie_{mois}_{section.pk}.pdf"
+    filename = f"bulletin_paie_{annee}_{mois}_{section.pk}.pdf"
     response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
@@ -837,10 +1001,11 @@ def bulletin_paie_individuel_pdf(request, personnel_id):
         messages.info(request, "Sélectionnez d'abord un mois et une section pour générer le bulletin individuel.")
         return redirect("prestation:etat_paie_mensuel")
 
+    annee = int(form.cleaned_data["annee"])
     mois = int(form.cleaned_data["mois"])
     section = form.cleaned_data["section"]
     personnel = get_object_or_404(Personnel, pk=personnel_id)
-    bulletin_item = _collect_individual_bulletin(personnel, mois, section)
+    bulletin_item = _collect_individual_bulletin(personnel, mois, section, annee)
     bulletin = {
         "mois": MONTH_LABELS.get(str(mois), str(mois)),
         "section": section,
@@ -1080,12 +1245,15 @@ def etat_paie_mensuel(request):
     annee_academique = _get_calcul_annee()
     form = CalculPaieForm(request.GET or None)
     etat = None
+    budget = None
     download_query = ""
 
     if form.is_valid():
+        annee = int(form.cleaned_data["annee"])
         mois = int(form.cleaned_data["mois"])
         section = form.cleaned_data["section"]
-        paie_data = _collect_paie_data(mois, section)
+        paie_data = _collect_paie_data(mois, section, annee)
+        budget = get_budget_context(annee, mois)
         if paie_data["fallback_used"]:
             messages.warning(
                 request,
@@ -1093,6 +1261,8 @@ def etat_paie_mensuel(request):
             )
         elif not paie_data["prestations"]:
             messages.info(request, "Aucune prestation trouvée pour ce mois et cette section.")
+        if budget["depasse"]:
+            messages.error(request, budget["message"])
 
         lignes = []
         for index, item in enumerate(paie_data["resultats"], start=1):
@@ -1107,17 +1277,20 @@ def etat_paie_mensuel(request):
 
         etat = {
             "mois": MONTH_LABELS.get(str(mois), str(mois)),
+            "mois_numero": mois,
+            "annee": annee,
             "section": section,
             "section_label": section.nom or section.code or "SECTION",
             "annee_academique": annee_academique,
             "lignes": lignes,
             "total_general": paie_data["total_general"],
         }
-        download_query = f"mois={mois}&section={section.pk}"
+        download_query = f"annee={annee}&mois={mois}&section={section.pk}"
 
     return render(request, "prestation/etat_paie_mensuel.html", {
         "form": form,
         "etat": etat,
+        "budget": budget,
         "annee_academique": annee_academique,
         "download_query": download_query,
     })
@@ -1235,9 +1408,10 @@ def etat_paie_mensuel_pdf(request):
         messages.info(request, "Sélectionnez d'abord un mois et une section pour générer l'état de paie.")
         return redirect("prestation:etat_paie_mensuel")
 
+    annee = int(form.cleaned_data["annee"])
     mois = int(form.cleaned_data["mois"])
     section = form.cleaned_data["section"]
-    paie_data = _collect_paie_data(mois, section)
+    paie_data = _collect_paie_data(mois, section, annee)
     lignes = []
     for index, item in enumerate(paie_data["resultats"], start=1):
         personnel = item["personnel"]
@@ -1257,7 +1431,7 @@ def etat_paie_mensuel_pdf(request):
         "total_general": paie_data["total_general"],
     }
     pdf_buffer = _build_etat_paie_pdf(etat)
-    filename = f"etat_paie_{mois}_{section.pk}.pdf"
+    filename = f"etat_paie_{annee}_{mois}_{section.pk}.pdf"
     response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
@@ -1545,6 +1719,7 @@ def _build_pdf(horaire):
         horaire.lignes.select_related(
             "element_constitutif",
             "element_constitutif__ue",
+            "element_constitutif__professeur",
             "local",
             "professeur",
         ).order_by("jour", "heure_debut", "ordre")
@@ -1619,15 +1794,13 @@ def _build_pdf(horaire):
         legend_data = [[
             Paragraph("<b>INTITULES DES UE</b>", center_style),
             Paragraph("<b>TITULAIRE</b>", center_style),
-            Paragraph("<b>CODE UE</b>", center_style),
         ]]
-        for title, titulaire, code in legend:
+        for title, titulaire in legend:
             legend_data.append([
                 Paragraph(title, body_style),
                 Paragraph(titulaire, center_style),
-                Paragraph(code, center_style),
             ])
-        legend_table = Table(legend_data, colWidths=[96 * mm, 50 * mm, 18 * mm], repeatRows=1)
+        legend_table = Table(legend_data, colWidths=[110 * mm, 54 * mm], repeatRows=1)
         legend_table.setStyle(TableStyle([
             ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#94a3b8")),
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e0f2fe")),
@@ -1712,6 +1885,7 @@ def horaire_detail(request, pk):
         ).prefetch_related(
             "lignes",
             "lignes__element_constitutif",
+            "lignes__element_constitutif__professeur",
             "lignes__local",
             "lignes__professeur",
         ),
@@ -1750,6 +1924,7 @@ def horaire_create(request):
         "form": form,
         "formset": formset,
         "title": "Nouvel horaire",
+        "ec_professeur_map": _build_ec_professeur_map(),
     })
 
 
@@ -1774,6 +1949,7 @@ def horaire_update(request, pk):
         "formset": formset,
         "title": "Modifier l'horaire",
         "horaire": horaire,
+        "ec_professeur_map": _build_ec_professeur_map(),
     })
 
 

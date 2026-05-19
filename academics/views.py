@@ -442,7 +442,7 @@ def ue_delete(request, pk):
 # ========== ELEMENTS CONSTITUTIFS ==========
 @login_required
 def ec_list(request):
-    ecs = ElementConstitutif.objects.select_related('ue').all().order_by('ue', 'ordre', 'code')
+    ecs = ElementConstitutif.objects.select_related('ue', 'professeur').all().order_by('ue', 'ordre', 'code')
     paginator = Paginator(ecs, 10)
     page = request.GET.get('page')
     ecs = paginator.get_page(page)

@@ -118,19 +118,17 @@
                                 <tr>
                                     <th>INTITULES DES UE</th>
                                     <th>TITULAIRE</th>
-                                    <th>CODE UE</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for title, titulaire, code in legend_items %}
+                                {% for title, titulaire in legend_items %}
                                 <tr>
                                     <td>{{ title }}</td>
                                     <td>{{ titulaire }}</td>
-                                    <td>{{ code }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted">Aucune ligne d'horaire disponible.</td>
+                                    <td colspan="2" class="text-center text-muted">Aucune ligne d'horaire disponible.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

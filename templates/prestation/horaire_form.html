@@ -28,7 +28,7 @@
                     {% endfor %}
                 {% endif %}
 
-                <form method="post">
+                <form method="post" id="horaire-form">
                     {% csrf_token %}
 
                     <div class="row">
@@ -69,13 +69,12 @@
                     <h6 class="mb-3">Lignes d'horaire</h6>
                     {{ formset.management_form }}
                     <div class="table-responsive">
-                        <table class="table table-bordered align-middle">
+                        <table class="table table-bordered align-middle" id="horaire-lignes-table">
                             <thead class="table-light">
                                 <tr>
                                     <th>Jour</th>
                                     <th>Heure début</th>
                                     <th>Heure fin</th>
-                                    <th>Code UE</th>
                                     <th>Élément constitutif</th>
                                     <th>Local</th>
                                     <th>Professeur</th>
@@ -86,14 +85,20 @@
                             </thead>
                             <tbody>
                                 {% for ligne_form in formset.forms %}
-                                <tr>
+                                <tr class="horaire-ligne-row">
                                     <td>{{ ligne_form.jour }}{{ ligne_form.jour.errors }}</td>
                                     <td>{{ ligne_form.heure_debut }}{{ ligne_form.heure_debut.errors }}</td>
                                     <td>{{ ligne_form.heure_fin }}{{ ligne_form.heure_fin.errors }}</td>
-                                    <td>{{ ligne_form.ue_code }}{{ ligne_form.ue_code.errors }}</td>
-                                    <td>{{ ligne_form.element_constitutif }}{{ ligne_form.element_constitutif.errors }}</td>
+                                    <td>
+                                        {{ ligne_form.element_constitutif }}{{ ligne_form.element_constitutif.errors }}
+                                        {{ ligne_form.ue_code }}
+                                    </td>
                                     <td>{{ ligne_form.local }}{{ ligne_form.local.errors }}</td>
-                                    <td>{{ ligne_form.professeur }}{{ ligne_form.professeur.errors }}</td>
+                                    <td>
+                                        {{ ligne_form.professeur }}
+                                        <span class="professeur-label text-muted">-</span>
+                                        {{ ligne_form.professeur.errors }}
+                                    </td>
                                     <td>{{ ligne_form.ordre }}{{ ligne_form.ordre.errors }}</td>
                                     <td>{{ ligne_form.notes }}{{ ligne_form.notes.errors }}</td>
                                     <td class="text-center">{{ ligne_form.DELETE }}</td>
@@ -114,4 +119,42 @@
         </div>
     </div>
 </div>
+
+{{ ec_professeur_map|json_script:"ec-professeur-map" }}
+
+<script>
+(function() {
+  const ecMap = JSON.parse(document.getElementById('ec-professeur-map').textContent);
+  const table = document.getElementById('horaire-lignes-table');
+
+  function updateProfesseurRow(row) {
+    const ecSelect = row.querySelector('select[name$="-element_constitutif"]');
+    const professeurInput = row.querySelector('input[name$="-professeur"]');
+    const label = row.querySelector('.professeur-label');
+    if (!ecSelect || !professeurInput || !label) {
+      return;
+    }
+    const ecId = ecSelect.value;
+    const prof = ecId ? ecMap[ecId] : null;
+    if (prof) {
+      professeurInput.value = prof.id;
+      label.textContent = prof.label;
+      label.classList.remove('text-muted');
+    } else {
+      professeurInput.value = '';
+      label.textContent = ecId ? 'Aucun professeur assigné à cet EC' : '-';
+      label.classList.add('text-muted');
+    }
+  }
+
+  table.addEventListener('change', function(event) {
+    if (!event.target.matches('select[name$="-element_constitutif"]')) {
+      return;
+    }
+    updateProfesseurRow(event.target.closest('tr'));
+  });
+
+  table.querySelectorAll('.horaire-ligne-row').forEach(updateProfesseurRow);
+})();
+</script>
 {% endblock %}
