@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, PaieMensuelle
+from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, PaieMensuelle, PersonnelBaremeInitial
 
 
 @admin.register(EnveloppeBudgetaire)
@@ -16,6 +16,12 @@ class PaieMensuelleAdmin(admin.ModelAdmin):
     list_filter = ("validee_le",)
     readonly_fields = ("validee_le",)
 
+
+@admin.register(PersonnelBaremeInitial)
+class PersonnelBaremeInitialAdmin(admin.ModelAdmin):
+    list_display = ("personnel", "bareme", "quantite", "created_at")
+    list_filter = ("bareme__categorie",)
+    search_fields = ("personnel__last_name", "personnel__first_name", "bareme__intitule")
 
 @admin.register(BaremePrestation)
 class BaremePrestationAdmin(admin.ModelAdmin):

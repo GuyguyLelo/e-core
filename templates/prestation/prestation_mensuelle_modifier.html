@@ -1,0 +1,102 @@
+{% extends "layout/master.html" %}
+
+{% block title %}Modifier saisie mensuelle - e-Core{% endblock %}
+
+{% block page_title %}Modifier saisie mensuelle{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:prestation_mensuelle_list' %}">Saisie prestation mensuelle</a></li>
+<li class="breadcrumb-item active">Modifier</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Modifier la saisie mensuelle</h5>
+                <a href="{% url 'prestation:prestation_mensuelle_list' %}?mois={{ keys.mois }}&annee={{ keys.annee }}&numero_fiche={{ keys.numero_fiche|urlencode }}" class="btn btn-secondary btn-sm">
+                    <i class="fa fa-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="alert alert-light border mb-4 small">
+                    <strong>Saisie actuelle :</strong> {{ saisie_resume.periode }} —
+                    Fiche <strong>{{ saisie_resume.numero_fiche }}</strong> —
+                    {{ saisie_resume.personnel_label }} —
+                    {{ saisie_resume.bareme_label }} —
+                    {{ saisie_resume.nb_lignes }} ligne(s)
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <p class="text-muted small mb-4">
+                    Modifiez les informations ci-dessous. Les anciennes lignes seront remplacées par
+                    <strong>{{ form.quantite.value|default:saisie_resume.nb_lignes }}</strong> nouvelle(s) ligne(s) selon la quantité indiquée.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="orig_mois" value="{{ keys.mois }}">
+                    <input type="hidden" name="orig_annee" value="{{ keys.annee }}">
+                    <input type="hidden" name="orig_numero_fiche" value="{{ keys.numero_fiche }}">
+                    <input type="hidden" name="orig_personnel" value="{{ keys.personnel_id }}">
+                    <input type="hidden" name="orig_bareme" value="{{ keys.bareme_id }}">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Mois <span class="text-danger">*</span></label>
+                            {{ form.mois }}
+                            {{ form.mois.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Année <span class="text-danger">*</span></label>
+                            {{ form.annee }}
+                            {{ form.annee.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Numéro de fiche <span class="text-danger">*</span></label>
+                            {{ form.numero_fiche }}
+                            {{ form.numero_fiche.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Personnel <span class="text-danger">*</span></label>
+                            {{ form.personnel }}
+                            {{ form.personnel.errors }}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Barème <span class="text-danger">*</span></label>
+                            {{ form.bareme }}
+                            {{ form.bareme.errors }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Quantité <span class="text-danger">*</span></label>
+                            {{ form.quantite }}
+                            {{ form.quantite.errors }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{% url 'prestation:prestation_mensuelle_list' %}?mois={{ keys.mois }}&annee={{ keys.annee }}&numero_fiche={{ keys.numero_fiche|urlencode }}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

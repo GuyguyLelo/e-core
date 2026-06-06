@@ -102,13 +102,12 @@ class PrestationForm(forms.ModelForm):
             self.add_error("bareme", "Le barème sélectionné ne correspond pas au type de prestation choisi.")
         date_prestation = cleaned.get("date_prestation")
         if date_prestation:
-            from .services import is_paie_mois_cloturee, get_month_label
+            from .services import get_enveloppe_for_date
 
-            if is_paie_mois_cloturee(date_prestation.year, date_prestation.month):
+            if not get_enveloppe_for_date(date_prestation):
                 self.add_error(
                     "date_prestation",
-                    f"La paie de {get_month_label(date_prestation.month)} {date_prestation.year} est clôturée. "
-                    "Aucune prestation ne peut être enregistrée ou modifiée pour ce mois.",
+                    "Aucune enveloppe budgétaire n'a été trouvée.",
                 )
         return cleaned
 
@@ -156,6 +155,198 @@ class CalculPaieForm(forms.Form):
         self.fields["annee"].choices = _annee_choices()
         if not self.is_bound:
             self.fields["annee"].initial = date.today().year
+
+
+class PrestationMensuelleSaisieForm(forms.Form):
+    mois = forms.ChoiceField(
+        choices=MONTH_CHOICES,
+        label="Mois",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    annee = forms.TypedChoiceField(
+        choices=[],
+        coerce=int,
+        label="Année",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    numero_fiche = forms.CharField(
+        label="Numéro de fiche",
+        max_length=50,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex. FIC-2026-001"}),
+    )
+    personnel = forms.ModelChoiceField(
+        queryset=Personnel.objects.order_by("last_name", "first_name"),
+        label="Personnel",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    bareme = forms.ModelChoiceField(
+        queryset=BaremePrestation.objects.none(),
+        label="Barème",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    quantite = forms.IntegerField(
+        label="Quantité",
+        min_value=1,
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1, "step": 1}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .services import get_baremes_prestation_mensuelle_queryset
+
+        self.fields["annee"].choices = _annee_choices()
+        self.fields["bareme"].queryset = get_baremes_prestation_mensuelle_queryset()
+        self.fields["bareme"].label_from_instance = self._bareme_label
+
+        if not self.is_bound:
+            today = date.today()
+            self.initial.setdefault("mois", str(today.month))
+            self.initial.setdefault("annee", today.year)
+
+    @staticmethod
+    def _bareme_label(bareme):
+        montant = f"{int(bareme.montant):,}".replace(",", " ")
+        return f"{bareme.intitule} — {bareme.get_categorie_display()} ({montant} CDF)"
+
+    def clean(self):
+        cleaned = super().clean()
+        annee = cleaned.get("annee")
+        mois = cleaned.get("mois")
+        bareme = cleaned.get("bareme")
+
+        if annee and mois:
+            from .services import assert_enveloppe_disponible, get_enveloppe_for_date
+
+            try:
+                date_controle = date(int(annee), int(mois), 1)
+            except (TypeError, ValueError):
+                self.add_error("mois", "Mois ou année invalide.")
+            else:
+                if not get_enveloppe_for_date(date_controle):
+                    self.add_error(
+                        "mois",
+                        "Aucune enveloppe budgétaire n'a été trouvée pour cette période.",
+                    )
+                else:
+                    try:
+                        assert_enveloppe_disponible(date_controle)
+                    except ValueError as exc:
+                        self.add_error("mois", str(exc))
+
+        if bareme and bareme.categorie == BaremePrestation.CATEGORIE_ENSEIGNEMENT:
+            self.add_error("bareme", "Les barèmes de type enseignement ne sont pas autorisés ici.")
+
+        return cleaned
+
+
+class PrestationMensuelleListeForm(forms.Form):
+    mois = forms.ChoiceField(
+        choices=[("", "Tous les mois")] + MONTH_CHOICES,
+        required=False,
+        label="Mois",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    annee = forms.ChoiceField(
+        choices=[],
+        required=False,
+        label="Année",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    numero_fiche = forms.CharField(
+        required=False,
+        label="Numéro de fiche",
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Filtrer par fiche"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["annee"].choices = [("", "Toutes les années")] + [
+            (str(year), str(year)) for year, _ in _annee_choices()
+        ]
+        if not self.is_bound:
+            today = date.today()
+            self.initial.setdefault("mois", str(today.month))
+            self.initial.setdefault("annee", str(today.year))
+
+
+class PrestationDepuisHoraireListeForm(forms.Form):
+    mois = forms.ChoiceField(
+        choices=[("", "Tous les mois")] + MONTH_CHOICES,
+        required=False,
+        label="Mois",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    annee = forms.ChoiceField(
+        choices=[],
+        required=False,
+        label="Année",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    numero_fiche = forms.CharField(
+        required=False,
+        label="Numéro de fiche",
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Filtrer par fiche"}),
+    )
+    section = forms.ModelChoiceField(
+        queryset=Section.objects.filter(active=True).order_by("code"),
+        required=False,
+        label="Section",
+        empty_label="Toutes les sections",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["annee"].choices = [("", "Toutes les années")] + [
+            (str(year), str(year)) for year, _ in _annee_choices()
+        ]
+        if not self.is_bound:
+            today = date.today()
+            self.initial.setdefault("mois", str(today.month))
+            self.initial.setdefault("annee", str(today.year))
+
+
+class PrestationDepuisHoraireFiltreForm(forms.Form):
+    """Filtre d'affichage de l'horaire : fiche, section et jour uniquement."""
+
+    JOUR_CHOICES = [
+        ("lundi", "Lundi"),
+        ("mardi", "Mardi"),
+        ("mercredi", "Mercredi"),
+        ("jeudi", "Jeudi"),
+        ("vendredi", "Vendredi"),
+        ("samedi", "Samedi"),
+    ]
+
+    numero_fiche = forms.CharField(
+        label="Numéro fiche",
+        max_length=50,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex. FIC-2026-001"}),
+    )
+    section = forms.ModelChoiceField(
+        queryset=Section.objects.filter(active=True).order_by("code"),
+        label="Section",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    jour = forms.ChoiceField(
+        choices=JOUR_CHOICES,
+        label="Jour",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+
+
+class PrestationDepuisHoraireDateForm(forms.Form):
+    """Date figurant sur la fiche : enregistrée comme date de la prestation (hors filtre horaire)."""
+
+    date_prestation = forms.DateField(
+        label="Date de la prestation",
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date", "id": "id_date_prestation"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial.setdefault("date_prestation", date.today())
 
 
 class FichePrestationJournaliereForm(forms.Form):
@@ -287,10 +478,14 @@ class HoraireLigneForm(forms.ModelForm):
         ).order_by("ue__semestre__promotion__code", "ue__ordre", "ordre", "code")
         self.fields["local"].queryset = Local.objects.filter(active=True).order_by("code")
         self.fields["professeur"].queryset = Personnel.objects.all()
+        self.fields["jour"].required = False
+        self.fields["heure_debut"].required = False
+        self.fields["heure_fin"].required = False
         self.fields["ue_code"].required = False
         self.fields["element_constitutif"].required = False
         self.fields["local"].required = False
         self.fields["professeur"].required = False
+        self.fields["ordre"].required = False
         if self.instance and self.instance.element_constitutif_id and not self.instance.professeur_id:
             ec = self.instance.element_constitutif
             if ec.professeur_id:
@@ -298,9 +493,38 @@ class HoraireLigneForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        if cleaned.get("DELETE"):
+            return cleaned
+
+        jour = cleaned.get("jour")
+        heure_debut = cleaned.get("heure_debut")
+        heure_fin = cleaned.get("heure_fin")
         ec = cleaned.get("element_constitutif")
+        ue_code = (cleaned.get("ue_code") or "").strip()
+
+        if not jour and not heure_debut and not heure_fin and not ec and not ue_code:
+            return cleaned
+
+        if not jour:
+            raise forms.ValidationError({"jour": "Le jour est obligatoire pour une ligne renseignée."})
+        if not heure_debut:
+            raise forms.ValidationError({"heure_debut": "L'heure de début est obligatoire."})
+        if not heure_fin:
+            raise forms.ValidationError({"heure_fin": "L'heure de fin est obligatoire."})
+
+        if not ec and not ue_code:
+            raise forms.ValidationError(
+                "Veuillez sélectionner un élément constitutif ou renseigner le code UE."
+            )
+        if heure_debut and heure_fin and heure_fin <= heure_debut:
+            raise forms.ValidationError(
+                {"heure_fin": "L'heure de fin doit être supérieure à l'heure de début."}
+            )
+
         if ec and ec.professeur_id:
             cleaned["professeur"] = ec.professeur
         elif ec:
             cleaned["professeur"] = None
+        if ec and not ue_code and ec.code:
+            cleaned["ue_code"] = ec.code
         return cleaned

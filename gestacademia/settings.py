@@ -102,7 +102,7 @@ DATABASES = {
 #         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': os.environ.get('DJANGO_DB_NAME', 'ecore_db'),
 #         'USER': os.environ.get('DJANGO_DB_USER', 'admin'),
-#         'PASSWORD': os.environ.get('DJANGO_DB_PASSWORD', 'Dsiserver2026'),
+#         'PASSWORD': os.environ.get('DJANGO_DB_PASSWORD', 'Dsiserver@2026'),
 #         'HOST': os.environ.get('DJANGO_DB_HOST', 'localhost'),
 #         'PORT': os.environ.get('DJANGO_DB_PORT', '5432'),
 #         'OPTIONS': {},

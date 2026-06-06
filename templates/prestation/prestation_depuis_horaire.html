@@ -1,0 +1,477 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Saisie des prestations depuis l'horaire - e-Core{% endblock %}
+
+{% block page_title %}Saisie des prestations depuis l'horaire{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:prestation_depuis_horaire' %}">Saisie depuis l'horaire</a></li>
+<li class="breadcrumb-item active">Nouvelle saisie</li>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<style>
+  .prestation-horaire-table thead th { white-space: nowrap; }
+  .prestation-valide-checkbox { width: 1.25rem; height: 1.25rem; cursor: pointer; }
+  .prestation-valide-checkbox:disabled { cursor: not-allowed; opacity: 0.6; }
+  .prestation-valide-cell { min-width: 90px; }
+  .prestation-statut-cell { min-width: 220px; font-size: 0.85rem; line-height: 1.35; }
+  tr.row-bloquee { background-color: rgba(220, 53, 69, 0.04); }
+  tr.row-loading { opacity: 0.55; pointer-events: none; }
+  .date-prestation-block {
+    border-left: 3px solid #0d6efd;
+    padding-left: 1rem;
+    margin-top: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Critères d'affichage de l'horaire</h5>
+                <a href="{% url 'prestation:prestation_depuis_horaire' %}" class="btn btn-secondary btn-sm">
+                    <i class="fa fa-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="get" id="filtre-prestation-horaire-form">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Numéro fiche <span class="text-danger">*</span></label>
+                            {{ filtre_form.numero_fiche }}
+                            {{ filtre_form.numero_fiche.errors }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Section</label>
+                            {{ filtre_form.section }}
+                            {{ filtre_form.section.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Jour</label>
+                            {{ filtre_form.jour }}
+                            {{ filtre_form.jour.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Date prestation <span class="text-danger">*</span></label>
+                            {{ date_form.date_prestation }}
+                            {{ date_form.date_prestation.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fa fa-eye"></i> Afficher
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0 mt-2">
+                        La date figurant sur la fiche sera enregistrée comme date de la prestation (elle ne filtre pas l'horaire affiché).
+                    </p>
+                    {% if filtre_form.non_field_errors %}
+                    <div class="alert alert-danger mt-3 mb-0">{{ filtre_form.non_field_errors }}</div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if tableau %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <div class="row g-2 small">
+                    <div class="col-md-3"><span class="text-muted">Fiche :</span> <strong>{{ tableau.numero_fiche }}</strong></div>
+                    <div class="col-md-3"><span class="text-muted">Section :</span> <strong>{{ tableau.section_label }}</strong></div>
+                    <div class="col-md-2"><span class="text-muted">Jour :</span> <strong>{{ tableau.jour_label }}</strong></div>
+                    <div class="col-md-2"><span class="text-muted">Date prestation :</span> <strong id="date-prestation-label">{{ tableau.date_label }}</strong></div>
+                    <div class="col-md-2"><span class="text-muted">Année acad. :</span> <strong>{{ tableau.annee_academique }}</strong></div>
+                </div>
+                {% if alertes_blocage %}
+                <div id="prestation-blocages-alertes" class="mt-3 mb-0">
+                    {% for alerte in alertes_blocage %}
+                    <div class="alert alert-{{ alerte.niveau }} mb-2 py-2" role="alert">
+                        <i class="fa fa-info-circle me-1"></i> {{ alerte.texte }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <input type="hidden" id="prestation-horaire-csrf" value="{{ csrf_token }}">
+        <div class="card"
+             id="prestation-horaire-table"
+             data-api-url="{{ api_url }}"
+             data-numero-fiche="{{ tableau.numero_fiche }}"
+             data-section="{{ tableau.section.pk }}"
+             data-jour="{{ tableau.jour }}"
+             data-date-prestation="{{ tableau.date_prestation|date:'Y-m-d' }}"
+             data-can-add="{% if peut_ajouter %}1{% else %}0{% endif %}"
+             data-can-cancel="{% if peut_annuler %}1{% else %}0{% endif %}"
+             data-msg-blocage-ajout="{{ msg_blocage_ajout|default:'' }}"
+             data-msg-blocage-annulation="{{ msg_blocage_annulation|default:'' }}">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0">
+                    {% if mode_modification %}
+                    Modification de la fiche — lignes validées
+                    {% else %}
+                    Horaire — prestations à valider
+                    {% endif %}
+                </h6>
+                <div class="d-flex align-items-center gap-2">
+                    {% if mode_modification %}
+                    <span class="badge bg-info">{{ tableau.nb_validees }} validée(s)</span>
+                    {% endif %}
+                    <span class="badge bg-light text-dark">{{ tableau.rows|length }} ligne(s)</span>
+                </div>
+            </div>
+            {% if mode_modification %}
+            <div class="card-body py-2 border-bottom bg-light">
+                <p class="mb-0 small text-muted">
+                    <strong>Modification :</strong> décochez une ligne pour retirer une prestation déjà enregistrée,
+                    ou cochez une nouvelle ligne pour l'ajouter. Conservez la même date de prestation que lors de l'enregistrement initial.
+                </p>
+            </div>
+            {% endif %}
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle mb-0 prestation-horaire-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Jour</th>
+                                <th>Cours</th>
+                                <th>Classe</th>
+                                <th>Professeur</th>
+                                <th>Heure du cours</th>
+                                <th class="text-center prestation-valide-cell">Validé</th>
+                                <th>État / message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in tableau.rows %}
+                            <tr class="{% if not row.professeur_id %}row-bloquee{% endif %}"
+                                data-ligne-id="{{ row.ligne_id }}"
+                                data-prestation-id="{{ row.prestation_id|default:'' }}"
+                                data-blocage-clic="{{ row.blocage_clic|default:'' }}">
+                                <td>{{ row.jour_label }}</td>
+                                <td>{{ row.cours }}</td>
+                                <td>{{ row.classe }}</td>
+                                <td>{% if not row.professeur_id %}<span class="text-danger">{{ row.professeur }}</span>{% else %}{{ row.professeur }}{% endif %}</td>
+                                <td>{{ row.heure_cours }}</td>
+                                <td class="text-center prestation-valide-cell">
+                                    <input type="checkbox"
+                                           class="form-check-input prestation-valide-checkbox"
+                                           {% if row.validee %}checked{% endif %}
+                                           {% if not row.professeur_id %}disabled{% endif %}
+                                           title="{{ row.statut_message }}"
+                                           aria-label="Valider la prestation">
+                                </td>
+                                <td class="prestation-statut-cell {{ row.statut_class }}">
+                                    {{ row.statut_message }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Aucune ligne d'horaire à afficher.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif request.GET.numero_fiche or request.GET.section or request.GET.jour %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info mb-0">
+            Corrigez les critères ci-dessus ou vérifiez qu'un horaire actif existe pour la section et le jour choisis.
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info mb-0">
+            Renseignez le numéro de fiche, la section et le jour, puis cliquez sur <strong>Afficher</strong>.
+            Choisissez ensuite la <strong>date de la prestation</strong> indiquée sur la fiche avant de valider les lignes.
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      var cookies = document.cookie.split(";");
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function getCsrfToken() {
+    var hidden = document.getElementById("prestation-horaire-csrf");
+    if (hidden && hidden.value) {
+      return hidden.value;
+    }
+    return getCookie("csrftoken");
+  }
+
+  function showToast(icon, message, duration) {
+    var timer = duration || (icon === "error" ? 8000 : 3500);
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: icon,
+        title: message,
+        showConfirmButton: false,
+        timer: timer,
+        timerProgressBar: true,
+      });
+      return;
+    }
+    alert(message);
+  }
+
+  function showAlert(icon, title, message) {
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        icon: icon,
+        title: title,
+        text: message,
+        confirmButtonText: "Compris",
+      });
+      return;
+    }
+    alert(title + "\n\n" + message);
+  }
+
+  function askConfirm(title) {
+    if (typeof Swal !== "undefined") {
+      return Swal.fire({
+        title: title,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Oui",
+        cancelButtonText: "Non",
+        reverseButtons: true,
+      }).then(function (result) {
+        return result.isConfirmed;
+      });
+    }
+    return Promise.resolve(window.confirm(title));
+  }
+
+  function getDatePrestation(container) {
+    var input = document.getElementById("id_date_prestation");
+    if (input && input.value) {
+      return input.value;
+    }
+    if (container && container.dataset.datePrestation) {
+      return container.dataset.datePrestation;
+    }
+    return "";
+  }
+
+  var dateInput = document.getElementById("id_date_prestation");
+  var dateLabel = document.getElementById("date-prestation-label");
+  var container = document.getElementById("prestation-horaire-table");
+  if (dateInput && dateLabel) {
+    dateInput.addEventListener("change", function () {
+      if (!dateInput.value) {
+        return;
+      }
+      if (container) {
+        container.dataset.datePrestation = dateInput.value;
+      }
+      var parts = dateInput.value.split("-");
+      if (parts.length === 3) {
+        dateLabel.textContent = parts[2] + "/" + parts[1] + "/" + parts[0];
+      }
+    });
+  }
+
+  if (!container) {
+    return;
+  }
+
+  var apiUrl = container.dataset.apiUrl;
+  var numeroFiche = container.dataset.numeroFiche || "";
+  var sectionId = container.dataset.section;
+  var jour = container.dataset.jour;
+  var csrftoken = getCsrfToken();
+
+  function canAdd() {
+    return container.dataset.canAdd === "1";
+  }
+
+  function canCancel() {
+    return container.dataset.canCancel === "1";
+  }
+
+  function msgBlocageAjout() {
+    return container.dataset.msgBlocageAjout || "Vous ne pouvez pas enregistrer de nouvelle prestation pour le moment.";
+  }
+
+  function msgBlocageAnnulation() {
+    return container.dataset.msgBlocageAnnulation || "Vous ne pouvez pas annuler de prestation pour le moment.";
+  }
+
+  function msgBlocageLigne(row) {
+    if (row && row.dataset.blocageClic) {
+      return row.dataset.blocageClic;
+    }
+    return "";
+  }
+
+  container.addEventListener("click", function (event) {
+    var checkbox = event.target;
+    if (!checkbox.classList.contains("prestation-valide-checkbox") || !checkbox.disabled) {
+      return;
+    }
+    var row = checkbox.closest("tr");
+    var message = msgBlocageLigne(row) || "Cette ligne ne peut pas être validée.";
+    showAlert("warning", "Validation impossible", message);
+  });
+
+  container.addEventListener("change", function (event) {
+    var checkbox = event.target;
+    if (!checkbox.classList.contains("prestation-valide-checkbox") || checkbox.disabled) {
+      return;
+    }
+
+    var dateStr = getDatePrestation(container);
+    if (!dateStr) {
+      checkbox.checked = !checkbox.checked;
+      showAlert(
+        "warning",
+        "Date manquante",
+        "Veuillez sélectionner la date de la prestation figurant sur la fiche (champ au-dessus du tableau), puis réessayez."
+      );
+      return;
+    }
+
+    var row = checkbox.closest("tr");
+    if (!row || !row.dataset.ligneId) {
+      checkbox.checked = !checkbox.checked;
+      showAlert("error", "Erreur", "Ligne d'horaire introuvable. Rechargez la page.");
+      return;
+    }
+
+    var ligneId = row.dataset.ligneId;
+    var wantChecked = checkbox.checked;
+    var previousChecked = !wantChecked;
+
+    if (wantChecked && !canAdd()) {
+      checkbox.checked = false;
+      var blocageLigne = msgBlocageLigne(row);
+      showAlert(
+        "warning",
+        "Enregistrement impossible",
+        blocageLigne || msgBlocageAjout()
+      );
+      return;
+    }
+    if (!wantChecked && !canCancel()) {
+      checkbox.checked = true;
+      showAlert(
+        "warning",
+        "Annulation impossible",
+        msgBlocageLigne(row) || msgBlocageAnnulation()
+      );
+      return;
+    }
+
+    if (!csrftoken) {
+      checkbox.checked = previousChecked;
+      showToast("error", "Jeton de sécurité manquant. Rechargez la page.");
+      return;
+    }
+
+    checkbox.checked = previousChecked;
+
+    var confirmTitle = wantChecked
+      ? "Voulez-vous confirmer cette prestation ?"
+      : "Voulez-vous annuler cette prestation ?";
+
+    askConfirm(confirmTitle).then(function (confirmed) {
+      if (!confirmed) {
+        checkbox.checked = previousChecked;
+        return;
+      }
+
+      checkbox.checked = wantChecked;
+      row.classList.add("row-loading");
+      checkbox.disabled = true;
+
+      var formData = new FormData();
+      formData.append("action", wantChecked ? "confirm" : "cancel");
+      formData.append("ligne_id", ligneId);
+      formData.append("numero_fiche", numeroFiche);
+      formData.append("section", sectionId);
+      formData.append("jour", jour);
+      formData.append("date", dateStr);
+      formData.append("csrfmiddlewaretoken", csrftoken);
+
+      fetch(apiUrl, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken },
+        body: formData,
+        credentials: "same-origin",
+      })
+        .then(function (response) {
+          return response.json().then(
+            function (data) {
+              return { ok: response.ok, data: data };
+            },
+            function () {
+              return { ok: false, data: { success: false, message: "Réponse serveur invalide." } };
+            }
+          );
+        })
+        .then(function (result) {
+          row.classList.remove("row-loading");
+          checkbox.disabled = false;
+          if (!result.ok || !result.data.success) {
+            checkbox.checked = previousChecked;
+            showAlert(
+              "error",
+              "Opération refusée",
+              (result.data && result.data.message) || "Une erreur est survenue."
+            );
+            return;
+          }
+          checkbox.checked = !!result.data.checked;
+          row.dataset.prestationId = result.data.prestation_id || "";
+          showToast("success", result.data.message);
+        })
+        .catch(function () {
+          row.classList.remove("row-loading");
+          checkbox.checked = previousChecked;
+          checkbox.disabled = false;
+          showToast("error", "Erreur de communication avec le serveur.");
+        });
+    });
+  });
+});
+</script>
+{% endblock %}

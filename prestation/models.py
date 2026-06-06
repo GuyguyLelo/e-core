@@ -134,6 +134,49 @@ class BaremePrestation(models.Model):
         return self.intitule
 
 
+class PersonnelBaremeInitial(models.Model):
+    personnel = models.ForeignKey(
+        "cards.Personnel",
+        on_delete=models.CASCADE,
+        related_name="baremes_initiaux_liens",
+        verbose_name="Personnel",
+    )
+    bareme = models.ForeignKey(
+        BaremePrestation,
+        on_delete=models.CASCADE,
+        related_name="personnels_initiaux",
+        verbose_name="Barème",
+    )
+    quantite = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name="Quantité",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Barème initial du personnel"
+        verbose_name_plural = "Barèmes initiaux du personnel"
+        ordering = ["personnel", "bareme__categorie", "bareme__ordre", "bareme__intitule"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["personnel", "bareme"],
+                name="unique_personnel_bareme_initial",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.personnel} — {self.bareme}"
+
+    @property
+    def montant_unitaire(self):
+        return self.bareme.montant if self.bareme_id else 0
+
+    @property
+    def montant_total(self):
+        return self.montant_unitaire * self.quantite
+
+
 class Prestation(models.Model):
     date_prestation = models.DateField(verbose_name="Date")
     personnel = models.ForeignKey(
@@ -162,6 +205,25 @@ class Prestation(models.Model):
         null=True,
         blank=True,
     )
+    horaire_ligne = models.ForeignKey(
+        "HoraireLigne",
+        on_delete=models.SET_NULL,
+        related_name="prestations",
+        verbose_name="Ligne d'horaire",
+        null=True,
+        blank=True,
+    )
+    numero_fiche = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Numéro fiche",
+    )
+    jour = models.CharField(max_length=20, blank=True, verbose_name="Jour")
+    heure_debut = models.TimeField(
+        null=True,
+        blank=True,
+        verbose_name="Heure début",
+    )
     observation = models.TextField(blank=True, null=True, verbose_name="Observation")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -170,6 +232,13 @@ class Prestation(models.Model):
         verbose_name = "Prestation"
         verbose_name_plural = "Prestations"
         ordering = ["-date_prestation", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["date_prestation", "horaire_ligne"],
+                condition=models.Q(horaire_ligne__isnull=False),
+                name="unique_prestation_date_horaire_ligne",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.date_prestation} - {self.personnel}"

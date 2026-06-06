@@ -1,8 +1,9 @@
 from collections import OrderedDict, defaultdict
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 import os
 import re
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
@@ -14,6 +15,7 @@ from django.http import JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -40,27 +42,148 @@ from .forms import (
     FichePrestationJournaliereForm,
     HoraireForm,
     HoraireLigneForm,
+    PrestationDepuisHoraireDateForm,
+    PrestationDepuisHoraireFiltreForm,
+    PrestationDepuisHoraireListeForm,
+    PrestationMensuelleListeForm,
+    PrestationMensuelleSaisieForm,
     PrestationForm,
     StatistiquesPrestationEnseignementForm,
 )
 from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, PaieMensuelle, Prestation
 from .services import (
+    cancel_prestation_horaire_ligne,
     cloturer_paie_mensuelle,
+    collect_prestation_horaire_rows,
+    confirm_prestation_horaire_ligne,
+    enregistrer_prestations_mensuelles,
     get_budget_context,
+    get_fiches_saisie_horaire,
+    get_prestations_mensuelles_queryset,
+    get_saisies_prestation_mensuelle,
+    get_prestations_mensuelle_groupe,
+    modifier_saisie_prestation_mensuelle,
+    supprimer_saisie_prestation_mensuelle,
+    collect_bulletin_individuel_paie,
+    collect_calcul_paie_data,
+    get_default_bareme_enseignement,
+    get_enveloppe_for_date,
     get_month_label,
     is_paie_mois_cloturee,
 )
 
 
-HoraireLigneFormSet = inlineformset_factory(
-    Horaire,
-    HoraireLigne,
-    form=HoraireLigneForm,
-    extra=18,
-    can_delete=True,
-    min_num=1,
-    validate_min=True,
-)
+def _blocage_ajout_prestation_horaire(request, date_prestation, enveloppe_manquante):
+    """Message explicite lorsque l'utilisateur ne peut pas cocher une nouvelle ligne."""
+    if not request.user.has_perm("prestation.add_prestation"):
+        return (
+            "Vous n'avez pas la permission d'ajouter une prestation. "
+            "Demandez le droit « Ajouter une prestation » à un administrateur."
+        )
+    if is_paie_mois_cloturee(date_prestation.year, date_prestation.month):
+        mois = get_month_label(date_prestation.month)
+        return (
+            f"La paie de {mois} {date_prestation.year} est clôturée : "
+            "aucune nouvelle prestation ne peut être enregistrée pour cette date."
+        )
+    if enveloppe_manquante:
+        mois = get_month_label(date_prestation.month)
+        return (
+            f"Aucune enveloppe budgétaire pour {mois} {date_prestation.year}. "
+            "Créez-la dans le menu Enveloppes budgétaires, puis réessayez."
+        )
+    if not get_default_bareme_enseignement():
+        return (
+            "Aucun barème d'enseignement actif n'est configuré. "
+            "Créez un barème (catégorie enseignement) avant de valider."
+        )
+    return ""
+
+
+def _blocage_annulation_prestation_horaire(request, date_prestation):
+    if not (
+        request.user.has_perm("prestation.delete_prestation")
+        or request.user.has_perm("prestation.change_prestation")
+    ):
+        return (
+            "Vous n'avez pas la permission d'annuler une prestation. "
+            "Demandez le droit de modification ou de suppression des prestations."
+        )
+    if is_paie_mois_cloturee(date_prestation.year, date_prestation.month):
+        mois = get_month_label(date_prestation.month)
+        return (
+            f"La paie de {mois} {date_prestation.year} est clôturée : "
+            "vous ne pouvez plus retirer de prestation pour cette date."
+        )
+    return ""
+
+
+def _enrich_prestation_horaire_rows(
+    rows,
+    *,
+    date_prestation,
+    enveloppe_manquante,
+    paie_cloturee,
+    can_add,
+    can_cancel,
+    msg_blocage_ajout,
+    msg_blocage_annulation,
+):
+    mois = get_month_label(date_prestation.month)
+    annee = date_prestation.year
+    for row in rows:
+        if not row["professeur_id"]:
+            row["statut_message"] = (
+                "Impossible de valider : aucun professeur n'est associé à ce cours. "
+                "Assignez un professeur sur la ligne d'horaire concernée."
+            )
+            row["statut_class"] = "text-danger"
+            row["blocage_clic"] = row["statut_message"]
+            continue
+        if row["validee"]:
+            if paie_cloturee:
+                row["statut_message"] = (
+                    f"Prestation enregistrée — paie de {mois} {annee} clôturée, "
+                    "retrait impossible."
+                )
+                row["statut_class"] = "text-warning"
+            elif not can_cancel:
+                row["statut_message"] = (
+                    f"Prestation enregistrée — {msg_blocage_annulation or 'annulation non autorisée.'}"
+                )
+                row["statut_class"] = "text-warning"
+            else:
+                row["statut_message"] = (
+                    "Prestation enregistrée — décochez la case pour la retirer."
+                )
+                row["statut_class"] = "text-success"
+            row["blocage_clic"] = msg_blocage_annulation or ""
+            continue
+        if msg_blocage_ajout:
+            row["statut_message"] = msg_blocage_ajout
+            row["statut_class"] = "text-warning"
+            row["blocage_clic"] = msg_blocage_ajout
+            continue
+        row["statut_message"] = "Cochez la case « Validé » pour enregistrer cette prestation."
+        row["statut_class"] = "text-muted"
+        row["blocage_clic"] = ""
+
+
+def get_horaire_ligne_formset(instance=None, data=None):
+    """Formset des lignes : 18 lignes vides à la création, uniquement les existantes en modification."""
+    extra = 0 if instance and instance.pk else 18
+    FormSet = inlineformset_factory(
+        Horaire,
+        HoraireLigne,
+        form=HoraireLigneForm,
+        extra=extra,
+        can_delete=True,
+        min_num=1,
+        validate_min=True,
+    )
+    if data is not None:
+        return FormSet(data, instance=instance, prefix="lignes")
+    return FormSet(instance=instance, prefix="lignes")
 
 
 DAY_ORDER = [
@@ -280,81 +403,11 @@ def _collect_statistiques_prestations_enseignement(section, annee_academique, se
 
 
 def _collect_paie_data(mois, section, annee):
-    prestations_mois = Prestation.objects.select_related(
-        "personnel",
-        "bareme",
-        "horaire",
-        "horaire__classe",
-        "horaire__classe__promotion",
-        "horaire__classe__promotion__filiere",
-        "horaire__classe__promotion__filiere__section",
-    ).filter(
-        date_prestation__year=annee,
-        date_prestation__month=mois,
-    ).order_by("personnel__last_name", "personnel__first_name", "date_prestation")
-
-    prestations_filtrees = [prestation for prestation in prestations_mois if _section_matches_prestation(prestation, section)]
-    fallback_used = False
-    if not prestations_filtrees and prestations_mois.exists():
-        prestations_filtrees = list(prestations_mois)
-        fallback_used = True
-
-    grouped = defaultdict(list)
-    for prestation in prestations_filtrees:
-        grouped[prestation.personnel].append(prestation)
-
-    resultats = []
-    for personnel, lignes in grouped.items():
-        total_personnel = sum(int(p.montant or 0) for p in lignes)
-        resultats.append({
-            "personnel": personnel,
-            "prestations": lignes,
-            "total": total_personnel,
-        })
-
-    total_general = sum(item["total"] for item in resultats)
-    total_prestations = len(prestations_filtrees)
-    total_personnels = len(resultats)
-    ids = [p.id for p in prestations_filtrees]
-    totals_by_bareme = (
-        Prestation.objects.filter(id__in=ids)
-        .values("bareme__categorie", "bareme__intitule")
-        .annotate(total=Sum("montant"), nombre=Count("id"))
-    ) if ids else []
-
-    return {
-        "prestations_mois": prestations_mois,
-        "prestations": prestations_filtrees,
-        "resultats": resultats,
-        "total_general": total_general,
-        "total_prestations": total_prestations,
-        "total_personnels": total_personnels,
-        "totals_by_bareme": totals_by_bareme,
-        "fallback_used": fallback_used,
-    }
+    return collect_calcul_paie_data(mois, section, annee)
 
 
 def _collect_individual_bulletin(personnel, mois, section, annee):
-    prestations = Prestation.objects.select_related(
-        "personnel",
-        "bareme",
-        "horaire",
-        "horaire__classe",
-        "horaire__classe__promotion",
-        "horaire__classe__promotion__filiere",
-        "horaire__classe__promotion__filiere__section",
-    ).filter(
-        personnel=personnel,
-        date_prestation__year=annee,
-        date_prestation__month=mois,
-    ).order_by("date_prestation")
-    prestations = [prestation for prestation in prestations if _section_matches_prestation(prestation, section)]
-    total_general = sum(int(prestation.montant or 0) for prestation in prestations)
-    return {
-        "personnel": personnel,
-        "prestations": prestations,
-        "total_general": total_general,
-    }
+    return collect_bulletin_individuel_paie(personnel, mois, section, annee)
 
 
 def _build_header_table(body_style, direction, ecole, systeme_affichage, right_title, right_value):
@@ -648,12 +701,8 @@ def prestation_create(request):
 @login_required
 def prestation_update(request, pk):
     prestation = get_object_or_404(Prestation, pk=pk)
-    if is_paie_mois_cloturee(prestation.date_prestation.year, prestation.date_prestation.month):
-        messages.error(
-            request,
-            f"La paie de {get_month_label(prestation.date_prestation.month)} "
-            f"{prestation.date_prestation.year} est clôturée. Modification impossible.",
-        )
+    if not get_enveloppe_for_date(prestation.date_prestation):
+        messages.error(request, "Aucune enveloppe budgétaire n'a été trouvée.")
         return redirect("prestation:prestation_list")
     if request.method == "POST":
         form = PrestationForm(request.POST, instance=prestation)
@@ -670,12 +719,8 @@ def prestation_update(request, pk):
 @login_required
 def prestation_delete(request, pk):
     prestation = get_object_or_404(Prestation, pk=pk)
-    if is_paie_mois_cloturee(prestation.date_prestation.year, prestation.date_prestation.month):
-        messages.error(
-            request,
-            f"La paie de {get_month_label(prestation.date_prestation.month)} "
-            f"{prestation.date_prestation.year} est clôturée. Suppression impossible.",
-        )
+    if not get_enveloppe_for_date(prestation.date_prestation):
+        messages.error(request, "Aucune enveloppe budgétaire n'a été trouvée.")
         return redirect("prestation:prestation_list")
     if request.method == "POST":
         prestation.delete()
@@ -740,6 +785,13 @@ def calcul_paie(request):
                     messages.info(request, "Aucune prestation trouvée pour ce mois et cette section.")
                 if budget["depasse"]:
                     messages.error(request, budget["message"])
+                for alerte in paie_data.get("alertes_globales", [])[:5]:
+                    messages.warning(request, alerte)
+                if len(paie_data.get("alertes_globales", [])) > 5:
+                    messages.warning(
+                        request,
+                        f"{len(paie_data['alertes_globales']) - 5} autre(s) alerte(s) barème initial — voir le détail par personnel.",
+                    )
                 calculation = {
                     "mois": MONTH_LABELS.get(str(mois), str(mois)),
                     "annee": annee,
@@ -748,6 +800,8 @@ def calcul_paie(request):
                     "prestations": paie_data["prestations"],
                     "prestations_trouvees": paie_data["total_prestations"],
                     "totals_by_bareme": paie_data["totals_by_bareme"],
+                    "total_horaire_global": paie_data["total_horaire_global"],
+                    "total_mensuelles_global": paie_data["total_mensuelles_global"],
                 }
     else:
         form = CalculPaieForm()
@@ -761,6 +815,8 @@ def calcul_paie(request):
         "total_general": total_general,
         "total_prestations": total_prestations,
         "total_personnels": total_personnels,
+        "total_horaire_global": calculation["total_horaire_global"] if calculation else 0,
+        "total_mensuelles_global": calculation["total_mensuelles_global"] if calculation else 0,
     })
 
 
@@ -901,13 +957,24 @@ def _build_bulletin_pdf(bulletin):
         info_table = Table([[
             Paragraph("<b>Personnel</b>", body_style),
             Paragraph(item["personnel"].__str__(), body_style),
-            Paragraph("<b>Nombre de prestations</b>", body_style),
-            Paragraph(str(len(item["prestations"])), body_style),
+            Paragraph("<b>Prestations horaire</b>", body_style),
+            Paragraph(
+                f"{item.get('nb_horaire', 0)} — {int(item.get('total_horaire', 0)):,} CDF".replace(",", " "),
+                body_style,
+            ),
         ], [
+            Paragraph("<b>Prestations mensuelles</b>", body_style),
+            Paragraph(
+                f"{item.get('nb_mensuelle', 0)} — {int(item.get('total_mensuelles', 0)):,} CDF".replace(",", " "),
+                body_style,
+            ),
             Paragraph("<b>Total à payer</b>", body_style),
             Paragraph(f"{int(item['total']):,} CDF".replace(",", " "), body_style),
+        ], [
             Paragraph("<b>Mois</b>", body_style),
             Paragraph(bulletin["mois"], body_style),
+            Paragraph("<b>Nombre de lignes</b>", body_style),
+            Paragraph(str(len(item["prestations"])), body_style),
         ]], colWidths=[35 * mm, 65 * mm, 40 * mm, 42 * mm])
         info_table.setStyle(TableStyle([
             ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
@@ -924,16 +991,20 @@ def _build_bulletin_pdf(bulletin):
 
         table_data = [[
             Paragraph("<b>Date</b>", center_style),
-            Paragraph("<b>Barème</b>", center_style),
-            Paragraph("<b>Type prestation</b>", center_style),
+            Paragraph("<b>Source</b>", center_style),
+            Paragraph("<b>Barème / calcul</b>", center_style),
             Paragraph("<b>Montant</b>", center_style),
         ]]
-        for prestation in item["prestations"]:
+        for ligne in item["prestations"]:
+            calcul_label = ligne.get("formule", "")
+            bareme_text = ligne.get("bareme_label", "-")
+            if calcul_label:
+                bareme_text = f"{bareme_text} ({calcul_label})"
             table_data.append([
-                Paragraph(prestation.date_prestation.strftime("%d/%m/%Y"), body_style),
-                Paragraph(str(prestation.bareme), body_style),
-                Paragraph(prestation.get_categorie_display(), body_style),
-                Paragraph(f"{int(prestation.montant):,} CDF".replace(",", " "), body_style),
+                Paragraph(ligne["date_prestation"].strftime("%d/%m/%Y"), body_style),
+                Paragraph(ligne.get("source_label", ""), body_style),
+                Paragraph(bareme_text, body_style),
+                Paragraph(f"{int(ligne['montant']):,} CDF".replace(",", " "), body_style),
             ])
         table_data.append([
             Paragraph("<b>Total</b>", body_style),
@@ -1015,6 +1086,10 @@ def bulletin_paie_individuel_pdf(request, personnel_id):
             "personnel": personnel,
             "prestations": bulletin_item["prestations"],
             "total": bulletin_item["total_general"],
+            "total_horaire": bulletin_item.get("total_horaire", 0),
+            "total_mensuelles": bulletin_item.get("total_mensuelles", 0),
+            "nb_horaire": sum(1 for l in bulletin_item["prestations"] if l.get("source") == "horaire"),
+            "nb_mensuelle": sum(1 for l in bulletin_item["prestations"] if l.get("source") == "mensuelle"),
         }],
         "titre": f"BULLETIN DE PAIE INDIVIDUEL - {personnel.first_name} {personnel.last_name}",
     }
@@ -1171,6 +1246,533 @@ def _build_fiche_prestations_journaliere_pdf(fiche):
     doc.build(story, onFirstPage=_draw_page_number, onLaterPages=_draw_page_number)
     buffer.seek(0)
     return buffer
+
+
+@login_required
+def prestation_mensuelle_list(request):
+    if request.GET.get("detail") == "1":
+        params = {
+            key: request.GET[key]
+            for key in ("mois", "annee", "numero_fiche")
+            if request.GET.get(key)
+        }
+        if params:
+            return redirect(f"{reverse('prestation:prestation_mensuelle_list')}?{urlencode(params)}")
+        return redirect("prestation:prestation_mensuelle_list")
+
+    if request.GET:
+        filtre_form = PrestationMensuelleListeForm(request.GET)
+    else:
+        today = date.today()
+        filtre_form = PrestationMensuelleListeForm(
+            initial={"mois": str(today.month), "annee": str(today.year)},
+        )
+
+    saisies = []
+
+    if filtre_form.is_valid():
+        mois = filtre_form.cleaned_data.get("mois")
+        annee = filtre_form.cleaned_data.get("annee")
+        numero_fiche = filtre_form.cleaned_data.get("numero_fiche")
+        saisies = get_saisies_prestation_mensuelle(
+            annee=int(annee) if annee else None,
+            mois=int(mois) if mois else None,
+            numero_fiche=numero_fiche,
+        )
+    elif not request.GET:
+        today = date.today()
+        saisies = get_saisies_prestation_mensuelle(
+            annee=today.year,
+            mois=today.month,
+        )
+
+    total_saisies = len(saisies)
+    total_lignes = sum(s["nb_lignes"] for s in saisies)
+    total_montant = sum(s["total_montant"] for s in saisies)
+
+    return render(
+        request,
+        "prestation/prestation_mensuelle_list.html",
+        {
+            "filtre_form": filtre_form,
+            "saisies": saisies,
+            "total_montant": total_montant,
+            "total_lignes": total_lignes,
+            "total_saisies": total_saisies,
+        },
+    )
+
+
+@login_required
+def prestation_mensuelle_saisie(request):
+    form = PrestationMensuelleSaisieForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            quantite = enregistrer_prestations_mensuelles(
+                annee=form.cleaned_data["annee"],
+                mois=form.cleaned_data["mois"],
+                numero_fiche=form.cleaned_data["numero_fiche"],
+                personnel=form.cleaned_data["personnel"],
+                bareme=form.cleaned_data["bareme"],
+                quantite=form.cleaned_data["quantite"],
+            )
+            messages.success(
+                request,
+                f"{quantite} prestation(s) enregistrée(s) avec succès.",
+            )
+            params = urlencode({
+                "mois": form.cleaned_data["mois"],
+                "annee": form.cleaned_data["annee"],
+                "numero_fiche": form.cleaned_data["numero_fiche"],
+            })
+            return redirect(f"{reverse('prestation:prestation_mensuelle_list')}?{params}")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+
+    return render(
+        request,
+        "prestation/prestation_mensuelle_saisie.html",
+        {"form": form},
+    )
+
+
+@login_required
+def prestation_mensuelle_modifier(request):
+    if not (
+        request.user.has_perm("prestation.change_prestation")
+        or request.user.has_perm("prestation.add_prestation")
+    ):
+        messages.error(request, "Vous n'avez pas la permission de modifier cette saisie.")
+        return redirect("prestation:prestation_mensuelle_list")
+
+    keys = _parse_saisie_mensuelle_keys(request.GET if request.method == "GET" else request.POST)
+    if not keys:
+        messages.error(request, "Paramètres de saisie incomplets.")
+        return redirect("prestation:prestation_mensuelle_list")
+
+    groupe = get_prestations_mensuelle_groupe(**keys)
+    if not groupe.exists():
+        messages.error(request, "Saisie mensuelle introuvable.")
+        return redirect("prestation:prestation_mensuelle_list")
+
+    first = groupe.select_related("personnel", "bareme").first()
+
+    if request.method == "POST":
+        form = PrestationMensuelleSaisieForm(request.POST)
+        if form.is_valid():
+            try:
+                orig_keys = _parse_orig_saisie_mensuelle_keys(request.POST)
+                if not orig_keys:
+                    raise ValueError("Référence de la saisie d'origine manquante.")
+                quantite = modifier_saisie_prestation_mensuelle(
+                    orig_annee=orig_keys["annee"],
+                    orig_mois=orig_keys["mois"],
+                    orig_numero_fiche=orig_keys["numero_fiche"],
+                    orig_personnel_id=orig_keys["personnel_id"],
+                    orig_bareme_id=orig_keys["bareme_id"],
+                    annee=form.cleaned_data["annee"],
+                    mois=int(form.cleaned_data["mois"]),
+                    numero_fiche=form.cleaned_data["numero_fiche"],
+                    personnel=form.cleaned_data["personnel"],
+                    bareme=form.cleaned_data["bareme"],
+                    quantite=form.cleaned_data["quantite"],
+                )
+                messages.success(
+                    request,
+                    f"Saisie modifiée : {quantite} prestation(s) enregistrée(s).",
+                )
+                params = urlencode({
+                    "mois": form.cleaned_data["mois"],
+                    "annee": form.cleaned_data["annee"],
+                    "numero_fiche": form.cleaned_data["numero_fiche"],
+                })
+                return redirect(f"{reverse('prestation:prestation_mensuelle_list')}?{params}")
+            except ValueError as exc:
+                messages.error(request, str(exc))
+    else:
+        form = PrestationMensuelleSaisieForm(
+            initial={
+                "mois": str(keys["mois"]),
+                "annee": keys["annee"],
+                "numero_fiche": keys["numero_fiche"],
+                "personnel": keys["personnel_id"],
+                "bareme": keys["bareme_id"],
+                "quantite": groupe.count(),
+            },
+        )
+
+    mois_labels = dict(PrestationMensuelleSaisieForm.base_fields["mois"].choices)
+    saisie_resume = {
+        "periode": f"{mois_labels.get(str(keys['mois']), keys['mois'])} {keys['annee']}",
+        "numero_fiche": keys["numero_fiche"],
+        "personnel_label": str(first.personnel) if first else "-",
+        "bareme_label": str(first.bareme) if first else "-",
+        "nb_lignes": groupe.count(),
+    }
+
+    return render(
+        request,
+        "prestation/prestation_mensuelle_modifier.html",
+        {
+            "form": form,
+            "keys": keys,
+            "saisie_resume": saisie_resume,
+        },
+    )
+
+
+@login_required
+def prestation_mensuelle_supprimer(request):
+    keys = _parse_saisie_mensuelle_keys(request.GET if request.method == "GET" else request.POST)
+    if not keys:
+        messages.error(request, "Paramètres de saisie incomplets.")
+        return redirect("prestation:prestation_mensuelle_list")
+
+    groupe = get_prestations_mensuelle_groupe(**keys).select_related("personnel", "bareme")
+    if not groupe.exists():
+        messages.error(request, "Saisie mensuelle introuvable.")
+        return redirect("prestation:prestation_mensuelle_list")
+
+    if request.method == "POST":
+        if not (
+            request.user.has_perm("prestation.delete_prestation")
+            or request.user.has_perm("prestation.change_prestation")
+        ):
+            messages.error(request, "Vous n'avez pas la permission de supprimer cette saisie.")
+            return redirect("prestation:prestation_mensuelle_list")
+        try:
+            nb = supprimer_saisie_prestation_mensuelle(**keys)
+            messages.success(request, f"Saisie supprimée ({nb} ligne(s) retirée(s)).")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect(f"{reverse('prestation:prestation_mensuelle_list')}?{_saisie_mensuelle_list_redirect_params(keys)}")
+
+    first = groupe.first()
+    mois_labels = dict(PrestationMensuelleSaisieForm.base_fields["mois"].choices)
+    saisie_resume = {
+        "periode": f"{mois_labels.get(str(keys['mois']), keys['mois'])} {keys['annee']}",
+        "numero_fiche": keys["numero_fiche"],
+        "personnel_label": str(first.personnel),
+        "bareme_label": str(first.bareme),
+        "nb_lignes": groupe.count(),
+        "total_montant": groupe.aggregate(total=Sum("montant"))["total"] or 0,
+    }
+
+    return render(
+        request,
+        "prestation/prestation_mensuelle_confirm_delete.html",
+        {"keys": keys, "saisie_resume": saisie_resume},
+    )
+
+
+def _parse_saisie_mensuelle_keys(data):
+    """Extrait les clés d'une saisie mensuelle depuis GET ou POST."""
+    mois = data.get("mois")
+    annee = data.get("annee")
+    numero_fiche = (data.get("numero_fiche") or "").strip()
+    personnel = data.get("personnel")
+    bareme = data.get("bareme")
+    if not all([mois, annee, numero_fiche, personnel, bareme]):
+        return None
+    try:
+        return {
+            "mois": int(mois),
+            "annee": int(annee),
+            "numero_fiche": numero_fiche,
+            "personnel_id": int(personnel),
+            "bareme_id": int(bareme),
+        }
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_orig_saisie_mensuelle_keys(data):
+    """Clés de la saisie d'origine (champs cachés lors d'une modification)."""
+    mois = data.get("orig_mois")
+    annee = data.get("orig_annee")
+    numero_fiche = (data.get("orig_numero_fiche") or "").strip()
+    personnel = data.get("orig_personnel")
+    bareme = data.get("orig_bareme")
+    if not all([mois, annee, numero_fiche, personnel, bareme]):
+        return None
+    try:
+        return {
+            "mois": int(mois),
+            "annee": int(annee),
+            "numero_fiche": numero_fiche,
+            "personnel_id": int(personnel),
+            "bareme_id": int(bareme),
+        }
+    except (TypeError, ValueError):
+        return None
+
+
+def _saisie_mensuelle_list_redirect_params(keys):
+    return urlencode({
+        "mois": keys["mois"],
+        "annee": keys["annee"],
+        "numero_fiche": keys["numero_fiche"],
+    })
+
+
+def _parse_date_prestation_param(raw_value):
+    if not raw_value:
+        return date.today()
+    try:
+        return datetime.strptime(raw_value, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return date.today()
+
+
+@login_required
+def prestation_depuis_horaire_list(request):
+    if request.GET:
+        filtre_form = PrestationDepuisHoraireListeForm(request.GET)
+    else:
+        today = date.today()
+        filtre_form = PrestationDepuisHoraireListeForm(
+            initial={"mois": str(today.month), "annee": str(today.year)},
+        )
+
+    fiches = get_fiches_saisie_horaire()
+    if filtre_form.is_valid():
+        mois = filtre_form.cleaned_data.get("mois")
+        annee = filtre_form.cleaned_data.get("annee")
+        fiches = get_fiches_saisie_horaire(
+            numero_fiche=filtre_form.cleaned_data.get("numero_fiche"),
+            section_id=filtre_form.cleaned_data["section"].pk if filtre_form.cleaned_data.get("section") else None,
+            mois=int(mois) if mois else None,
+            annee=int(annee) if annee else None,
+        )
+    elif not request.GET:
+        today = date.today()
+        fiches = get_fiches_saisie_horaire(annee=today.year, mois=today.month)
+
+    total_lignes = sum(f["nb_lignes"] for f in fiches)
+    total_montant = sum(f["total_montant"] for f in fiches)
+
+    return render(
+        request,
+        "prestation/prestation_depuis_horaire_list.html",
+        {
+            "filtre_form": filtre_form,
+            "fiches": fiches,
+            "total_fiches": len(fiches),
+            "total_lignes": total_lignes,
+            "total_montant": total_montant,
+        },
+    )
+
+
+@login_required
+def prestation_depuis_horaire_saisie(request):
+    annee_academique = _get_calcul_annee()
+    filtre_form = PrestationDepuisHoraireFiltreForm(request.GET or None)
+    if request.GET:
+        date_form = PrestationDepuisHoraireDateForm(request.GET)
+    else:
+        date_form = PrestationDepuisHoraireDateForm(initial={"date_prestation": date.today()})
+    tableau = None
+    enveloppe_manquante = False
+    paie_cloturee = False
+    mode_modification = False
+    msg_blocage_ajout = ""
+    msg_blocage_annulation = ""
+    alertes_blocage = []
+    peut_ajouter = False
+    peut_annuler = False
+    date_prestation = _parse_date_prestation_param(request.GET.get("date_prestation"))
+
+    if filtre_form.is_valid():
+        numero_fiche = filtre_form.cleaned_data["numero_fiche"]
+        section = filtre_form.cleaned_data["section"]
+        jour = filtre_form.cleaned_data["jour"]
+        if date_form.is_bound and date_form.is_valid():
+            date_prestation = date_form.cleaned_data["date_prestation"]
+        enveloppe_manquante = get_enveloppe_for_date(date_prestation) is None
+        paie_cloturee = is_paie_mois_cloturee(date_prestation.year, date_prestation.month)
+        msg_blocage_ajout = _blocage_ajout_prestation_horaire(
+            request, date_prestation, enveloppe_manquante
+        )
+        msg_blocage_annulation = _blocage_annulation_prestation_horaire(request, date_prestation)
+
+        if not annee_academique:
+            messages.error(request, "Aucune année académique active n'est configurée.")
+        else:
+            rows = collect_prestation_horaire_rows(
+                section, jour, numero_fiche, date_prestation, annee_academique
+            )
+            if not rows:
+                messages.info(
+                    request,
+                    "Aucune ligne d'horaire trouvée pour cette section, ce jour et l'année académique active.",
+                )
+            jour_labels = dict(HoraireLigne.JOUR_CHOICES)
+            nb_validees = sum(1 for row in rows if row["validee"])
+            mode_modification = nb_validees > 0
+            can_add = request.user.has_perm("prestation.add_prestation")
+            can_cancel = (
+                request.user.has_perm("prestation.delete_prestation")
+                or request.user.has_perm("prestation.change_prestation")
+            )
+            _enrich_prestation_horaire_rows(
+                rows,
+                date_prestation=date_prestation,
+                enveloppe_manquante=enveloppe_manquante,
+                paie_cloturee=paie_cloturee,
+                can_add=can_add and not msg_blocage_ajout,
+                can_cancel=can_cancel and not msg_blocage_annulation,
+                msg_blocage_ajout=msg_blocage_ajout,
+                msg_blocage_annulation=msg_blocage_annulation,
+            )
+            nb_sans_prof = sum(1 for row in rows if not row["professeur_id"])
+            if msg_blocage_ajout:
+                alertes_blocage.append({"niveau": "warning", "texte": msg_blocage_ajout})
+            if msg_blocage_annulation:
+                alertes_blocage.append({"niveau": "warning", "texte": msg_blocage_annulation})
+            if nb_sans_prof:
+                alertes_blocage.append({
+                    "niveau": "danger",
+                    "texte": (
+                        f"{nb_sans_prof} ligne(s) sans professeur : la case « Validé » est "
+                        "désactivée. Corrigez l'horaire pour assigner un professeur à chaque cours."
+                    ),
+                })
+            peut_ajouter = not msg_blocage_ajout
+            peut_annuler = not msg_blocage_annulation
+            if peut_ajouter and rows:
+                alertes_blocage.append({
+                    "niveau": "info",
+                    "texte": (
+                        "Pour enregistrer une prestation, cochez la case « Validé » sur la ligne "
+                        "concernée puis confirmez dans la fenêtre qui s'affiche."
+                    ),
+                })
+            tableau = {
+                "numero_fiche": numero_fiche,
+                "section": section,
+                "section_label": section.nom or section.code,
+                "jour": jour,
+                "jour_label": jour_labels.get(jour, jour),
+                "date_prestation": date_prestation,
+                "date_label": date_prestation.strftime("%d/%m/%Y"),
+                "rows": rows,
+                "annee_academique": annee_academique,
+                "nb_validees": nb_validees,
+            }
+
+    return render(
+        request,
+        "prestation/prestation_depuis_horaire.html",
+        {
+            "filtre_form": filtre_form,
+            "date_form": date_form,
+            "tableau": tableau,
+            "mode_modification": mode_modification,
+            "enveloppe_manquante": enveloppe_manquante,
+            "paie_cloturee": paie_cloturee,
+            "annee_academique": annee_academique,
+            "api_url": reverse("prestation:api_prestation_horaire_toggle"),
+            "can_add": request.user.has_perm("prestation.add_prestation"),
+            "can_delete": request.user.has_perm("prestation.delete_prestation"),
+            "can_change": request.user.has_perm("prestation.change_prestation"),
+            "msg_blocage_ajout": msg_blocage_ajout,
+            "msg_blocage_annulation": msg_blocage_annulation,
+            "alertes_blocage": alertes_blocage,
+            "peut_ajouter": peut_ajouter,
+            "peut_annuler": peut_annuler,
+        },
+    )
+
+
+@login_required
+@require_POST
+def api_prestation_horaire_toggle(request):
+    action = request.POST.get("action")
+    ligne_id = request.POST.get("ligne_id")
+    numero_fiche = (request.POST.get("numero_fiche") or "").strip()
+    section_id = request.POST.get("section")
+    jour = request.POST.get("jour")
+    date_str = request.POST.get("date")
+    if not ligne_id or not section_id or not jour or not date_str:
+        return JsonResponse(
+            {"success": False, "message": "Paramètres incomplets."},
+            status=400,
+        )
+
+    try:
+        ligne_id = int(ligne_id)
+        section_id = int(section_id)
+        date_prestation = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {"success": False, "message": "Paramètres invalides."},
+            status=400,
+        )
+
+    annee_academique = _get_calcul_annee()
+    if not annee_academique:
+        return JsonResponse(
+            {"success": False, "message": "Aucune année académique active n'est configurée."},
+            status=400,
+        )
+
+    try:
+        if action == "confirm":
+            if not request.user.has_perm("prestation.add_prestation"):
+                return JsonResponse(
+                    {"success": False, "message": "Vous n'avez pas la permission d'enregistrer une prestation."},
+                    status=403,
+                )
+            if not numero_fiche:
+                return JsonResponse(
+                    {"success": False, "message": "Le numéro de fiche est obligatoire."},
+                    status=400,
+                )
+            prestation = confirm_prestation_horaire_ligne(
+                ligne_id=ligne_id,
+                numero_fiche=numero_fiche,
+                section_id=section_id,
+                jour=jour,
+                date_prestation=date_prestation,
+                annee_academique=annee_academique,
+            )
+            return JsonResponse({
+                "success": True,
+                "message": "Prestation confirmée avec succès.",
+                "checked": True,
+                "prestation_id": prestation.pk,
+            })
+
+        if action == "cancel":
+            if not (
+                request.user.has_perm("prestation.delete_prestation")
+                or request.user.has_perm("prestation.change_prestation")
+            ):
+                return JsonResponse(
+                    {"success": False, "message": "Vous n'avez pas la permission d'annuler une prestation."},
+                    status=403,
+                )
+            cancel_prestation_horaire_ligne(
+                ligne_id=ligne_id,
+                jour=jour,
+                numero_fiche=numero_fiche,
+                date_prestation=date_prestation,
+            )
+            return JsonResponse({
+                "success": True,
+                "message": "Prestation annulée avec succès.",
+                "checked": False,
+                "prestation_id": None,
+            })
+
+        return JsonResponse(
+            {"success": False, "message": "Action non reconnue."},
+            status=400,
+        )
+    except ValueError as exc:
+        return JsonResponse({"success": False, "message": str(exc)}, status=400)
 
 
 @login_required
@@ -1904,12 +2506,26 @@ def horaire_detail(request, pk):
     )
 
 
+def _render_horaire_form(request, *, form, formset, title, horaire=None):
+    return render(
+        request,
+        "prestation/horaire_form.html",
+        {
+            "form": form,
+            "formset": formset,
+            "title": title,
+            "horaire": horaire,
+            "ec_professeur_map": _build_ec_professeur_map(),
+        },
+    )
+
+
 @login_required
 def horaire_create(request):
     horaire = Horaire()
     if request.method == "POST":
         form = HoraireForm(request.POST, instance=horaire)
-        formset = HoraireLigneFormSet(request.POST, instance=horaire, prefix="lignes")
+        formset = get_horaire_ligne_formset(instance=horaire, data=request.POST)
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 horaire = form.save()
@@ -1917,15 +2533,14 @@ def horaire_create(request):
                 formset.save()
             messages.success(request, "Horaire créé avec succès.")
             return redirect("prestation:horaire_detail", pk=horaire.pk)
+        messages.error(
+            request,
+            "L'enregistrement a échoué. Vérifiez les erreurs indiquées dans le formulaire.",
+        )
     else:
         form = HoraireForm(instance=horaire)
-        formset = HoraireLigneFormSet(instance=horaire, prefix="lignes")
-    return render(request, "prestation/horaire_form.html", {
-        "form": form,
-        "formset": formset,
-        "title": "Nouvel horaire",
-        "ec_professeur_map": _build_ec_professeur_map(),
-    })
+        formset = get_horaire_ligne_formset(instance=horaire)
+    return _render_horaire_form(request, form=form, formset=formset, title="Nouvel horaire")
 
 
 @login_required
@@ -1933,7 +2548,7 @@ def horaire_update(request, pk):
     horaire = get_object_or_404(Horaire, pk=pk)
     if request.method == "POST":
         form = HoraireForm(request.POST, instance=horaire)
-        formset = HoraireLigneFormSet(request.POST, instance=horaire, prefix="lignes")
+        formset = get_horaire_ligne_formset(instance=horaire, data=request.POST)
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 horaire = form.save()
@@ -1941,16 +2556,20 @@ def horaire_update(request, pk):
                 formset.save()
             messages.success(request, "Horaire modifié avec succès.")
             return redirect("prestation:horaire_detail", pk=horaire.pk)
+        messages.error(
+            request,
+            "La modification a échoué. Vérifiez les erreurs indiquées dans le formulaire.",
+        )
     else:
         form = HoraireForm(instance=horaire)
-        formset = HoraireLigneFormSet(instance=horaire, prefix="lignes")
-    return render(request, "prestation/horaire_form.html", {
-        "form": form,
-        "formset": formset,
-        "title": "Modifier l'horaire",
-        "horaire": horaire,
-        "ec_professeur_map": _build_ec_professeur_map(),
-    })
+        formset = get_horaire_ligne_formset(instance=horaire)
+    return _render_horaire_form(
+        request,
+        form=form,
+        formset=formset,
+        title="Modifier l'horaire",
+        horaire=horaire,
+    )
 
 
 @login_required

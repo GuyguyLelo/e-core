@@ -31,6 +31,13 @@
                 <form method="post" id="horaire-form">
                     {% csrf_token %}
 
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                    {% if formset.non_form_errors %}
+                    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                    {% endif %}
+
                     <div class="row">
                         <div class="col-lg-6 mb-3">
                             <label class="form-label">Titre</label>
@@ -85,24 +92,52 @@
                             </thead>
                             <tbody>
                                 {% for ligne_form in formset.forms %}
-                                <tr class="horaire-ligne-row">
-                                    <td>{{ ligne_form.jour }}{{ ligne_form.jour.errors }}</td>
-                                    <td>{{ ligne_form.heure_debut }}{{ ligne_form.heure_debut.errors }}</td>
-                                    <td>{{ ligne_form.heure_fin }}{{ ligne_form.heure_fin.errors }}</td>
+                                <tr class="horaire-ligne-row{% if ligne_form.errors %} table-warning{% endif %}">
+                                    {{ ligne_form.id }}
+                                    {{ ligne_form.horaire }}
                                     <td>
-                                        {{ ligne_form.element_constitutif }}{{ ligne_form.element_constitutif.errors }}
+                                        {{ ligne_form.jour }}
+                                        {% if ligne_form.jour.errors %}<div class="text-danger small">{{ ligne_form.jour.errors }}</div>{% endif %}
+                                    </td>
+                                    <td>
+                                        {{ ligne_form.heure_debut }}
+                                        {% if ligne_form.heure_debut.errors %}<div class="text-danger small">{{ ligne_form.heure_debut.errors }}</div>{% endif %}
+                                    </td>
+                                    <td>
+                                        {{ ligne_form.heure_fin }}
+                                        {% if ligne_form.heure_fin.errors %}<div class="text-danger small">{{ ligne_form.heure_fin.errors }}</div>{% endif %}
+                                    </td>
+                                    <td>
+                                        {{ ligne_form.element_constitutif }}
+                                        {% if ligne_form.element_constitutif.errors %}<div class="text-danger small">{{ ligne_form.element_constitutif.errors }}</div>{% endif %}
                                         {{ ligne_form.ue_code }}
                                     </td>
-                                    <td>{{ ligne_form.local }}{{ ligne_form.local.errors }}</td>
+                                    <td>
+                                        {{ ligne_form.local }}
+                                        {% if ligne_form.local.errors %}<div class="text-danger small">{{ ligne_form.local.errors }}</div>{% endif %}
+                                    </td>
                                     <td>
                                         {{ ligne_form.professeur }}
                                         <span class="professeur-label text-muted">-</span>
-                                        {{ ligne_form.professeur.errors }}
+                                        {% if ligne_form.professeur.errors %}<div class="text-danger small">{{ ligne_form.professeur.errors }}</div>{% endif %}
                                     </td>
-                                    <td>{{ ligne_form.ordre }}{{ ligne_form.ordre.errors }}</td>
-                                    <td>{{ ligne_form.notes }}{{ ligne_form.notes.errors }}</td>
-                                    <td class="text-center">{{ ligne_form.DELETE }}</td>
+                                    <td>
+                                        {{ ligne_form.ordre }}
+                                        {% if ligne_form.ordre.errors %}<div class="text-danger small">{{ ligne_form.ordre.errors }}</div>{% endif %}
+                                    </td>
+                                    <td>
+                                        {{ ligne_form.notes }}
+                                        {% if ligne_form.notes.errors %}<div class="text-danger small">{{ ligne_form.notes.errors }}</div>{% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if ligne_form.DELETE %}{{ ligne_form.DELETE }}{% endif %}
+                                    </td>
                                 </tr>
+                                {% if ligne_form.non_field_errors %}
+                                <tr>
+                                    <td colspan="9" class="text-danger small py-1">{{ ligne_form.non_field_errors }}</td>
+                                </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>

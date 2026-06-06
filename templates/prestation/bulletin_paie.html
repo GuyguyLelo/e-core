@@ -146,12 +146,12 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for prestation in item.prestations %}
+                                        {% for ligne in item.prestations %}
                                         <tr>
-                                            <td>{{ prestation.date_prestation|date:"d/m/Y" }}</td>
-                                            <td>{{ prestation.bareme }}</td>
-                                            <td>{{ prestation.get_categorie_display }}</td>
-                                            <td class="text-end">{{ prestation.montant|floatformat:0 }} CDF</td>
+                                            <td>{{ ligne.date_prestation|date:"d/m/Y" }}</td>
+                                            <td>{{ ligne.bareme_label }}</td>
+                                            <td>{{ ligne.source_label }} — {{ ligne.categorie_display }}</td>
+                                            <td class="text-end">{{ ligne.montant|floatformat:0 }} CDF</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>

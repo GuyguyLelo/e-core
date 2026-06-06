@@ -170,6 +170,13 @@ class PersonnelDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
     context_object_name = 'personnel'
     permission_required = 'cards.view_personnel'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from prestation.services import get_baremes_initiaux_personnel
+
+        context["baremes_initiaux"] = get_baremes_initiaux_personnel(self.object)
+        return context
+
 class PersonnelCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Personnel
     form_class = PersonnelForm
@@ -184,10 +191,19 @@ class PersonnelCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
         last_personnel = Personnel.objects.order_by('-id').first()
         new_id = (last_personnel.id + 1) if last_personnel else 1
         initial['matricule'] = f"MAT-{year}-{new_id:04d}"
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            full_name = self.request.user.get_full_name() or self.request.user.get_username()
+            initial['admin_received_by'] = full_name
         return initial
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        from prestation.services import set_personnel_baremes_initiaux
+
+        set_personnel_baremes_initiaux(
+            self.object,
+            form.get_baremes_initiaux_from_post(self.request.POST),
+        )
         messages.success(self.request, "Personnel enregistré avec succès.")
         return response
 
@@ -202,6 +218,12 @@ class PersonnelUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        from prestation.services import set_personnel_baremes_initiaux
+
+        set_personnel_baremes_initiaux(
+            self.object,
+            form.get_baremes_initiaux_from_post(self.request.POST),
+        )
         messages.success(self.request, "Personnel mis à jour avec succès.")
         return response
 

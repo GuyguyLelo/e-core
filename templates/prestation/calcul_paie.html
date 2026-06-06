@@ -93,7 +93,19 @@
                     </div>
                     <div class="col-md-4">
                         <div class="border rounded p-3">
-                            <div class="text-muted small">Total général</div>
+                            <div class="text-muted small">Total horaire (barème initial)</div>
+                            <div class="fw-bold">{{ total_horaire_global|floatformat:0 }} CDF</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Total saisie mensuelle</div>
+                            <div class="fw-bold">{{ total_mensuelles_global|floatformat:0 }} CDF</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Total général à payer</div>
                             <div class="fw-bold text-primary">{{ total_general|floatformat:0 }} CDF</div>
                         </div>
                     </div>
@@ -163,14 +175,19 @@
                 <div data-pagination-group data-page-size="4">
                 {% for item in resultats %}
                 <details class="border rounded p-3 mb-3 payroll-details" {% if forloop.first %}open{% endif %}>
-                    <summary class="d-flex justify-content-between align-items-center">
+                    <summary class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
                             <div class="fw-bold">{{ item.personnel }}</div>
-                            <div class="text-muted small">{{ item.prestations|length }} prestation(s)</div>
+                            <div class="text-muted small">
+                                {{ item.nb_horaire }} horaire(s) · {{ item.nb_mensuelle }} mensuelle(s)
+                            </div>
                         </div>
                         <div class="text-end me-4">
-                            <div class="text-muted small">Total</div>
-                            <div class="fw-bold text-primary">{{ item.total|floatformat:0 }} CDF</div>
+                            <div class="text-muted small">
+                                Horaire {{ item.total_horaire|floatformat:0 }} +
+                                Mensuelle {{ item.total_mensuelles|floatformat:0 }} CDF
+                            </div>
+                            <div class="fw-bold text-primary">Total {{ item.total|floatformat:0 }} CDF</div>
                         </div>
                     </summary>
                     <div class="pt-3">
@@ -179,19 +196,26 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Date</th>
+                                        <th>Source</th>
                                         <th>Barème</th>
-                                        <th>Type prestation</th>
+                                        <th>Calcul</th>
                                         <th class="text-end">Montant</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for prestation in item.prestations %}
-                                    <tr>
-                                        <td>{{ prestation.date_prestation|date:"d/m/Y" }}</td>
-                                        <td>{{ prestation.bareme }}</td>
-                                        <td>{{ prestation.get_categorie_display }}</td>
-                                        <td class="text-end">{{ prestation.montant|floatformat:0 }}</td>
+                                    {% for ligne in item.prestations %}
+                                    <tr class="{% if ligne.avertissement %}table-warning{% endif %}">
+                                        <td>{{ ligne.date_prestation|date:"d/m/Y" }}</td>
+                                        <td>{{ ligne.source_label }}</td>
+                                        <td>{{ ligne.bareme_label }}</td>
+                                        <td class="small text-muted">{{ ligne.formule }}</td>
+                                        <td class="text-end">{{ ligne.montant|floatformat:0 }}</td>
                                     </tr>
+                                    {% if ligne.avertissement %}
+                                    <tr>
+                                        <td colspan="5" class="small text-warning py-1">{{ ligne.avertissement }}</td>
+                                    </tr>
+                                    {% endif %}
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -208,7 +232,9 @@
         <div class="card">
             <div class="card-body">
                 <div class="alert alert-info mb-0">
-                    Choisissez un mois et une section, puis cliquez sur <strong>Calculer la paie</strong> pour afficher les prestations correspondantes.
+                    Choisissez un mois et une section, puis cliquez sur <strong>Calculer la paie</strong>.
+                    Les prestations <strong>horaire</strong> sont filtrées par section et valorisées au <strong>barème initial</strong> du personnel.
+                    Les prestations <strong>mensuelles</strong> du mois sont toujours incluses dans le total (barème saisi × quantité).
                 </div>
             </div>
         </div>
