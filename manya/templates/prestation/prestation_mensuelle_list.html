@@ -1,0 +1,131 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Saisie prestation mensuelle - e-Core{% endblock %}
+
+{% block page_title %}Saisie prestation mensuelle{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item active">Saisie prestation mensuelle</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-3">
+            {% url 'prestation:prestation_mensuelle_saisie' as saisie_url %}
+            {% include "components/page_toolbar.html" with toolbar_title="Saisies prestation mensuelle effectuées" create_url=saisie_url create_label="Nouvelle saisie" %}
+            <div class="card-body">
+                {% include "components/messages.html" %}
+
+                <form method="get" class="ecore-filter-bar">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Mois</label>
+                            {{ filtre_form.mois }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Année</label>
+                            {{ filtre_form.annee }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Numéro de fiche</label>
+                            {{ filtre_form.numero_fiche }}
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                <i class="fa fa-filter"></i> Filtrer
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Saisies</div>
+                            <div class="fw-bold fs-5">{{ total_saisies }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Lignes de prestation</div>
+                            <div class="fw-bold fs-5">{{ total_lignes }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Total montant</div>
+                            <div class="fw-bold fs-5 text-primary">{{ total_montant|floatformat:0 }} CDF</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Période</th>
+                                <th>N° fiche</th>
+                                <th>Personnel</th>
+                                <th>Barème</th>
+                                <th class="text-center">Quantité</th>
+                                <th class="text-end">Montant total</th>
+                                <th>Dernière modification</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for saisie in saisies %}
+                            <tr>
+                                <td>{{ saisie.mois_label }} {{ saisie.annee }}</td>
+                                <td><strong>{{ saisie.numero_fiche }}</strong></td>
+                                <td>{{ saisie.personnel_label }}</td>
+                                <td>{{ saisie.bareme_label }}</td>
+                                <td class="text-center">{{ saisie.nb_lignes }}</td>
+                                <td class="text-end">{{ saisie.total_montant|floatformat:0 }}</td>
+                                <td>
+                                    {% if saisie.derniere_modification %}
+                                        {{ saisie.derniere_modification|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="ecore-table-actions btn-group" role="group">
+                                        {% if perms.prestation.change_prestation or perms.prestation.add_prestation %}
+                                        <a href="{% url 'prestation:prestation_mensuelle_modifier' %}?mois={{ saisie.mois }}&annee={{ saisie.annee }}&numero_fiche={{ saisie.numero_fiche|urlencode }}&personnel={{ saisie.personnel_id }}&bareme={{ saisie.bareme_id }}"
+                                           class="btn btn-sm btn-ecore-edit" title="Modifier la saisie">
+                                            <i class="fa fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if perms.prestation.delete_prestation or perms.prestation.change_prestation %}
+                                        <a href="{% url 'prestation:prestation_mensuelle_supprimer' %}?mois={{ saisie.mois }}&annee={{ saisie.annee }}&numero_fiche={{ saisie.numero_fiche|urlencode }}&personnel={{ saisie.personnel_id }}&bareme={{ saisie.bareme_id }}"
+                                           class="btn btn-sm btn-ecore-delete" title="Supprimer la saisie">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    Aucune saisie mensuelle trouvée pour ces critères.
+                                    <div class="mt-2">
+                                        <a href="{% url 'prestation:prestation_mensuelle_saisie' %}" class="btn btn-sm btn-primary">
+                                            <i class="fa fa-plus"></i> Nouvelle saisie
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

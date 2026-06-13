@@ -1,0 +1,14 @@
+<div class="card-header ecore-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h5 class="mb-0">{{ toolbar_title }}</h5>
+    {% if toolbar_subtitle %}<div class="ecore-card-subtitle">{{ toolbar_subtitle }}</div>{% endif %}
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% if toolbar_slot %}{{ toolbar_slot }}{% endif %}
+    {% if create_url %}
+      <a href="{{ create_url }}" class="btn btn-primary btn-sm">
+        <i class="fa fa-plus"></i> {{ create_label|default:"Nouveau" }}
+      </a>
+    {% endif %}
+  </div>
+</div>

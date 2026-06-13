@@ -1,0 +1,244 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:inscription_list' %}">Inscriptions</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.etudiant.id_for_label }}" class="form-label">
+                                    Étudiant <span class="text-danger">*</span>
+                                </label>
+                                {{ form.etudiant }}
+                                {% if form.etudiant.errors %}
+                                    <div class="text-danger small">{{ form.etudiant.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Structure académique <span class="text-danger">*</span></label>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label for="{{ form.section.id_for_label }}" class="form-label small mb-1">Section</label>
+                                        {{ form.section }}
+                                        {% if form.section.errors %}<div class="text-danger small">{{ form.section.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="{{ form.filiere.id_for_label }}" class="form-label small mb-1">Filière</label>
+                                        {{ form.filiere }}
+                                        {% if form.filiere.errors %}<div class="text-danger small">{{ form.filiere.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="{{ form.promotion_level.id_for_label }}" class="form-label small mb-1">Promotion</label>
+                                        {{ form.promotion_level }}
+                                        {% if form.promotion_level.errors %}<div class="text-danger small">{{ form.promotion_level.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="{{ form.classe.id_for_label }}" class="form-label small mb-1">Classe</label>
+                                        {{ form.classe }}
+                                        {% if form.classe.errors %}<div class="text-danger small">{{ form.classe.errors }}</div>{% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-muted small">Local :</span>
+                                    <span id="local-display" class="fw-semibold small">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.annee_academique.id_for_label }}" class="form-label">
+                                    Année académique <span class="text-danger">*</span>
+                                </label>
+                                {{ form.annee_academique }}
+                                {% if form.annee_academique.errors %}
+                                    <div class="text-danger small">{{ form.annee_academique.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.statut.id_for_label }}" class="form-label">
+                                    Statut <span class="text-danger">*</span>
+                                </label>
+                                {{ form.statut }}
+                                {% if form.statut.errors %}
+                                    <div class="text-danger small">{{ form.statut.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.numero_inscription.id_for_label }}" class="form-label">
+                                    Numéro d'inscription <span class="text-danger">*</span>
+                                </label>
+                                {{ form.numero_inscription }}
+                                {% if form.numero_inscription.errors %}
+                                    <div class="text-danger small">{{ form.numero_inscription.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.frais_inscription.id_for_label }}" class="form-label">Frais d'inscription</label>
+                                {{ form.frais_inscription }}
+                                {% if form.frais_inscription.errors %}
+                                    <div class="text-danger small">{{ form.frais_inscription.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.frais_payes.id_for_label }}" class="form-label">Frais payés</label>
+                                {{ form.frais_payes }}
+                                {% if form.frais_payes.errors %}
+                                    <div class="text-danger small">{{ form.frais_payes.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ form.dossier_complet }}
+                            <label class="form-check-label" for="{{ form.dossier_complet.id_for_label }}">
+                                Dossier complet
+                            </label>
+                        </div>
+                        {% if form.dossier_complet.errors %}
+                            <div class="text-danger small">{{ form.dossier_complet.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'students:inscription_list' %}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+  (function () {
+    const sectionSel = document.getElementById("id_section");
+    const filiereSel = document.getElementById("id_filiere");
+    const promotionSel = document.getElementById("id_promotion_level");
+    const classeSel = document.getElementById("id_classe");
+    const localDisplay = document.getElementById("local-display");
+
+    function setOptions(select, items, placeholder) {
+      while (select.options.length) select.remove(0);
+      const ph = document.createElement("option");
+      ph.value = "";
+      ph.textContent = placeholder;
+      select.appendChild(ph);
+      for (const it of items) {
+        const opt = document.createElement("option");
+        opt.value = it.id;
+        opt.textContent = it.text;
+        select.appendChild(opt);
+      }
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}});
+      return await res.json();
+    }
+
+    async function onSectionChange() {
+      localDisplay.textContent = "—";
+      setOptions(filiereSel, [], "Choisir...");
+      setOptions(promotionSel, [], "Choisir...");
+      setOptions(classeSel, [], "Choisir...");
+      if (!sectionSel.value) return;
+      const data = await fetchJson("{% url 'academics:api_filieres' %}?section_id=" + encodeURIComponent(sectionSel.value));
+      setOptions(filiereSel, data.results || [], "Choisir...");
+    }
+
+    async function onFiliereChange() {
+      localDisplay.textContent = "—";
+      setOptions(promotionSel, [], "Choisir...");
+      setOptions(classeSel, [], "Choisir...");
+      if (!filiereSel.value) return;
+      const data = await fetchJson("{% url 'academics:api_promotions' %}?filiere_id=" + encodeURIComponent(filiereSel.value));
+      setOptions(promotionSel, data.results || [], "Choisir...");
+    }
+
+    async function onPromotionChange() {
+      localDisplay.textContent = "—";
+      setOptions(classeSel, [], "Choisir...");
+      if (!promotionSel.value) return;
+      const data = await fetchJson("{% url 'academics:api_classes' %}?promotion_id=" + encodeURIComponent(promotionSel.value));
+      setOptions(classeSel, data.results || [], "Choisir...");
+    }
+
+    async function onClasseChange() {
+      localDisplay.textContent = "—";
+      if (!classeSel.value) return;
+      const data = await fetchJson("{% url 'academics:api_local' %}?classe_id=" + encodeURIComponent(classeSel.value));
+      if (data && data.local) localDisplay.textContent = data.local.nom + " (" + data.local.code + ")";
+    }
+
+    if (sectionSel) sectionSel.addEventListener("change", onSectionChange);
+    if (filiereSel) filiereSel.addEventListener("change", onFiliereChange);
+    if (promotionSel) promotionSel.addEventListener("change", onPromotionChange);
+    if (classeSel) classeSel.addEventListener("change", onClasseChange);
+
+    // Si édition: afficher le local déjà lié
+    if (classeSel && classeSel.value) onClasseChange();
+  })();
+</script>
+{% endblock %}

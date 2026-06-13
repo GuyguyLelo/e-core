@@ -1,0 +1,160 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'deliberations:parametres_lmd_list' %}">Paramètres LMD</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.promotion.id_for_label }}" class="form-label">
+                                    Promotion <span class="text-danger">*</span>
+                                </label>
+                                {{ form.promotion }}
+                                {% if form.promotion.errors %}
+                                    <div class="text-danger small">{{ form.promotion.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.seuil_validation.id_for_label }}" class="form-label">
+                                    Seuil de validation (/20) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.seuil_validation }}
+                                {% if form.seuil_validation.errors %}
+                                    <div class="text-danger small">{{ form.seuil_validation.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4">Compensation</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.compensation_intra_ue }}
+                                    <label class="form-check-label" for="{{ form.compensation_intra_ue.id_for_label }}">
+                                        Compensation intra-UE
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.compensation_intra_semestre }}
+                                    <label class="form-check-label" for="{{ form.compensation_intra_semestre.id_for_label }}">
+                                        Compensation intra-semestre
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.compensation_annuelle }}
+                                    <label class="form-check-label" for="{{ form.compensation_annuelle.id_for_label }}">
+                                        Compensation annuelle
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4">Capitalisation</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.capitalisation_ue }}
+                                    <label class="form-check-label" for="{{ form.capitalisation_ue.id_for_label }}">
+                                        Capitalisation des UE
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.capitalisation_ec }}
+                                    <label class="form-check-label" for="{{ form.capitalisation_ec.id_for_label }}">
+                                        Capitalisation des EC
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4">Autres paramètres</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.passage_avec_dettes }}
+                                    <label class="form-check-label" for="{{ form.passage_avec_dettes.id_for_label }}">
+                                        Passage avec dettes autorisé
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.seuil_credits_minimum.id_for_label }}" class="form-label">
+                                    Seuil crédits minimum pour passage
+                                </label>
+                                {{ form.seuil_credits_minimum }}
+                                {% if form.seuil_credits_minimum.errors %}
+                                    <div class="text-danger small">{{ form.seuil_credits_minimum.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'deliberations:parametres_lmd_list' %}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

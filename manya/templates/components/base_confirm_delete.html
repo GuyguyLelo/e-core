@@ -1,0 +1,27 @@
+{% extends "layout/master.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            {% include "components/page_toolbar.html" with toolbar_title="Confirmer la suppression" %}
+            <div class="card-body">
+                <div class="alert alert-warning ecore-alert" role="alert">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <strong>Attention !</strong>
+                    {% block delete_warning %}Vous êtes sur le point de supprimer cet élément.{% endblock %}
+                </div>
+
+                <div class="ecore-delete-details">
+                    {% block delete_details %}{% endblock %}
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% include "components/form_actions.html" with cancel_url=cancel_url submit_label="Confirmer la suppression" submit_class="btn-danger" submit_icon="fa-trash" %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

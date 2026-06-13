@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+Media/
+db.sqlite3
+.env
+.claude/
+_transcript_extract/

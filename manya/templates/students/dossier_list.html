@@ -1,0 +1,87 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}Dossiers Étudiants - e-Core{% endblock %}
+
+{% block page_title %}Dossiers Étudiants{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="#">Étudiants</a></li>
+<li class="breadcrumb-item f-w-400 active">Dossiers</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Liste des Dossiers Étudiants</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Étudiant</th>
+                                <th>Promotion</th>
+                                <th>Année académique</th>
+                                <th>Date ouverture</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dossier in dossiers %}
+                            <tr>
+                                <td><strong>{{ dossier.inscription.etudiant.numero_etudiant }}</strong><br>{{ dossier.inscription.etudiant.nom_complet }}</td>
+                                <td>{{ dossier.inscription.promotion.code }}</td>
+                                <td>{{ dossier.inscription.annee_academique.code }}</td>
+                                <td>{{ dossier.date_ouverture|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class="badge badge-{% if dossier.statut == 'complet' %}success{% elif dossier.statut == 'valide' %}info{% else %}warning{% endif %}">
+                                        {{ dossier.get_statut_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'students:dossier_detail' dossier.pk %}" class="btn btn-sm btn-info" title="Voir">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Aucun dossier enregistré</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if dossiers.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if dossiers.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ dossiers.previous_page_number }}">Précédent</a></li>
+                        {% endif %}
+                        <li class="page-item active"><span class="page-link">Page {{ dossiers.number }} sur {{ dossiers.paginator.num_pages }}</span></li>
+                        {% if dossiers.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ dossiers.next_page_number }}">Suivant</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>{{ title }}</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.etudiant.id_for_label }}" class="form-label">
+                                    Étudiant <span class="text-danger">*</span>
+                                </label>
+                                {{ form.etudiant }}
+                                {% if form.etudiant.errors %}
+                                    <div class="text-danger small">{{ form.etudiant.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.decision.id_for_label }}" class="form-label">
+                                    Décision <span class="text-danger">*</span>
+                                </label>
+                                {{ form.decision }}
+                                {% if form.decision.errors %}
+                                    <div class="text-danger small">{{ form.decision.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.moyenne_semestre.id_for_label }}" class="form-label">Moyenne semestre</label>
+                                {{ form.moyenne_semestre }}
+                                {% if form.moyenne_semestre.errors %}
+                                    <div class="text-danger small">{{ form.moyenne_semestre.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.credits_obtenus.id_for_label }}" class="form-label">Crédits obtenus</label>
+                                {{ form.credits_obtenus }}
+                                {% if form.credits_obtenus.errors %}
+                                    <div class="text-danger small">{{ form.credits_obtenus.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.credits_totaux.id_for_label }}" class="form-label">Crédits totaux</label>
+                                {{ form.credits_totaux }}
+                                {% if form.credits_totaux.errors %}
+                                    <div class="text-danger small">{{ form.credits_totaux.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.rang.id_for_label }}" class="form-label">Rang</label>
+                                {{ form.rang }}
+                                {% if form.rang.errors %}
+                                    <div class="text-danger small">{{ form.rang.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.mention.id_for_label }}" class="form-label">Mention</label>
+                                {{ form.mention }}
+                                {% if form.mention.errors %}
+                                    <div class="text-danger small">{{ form.mention.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes_jury.id_for_label }}" class="form-label">Notes du jury</label>
+                        {{ form.notes_jury }}
+                        {% if form.notes_jury.errors %}
+                            <div class="text-danger small">{{ form.notes_jury.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'deliberations:deliberation_detail' object.deliberation.pk %}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

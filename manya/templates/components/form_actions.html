@@ -1,0 +1,8 @@
+<div class="d-flex justify-content-between mt-4">
+  <a href="{{ cancel_url }}" class="btn btn-secondary">
+    <i class="fa fa-arrow-left"></i> {{ cancel_label|default:"Annuler" }}
+  </a>
+  <button type="submit" class="btn {{ submit_class|default:'btn-primary' }}">
+    <i class="fa {{ submit_icon|default:'fa-save' }}"></i> {{ submit_label|default:"Enregistrer" }}
+  </button>
+</div>

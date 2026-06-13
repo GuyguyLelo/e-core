@@ -1,0 +1,186 @@
+{% load perm_tags %}
+<!-- Menu LMD - Gestion Académique -->
+<li class="sidebar-main-title">
+    <div>
+        <h6>Navigation</h6>
+    </div>
+</li>
+
+<!-- Dashboard : visible pour tout utilisateur connecté -->
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title link-nav" href="{% url 'home' %}">
+        <i class="fa fa-dashboard"></i>
+        <span>Dashboard</span>
+    </a>
+</li>
+
+<!-- Structure Académique -->
+{% has_any_perm 'academics.view_section' 'academics.view_filiere' 'academics.view_promotion' 'academics.view_classe' 'academics.view_local' 'academics.view_anneeacademique' as can_structure %}
+{% if can_structure %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-sitemap"></i>
+        <span>Structure Académique</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'academics.view_section' as p_section %}{% if p_section %}<li><a href="{% url 'academics:section_list' %}">Sections</a></li>{% endif %}
+        {% has_perm 'academics.view_filiere' as p_filiere %}{% if p_filiere %}<li><a href="{% url 'academics:filiere_list' %}">Filières</a></li>{% endif %}
+        {% has_perm 'academics.view_promotion' as p_promo %}{% if p_promo %}<li><a href="{% url 'academics:promotion_list' %}">Promotions</a></li>{% endif %}
+        {% has_perm 'academics.view_classe' as p_classe %}{% if p_classe %}<li><a href="{% url 'academics:classe_list' %}">Classes</a></li>{% endif %}
+        {% has_perm 'academics.view_local' as p_local %}{% if p_local %}<li><a href="{% url 'academics:local_list' %}">Locaux</a></li>{% endif %}
+        {% has_perm 'academics.view_anneeacademique' as p_annee %}{% if p_annee %}<li><a href="{% url 'academics:annee_academique_list' %}">Années académiques</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}
+
+<!-- Maquette Pédagogique LMD -->
+{% has_any_perm 'academics.view_semestre' 'academics.view_uniteenseignement' 'academics.view_elementconstitutif' as can_maquette %}
+{% if can_maquette %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-book"></i>
+        <span>Maquette LMD</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'academics.view_semestre' as p_semestre %}{% if p_semestre %}<li><a href="{% url 'academics:semestre_list' %}">Semestres</a></li>{% endif %}
+        {% has_perm 'academics.view_uniteenseignement' as p_ue %}{% if p_ue %}<li><a href="{% url 'academics:ue_list' %}">Unités d'Enseignement (UE)</a></li>{% endif %}
+        {% has_perm 'academics.view_elementconstitutif' as p_ec %}{% if p_ec %}<li><a href="{% url 'academics:ec_list' %}">Éléments Constitutifs (EC)</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}
+
+<!-- Gestion des Étudiants -->
+{% has_any_perm 'students.view_student' 'students.view_inscription' 'students.view_dossieretudiant' 'students.view_documentetudiant' as can_students %}
+{% if can_students %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-users"></i>
+        <span>Étudiants</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'students.view_student' as p_student %}{% if p_student %}<li><a href="{% url 'students:student_list' %}">Liste des étudiants</a></li>{% endif %}
+        {% has_perm 'students.view_inscription' as p_inscription %}{% if p_inscription %}<li><a href="{% url 'students:inscription_list' %}">Inscriptions</a></li>{% endif %}
+        {% has_perm 'students.view_dossieretudiant' as p_dossier %}{% if p_dossier %}<li><a href="{% url 'students:dossier_list' %}">Dossiers étudiants</a></li>{% endif %}
+        {% has_perm 'students.view_documentetudiant' as p_doc %}{% if p_doc %}<li><a href="{% url 'students:document_list' %}">Documents</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}
+
+
+<!-- Évaluations -->
+{% has_any_perm 'evaluations.view_session' 'evaluations.view_evaluation' 'evaluations.view_note' 'evaluations.view_typeevaluation' as can_eval %}
+{% if can_eval %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-file-text"></i>
+        <span>Évaluations</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'evaluations.view_session' as p_session %}{% if p_session %}<li><a href="{% url 'evaluations:session_list' %}">Sessions</a></li>{% endif %}
+        {% has_perm 'evaluations.view_evaluation' as p_eval %}{% if p_eval %}<li><a href="{% url 'evaluations:evaluation_list' %}">Évaluations</a></li>{% endif %}
+        {% has_perm 'evaluations.view_note' as p_note %}{% if p_note %}<li><a href="{% url 'evaluations:note_list' %}">Saisie des notes</a></li>{% endif %}
+        {% has_perm 'evaluations.view_typeevaluation' as p_typeeval %}{% if p_typeeval %}<li><a href="{% url 'evaluations:type_evaluation_list' %}">Types d'évaluation</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}
+
+<!-- Délibérations -->
+{% has_any_perm 'deliberations.view_deliberation' 'deliberations.view_parametreslmd' as can_delib %}
+{% if can_delib %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-gavel"></i>
+        <span>Délibérations</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'deliberations.view_deliberation' as p_delib %}{% if p_delib %}<li><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>{% endif %}
+        {% has_perm 'deliberations.view_parametreslmd' as p_param %}{% if p_param %}<li><a href="{% url 'deliberations:parametres_lmd_list' %}">Paramètres LMD</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}
+
+<!-- Projets tutorés réalisés -->
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title link-nav" href="{% url 'projets_tutores_realises' %}">
+        <i class="fa fa-folder-open-o"></i>
+        <span>Projets tutorés réalisés</span>
+    </a>
+</li>
+
+<!-- Gestion de la prestation -->
+{% has_any_perm 'prestation.view_horaire' 'prestation.view_horaireligne' 'prestation.view_prestation' 'prestation.add_prestation' as can_prestation %}
+{% if can_prestation %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-money"></i>
+        <span>Gestion des prestations</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'prestation.view_horaire' as p_horaire %}{% if p_horaire %}<li><a href="{% url 'prestation:horaire_list' %}">Horaires</a></li>{% endif %}
+        {% has_perm 'prestation.view_baremeprestation' as p_bareme %}{% if p_bareme %}<li><a href="{% url 'prestation:bareme_list' %}">Barèmes</a></li>{% endif %}
+        {% has_perm 'prestation.view_enveloppebudgetaire' as p_enveloppe %}{% if p_enveloppe %}<li><a href="{% url 'prestation:enveloppe_list' %}">Enveloppes budgétaires</a></li>{% endif %}
+        {% has_perm 'prestation.view_enveloppebudgetaire' as p_cloture %}{% if p_cloture %}<li><a href="{% url 'prestation:cloture_paie_mensuelle' %}">Clôture de la paie mensuelle</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_prestation %}{% if p_prestation %}<li><a href="{% url 'prestation:prestation_list' %}">Prestations</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' 'prestation.view_horaire' as p_saisie_horaire %}{% if p_saisie_horaire %}<li><a href="{% url 'prestation:prestation_depuis_horaire' %}">Saisie depuis l'horaire</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_saisie_mensuelle %}{% if p_saisie_mensuelle %}<li><a href="{% url 'prestation:prestation_mensuelle_list' %}">Saisie prestation mensuelle</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_calc %}{% if p_calc %}<li><a href="{% url 'prestation:calcul_paie' %}">Calcul de la paie</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_bulletin %}{% if p_bulletin %}<li><a href="{% url 'prestation:bulletin_paie' %}">Bulletin de paie</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_horaire' 'prestation.view_prestation' 'prestation.add_prestation' as p_fiche_jour %}{% if p_fiche_jour %}<li><a href="{% url 'prestation:fiche_prestations_journaliere' %}">Prestations journalières</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_prestation' 'prestation.add_prestation' as p_etat %}{% if p_etat %}<li><a href="{% url 'prestation:etat_paie_mensuel' %}">État de paie mensuel</a></li>{% endif %}
+        {% has_any_perm 'prestation.view_horaire' 'prestation.view_prestation' 'prestation.add_prestation' as p_stats %}{% if p_stats %}<li><a href="{% url 'prestation:statistiques_prestations_enseignement' %}">Statistiques des prestations</a></li>{% endif %}
+        
+    </ul>
+</li>
+{% endif %}
+
+<!-- Cartes PVC (dropdown) -->
+{% has_any_perm 'cards.view_card' 'cards.view_personnel' as can_cards %}
+{% if can_cards %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-id-card"></i>
+        <span>Cartes PVC</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'cards.view_card' as p_card %}{% if p_card %}<li><a href="{% url 'cards:card_list' %}">Cartes PVC</a></li>{% endif %}
+        {% has_perm 'cards.view_personnel' as p_personnel %}{% if p_personnel %}<li><a href="{% url 'cards:personnel_list' %}">Personnel</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}
+
+<!-- Documents -->
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-file-pdf-o"></i>
+        <span>Documents</span>
+    </a>
+    <ul class="sidebar-submenu">
+        <li><a href="#">Relevés de notes</a></li>
+        <li><a href="#">Procès-verbaux</a></li>
+        <li><a href="#">Attestations</a></li>
+        <li><a href="#">Diplômes</a></li>
+    </ul>
+</li>
+
+<!-- Administration : uniquement staff -->
+{% if request.user.is_staff %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title link-nav" href="{% url 'admin:index' %}">
+        <i class="fa fa-cog"></i>
+        <span>Administration</span>
+    </a>
+</li>
+{% endif %}
+
+

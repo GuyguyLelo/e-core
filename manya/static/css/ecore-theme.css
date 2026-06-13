@@ -1,0 +1,463 @@
+/**
+ * e-Core theme — re-skin Mofi/Bootstrap
+ * Palette institutionnelle alignée sur la page de connexion.
+ */
+
+:root {
+  --ecore-primary: #2a3650;
+  --ecore-primary-dark: #1e2a3d;
+  --ecore-primary-light: #3d5168;
+  --ecore-secondary: #4a90c2;
+  --ecore-accent: #c9a227;
+  --ecore-surface: #ffffff;
+  --ecore-bg: #f0f2f6;
+  --ecore-text: #2f2f3b;
+  --ecore-text-muted: #6b7280;
+  --ecore-border: rgba(42, 54, 80, 0.12);
+  --ecore-shadow: 0 4px 24px rgba(42, 54, 80, 0.08);
+  --ecore-radius: 10px;
+  --ecore-radius-lg: 14px;
+
+  --theme-default: var(--ecore-primary);
+  --theme-secondary: var(--ecore-secondary);
+  --light-background: rgba(240, 242, 246, 0.85);
+  --body-font-color: var(--ecore-text);
+}
+
+body {
+  font-family: "Outfit", sans-serif;
+  color: var(--ecore-text);
+  background: var(--ecore-bg);
+}
+
+/* ── Sidebar ── */
+.sidebar-wrapper {
+  background: linear-gradient(180deg, var(--ecore-primary) 0%, var(--ecore-primary-dark) 100%);
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link.active,
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link.active {
+  border-left: 3px solid var(--ecore-accent);
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link i,
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-list > i.fa-thumb-tack,
+.sidebar-wrapper .sidebar-main .sidebar-links .sub-arrow i,
+.sidebar-wrapper .toggle-sidebar i,
+.sidebar-wrapper .back-btn i,
+.sidebar-wrapper .left-arrow i,
+.sidebar-wrapper .right-arrow i {
+  color: #fff !important;
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link i {
+  margin-right: 10px;
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-list > i.fa-thumb-tack {
+  margin-right: 8px;
+}
+
+.sidebar-wrapper .sidebar-main-title h6 {
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+/* ── Header ── */
+.page-header {
+  background: var(--ecore-surface);
+  border-bottom: 1px solid var(--ecore-border);
+  box-shadow: var(--ecore-shadow);
+}
+
+.page-header .page-title h4 {
+  color: var(--ecore-primary-dark);
+  font-weight: 600;
+}
+
+.ecore-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--ecore-primary);
+  text-decoration: none;
+}
+
+.ecore-brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: var(--ecore-primary);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ecore-brand--light {
+  color: #fff;
+}
+
+.ecore-brand--light .ecore-brand__mark {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ── Cards ── */
+.card {
+  border: 1px solid var(--ecore-border);
+  border-radius: var(--ecore-radius-lg);
+  box-shadow: var(--ecore-shadow);
+}
+
+.card .card-header {
+  background: linear-gradient(180deg, #fff 0%, #f8f9fb 100%);
+  border-bottom: 1px solid var(--ecore-border);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  background-color: var(--ecore-primary) !important;
+  border-color: var(--ecore-primary) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--ecore-primary-dark) !important;
+  border-color: var(--ecore-primary-dark) !important;
+}
+
+.btn-outline-primary {
+  color: var(--ecore-primary);
+  border-color: var(--ecore-primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--ecore-primary);
+  border-color: var(--ecore-primary);
+}
+
+/* ── Tables ── */
+.table thead th {
+  background: #f3f5f8;
+  color: var(--ecore-primary-dark);
+  font-weight: 600;
+  border-bottom: 2px solid var(--ecore-border);
+}
+
+.table-hover tbody tr:hover {
+  background: rgba(42, 54, 80, 0.03);
+}
+
+/* ── Forms ── */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ecore-primary);
+  box-shadow: 0 0 0 0.2rem rgba(42, 54, 80, 0.15);
+}
+
+/* ── Footer ── */
+.footer {
+  background: var(--ecore-surface);
+  border-top: 1px solid var(--ecore-border);
+}
+
+.footer .footer-copyright p {
+  color: var(--ecore-text-muted);
+}
+
+/* ── Login page ── */
+body.login-page {
+  font-family: "Outfit", sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--ecore-primary) !important;
+}
+
+.login-page .login-card {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 12px;
+  background: var(--ecore-primary) !important;
+  background-image: none !important;
+}
+
+.login-page .login-main {
+  width: 100%;
+  max-width: 450px;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+  background-color: #fff;
+  margin: 0 auto;
+}
+
+.login-page .brand-name {
+  color: var(--ecore-primary);
+  font-weight: 700;
+  font-size: 1.875rem;
+  letter-spacing: 0.5px;
+}
+
+.login-page .theme-form .text-muted {
+  color: #6c757d !important;
+}
+
+.login-page .theme-form input {
+  background-color: #f8f9fa;
+  border-color: rgba(42, 54, 80, 0.2);
+}
+
+.login-page .theme-form input:hover,
+.login-page .theme-form input:focus {
+  border-color: var(--ecore-primary) !important;
+  box-shadow: 0 0 0 2px rgba(42, 54, 80, 0.15) !important;
+}
+
+.login-page .btn-primary {
+  background-color: var(--ecore-primary) !important;
+  border-color: var(--ecore-primary) !important;
+  padding: 12px 24px;
+  font-weight: 600;
+}
+
+.login-page .btn-primary:hover {
+  background-color: var(--ecore-primary-dark) !important;
+  border-color: var(--ecore-primary-dark) !important;
+}
+
+/* ── Fullscreen layout ── */
+html:has(body.fullscreen-page),
+body.fullscreen-page {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-family: "Outfit", sans-serif;
+}
+
+.fullscreen-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.fullscreen-content > div {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Composants pages métier ── */
+.ecore-card-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(180deg, #fff 0%, #f8f9fb 100%);
+}
+
+.ecore-card-header h5 {
+  color: var(--ecore-primary-dark);
+  font-weight: 600;
+}
+
+.ecore-card-subtitle {
+  color: var(--ecore-text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}
+
+.ecore-alert {
+  border: none;
+  border-radius: var(--ecore-radius);
+  border-left: 4px solid var(--ecore-primary);
+}
+
+.ecore-table-actions .btn {
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+}
+
+.btn-ecore-info {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.btn-ecore-info:hover {
+  background: #0369a1;
+  border-color: #0369a1;
+  color: #fff;
+}
+
+.btn-ecore-edit {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.btn-ecore-edit:hover {
+  background: #b45309;
+  border-color: #b45309;
+  color: #fff;
+}
+
+.btn-ecore-delete {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.btn-ecore-delete:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.btn-ecore-notes {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.btn-ecore-notes:hover {
+  background: #15803d;
+  border-color: #15803d;
+  color: #fff;
+}
+
+.btn-ecore-success {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.btn-ecore-success:hover {
+  background: #15803d;
+  border-color: #15803d;
+  color: #fff;
+}
+
+.ecore-filter-bar {
+  background: #f8f9fb;
+  border: 1px solid var(--ecore-border);
+  border-radius: var(--ecore-radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.ecore-info-banner {
+  background: linear-gradient(90deg, rgba(42, 54, 80, 0.06) 0%, rgba(74, 144, 194, 0.08) 100%);
+  border: 1px solid var(--ecore-border);
+  border-left: 4px solid var(--ecore-secondary);
+  border-radius: var(--ecore-radius);
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.25rem;
+  color: var(--ecore-primary-dark);
+}
+
+.ecore-notes-table thead th {
+  background: var(--ecore-primary);
+  color: #fff;
+  border: none;
+}
+
+.ecore-delete-details {
+  background: #f8f9fb;
+  border: 1px solid var(--ecore-border);
+  border-radius: var(--ecore-radius);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+.bg-ecore-primary {
+  background-color: var(--ecore-primary) !important;
+  color: #fff;
+}
+
+.badge-ecore {
+  background: rgba(74, 144, 194, 0.12);
+  color: var(--ecore-secondary);
+  font-weight: 500;
+}
+
+/* ── Dashboard modules ── */
+.ecore-module-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.9rem;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.ecore-module-icon--students { background: #e8eef6; color: #2a3650; }
+.ecore-module-icon--structure { background: #e8f4f0; color: #047857; }
+.ecore-module-icon--maquette { background: #fff4e5; color: #b45309; }
+.ecore-module-icon--evaluations { background: #eef2ff; color: #4a90c2; }
+.ecore-module-icon--deliberations { background: #fce8f3; color: #be185d; }
+.ecore-module-icon--prestation { background: #fef3c7; color: #b45309; }
+.ecore-module-icon--cards { background: #e6f4fa; color: #0369a1; }
+.ecore-module-icon--projects { background: #ecfeff; color: #0e7490; }
+.ecore-module-icon--documents { background: #f3f4f6; color: #374151; }
+
+.ecore-dashboard-hero {
+  background: linear-gradient(180deg, var(--ecore-primary) 0%, var(--ecore-primary-dark) 100%);
+  color: #fff;
+  padding: 2rem 0;
+}
+
+.ecore-dashboard-hero .ecore-logo-text {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.ecore-dashboard-hero .ecore-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.ecore-module-card {
+  border: 1px solid var(--ecore-border);
+  border-radius: var(--ecore-radius-lg);
+  padding: 1.25rem;
+  background: var(--ecore-surface);
+  transition: box-shadow 0.2s, transform 0.2s;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: flex-start;
+}
+
+.ecore-module-card:hover {
+  box-shadow: var(--ecore-shadow);
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+.ecore-module-card h6 {
+  color: var(--ecore-primary-dark);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.ecore-module-card p {
+  color: var(--ecore-text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}

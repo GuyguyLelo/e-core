@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | e-Core</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendors/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/color-1.css' %}">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/ecore-theme.css' %}">
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="login-main">
+            <div class="theme-form">
+                <div class="logo text-center mb-4">
+                    <h2 class="brand-name">e-Core</h2>
+                    <p class="text-muted mb-0" style="font-size: 14px;">Plateforme intégrée de gestion académique</p>
+                </div>
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger ecore-alert" role="alert">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    <div class="form-group mb-3">
+                        <label class="col-form-label">Nom d'utilisateur</label>
+                        <input type="text" name="username" class="form-control" required autofocus placeholder="Entrez votre identifiant" value="{{ form.username.value|default:'' }}">
+                        {% if form.username.errors %}
+                            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="col-form-label">Mot de passe</label>
+                        <input type="password" name="password" class="form-control" required placeholder="Entrez votre mot de passe">
+                        {% if form.password.errors %}
+                            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group mb-0">
+                        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+                    </div>
+                </form>
+            </div>
+            <p class="text-center text-muted mt-4 mb-0" style="font-size: 13px;">Utilisez vos identifiants de connexion.</p>
+        </div>
+    </div>
+</body>
+</html>

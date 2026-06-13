@@ -1,0 +1,58 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="#">{{ breadcrumb_parent }}</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            {% with list_label="Liste des "|add:title %}
+            {% include "components/page_toolbar.html" with toolbar_title=list_label create_url=create_url %}
+            {% endwith %}
+            <div class="card-body">
+                {% include "components/messages.html" %}
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                {% for header in table_headers %}
+                                <th>{{ header }}</th>
+                                {% endfor %}
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                {% block table_row %}{% endblock %}
+                                <td>
+                                    {% url update_url item.pk as edit_link %}
+                                    {% url delete_url item.pk as del_link %}
+                                    {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="{{ table_headers|length|add:1 }}" class="text-center text-muted py-4">Aucun élément enregistré</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% include "components/pagination.html" %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

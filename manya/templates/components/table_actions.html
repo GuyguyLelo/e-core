@@ -1,0 +1,18 @@
+<div class="ecore-table-actions btn-group" role="group">
+  {% if detail_url %}
+    <a href="{{ detail_url }}" class="btn btn-sm btn-ecore-info" title="Voir">
+      <i class="fa fa-eye"></i>
+    </a>
+  {% endif %}
+  {% if update_url %}
+    <a href="{{ update_url }}" class="btn btn-sm btn-ecore-edit" title="Modifier">
+      <i class="fa fa-edit"></i>
+    </a>
+  {% endif %}
+  {% if delete_url %}
+    <a href="{{ delete_url }}" class="btn btn-sm btn-ecore-delete" title="Supprimer">
+      <i class="fa fa-trash"></i>
+    </a>
+  {% endif %}
+  {% if extra_actions %}{{ extra_actions }}{% endif %}
+</div>

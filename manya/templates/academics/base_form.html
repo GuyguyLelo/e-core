@@ -1,0 +1,31 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{{ list_url }}">{{ list_title }}</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            {% include "components/page_toolbar.html" with toolbar_title=title %}
+            <div class="card-body">
+                {% include "components/messages.html" %}
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% block form_fields %}{% endblock %}
+                    {% include "components/form_actions.html" with cancel_url=list_url %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
