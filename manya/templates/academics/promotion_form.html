@@ -1,92 +1,48 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'academics:promotion_list' %}">Promotions</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}promotion-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.filiere.id_for_label }}" class="form-label">
-                                    Filière <span class="text-danger">*</span>
-                                </label>
-                                {{ form.filiere }}
-                                {% if form.filiere.errors %}
-                                    <div class="text-danger small">{{ form.filiere.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.ordre.id_for_label }}" class="form-label">Ordre <span class="text-danger">*</span></label>
-                                {{ form.ordre }}
-                                {% if form.ordre.errors %}
-                                    <div class="text-danger small">{{ form.ordre.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.code.id_for_label }}" class="form-label">Code <span class="text-danger">*</span></label>
-                                {{ form.code }}
-                                {% if form.code.errors %}
-                                    <div class="text-danger small">{{ form.code.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.nom.id_for_label }}" class="form-label">Nom <span class="text-danger">*</span></label>
-                                {{ form.nom }}
-                                {% if form.nom.errors %}
-                                    <div class="text-danger small">{{ form.nom.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            {{ form.active }}
-                            <label class="form-check-label" for="{{ form.active.id_for_label }}">
-                                Promotion active
-                            </label>
-                        </div>
-                        {% if form.active.errors %}
-                            <div class="text-danger small">{{ form.active.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'academics:promotion_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-sitemap" title="Rattachement" subtitle="Filière et ordre dans le cursus" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.filiere col="col-md-8" icon="fa-graduation-cap" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.ordre col="col-md-4" icon="fa-sort-numeric-asc" help="Ordre d'affichage (1, 2, 3…)" %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-tag" title="Identification" subtitle="Code et libellé de la promotion" section_class="mb-0" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.code col="col-md-4" icon="fa-hashtag" required=True help="Ex. P1, P2, P3" %}
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-8" icon="fa-font" required=True help="Ex. Première année" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'academics:promotion_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Promotion active" hint="Disponible pour les classes" %}
+{% include "components/ecore_form_aside_tips.html" with tip1="La promotion définit l'année dans la filière" tip2="L'ordre contrôle le tri dans les listes" tip3="Une promotion inactive est masquée" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

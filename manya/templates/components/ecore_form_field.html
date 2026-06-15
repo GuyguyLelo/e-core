@@ -1,0 +1,16 @@
+<div class="{{ col|default:'col-12' }}">
+  <label for="{{ field.id_for_label }}" class="form-label">
+    {{ label|default:field.label }}{% if required %} <span class="text-danger">*</span>{% endif %}
+  </label>
+  {% if icon %}
+  <div class="input-group">
+    <span class="input-group-text"><i class="fa {{ icon }}"></i></span>
+    {{ field }}
+    {% if input_suffix %}<span class="input-group-text">{{ input_suffix }}</span>{% endif %}
+  </div>
+  {% else %}
+  {{ field }}
+  {% endif %}
+  {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+  {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+</div>

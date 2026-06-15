@@ -1,85 +1,76 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'academics:classe_list' %}">Classes</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}classe-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-sitemap" title="Affectation" subtitle="Promotion et local d'enseignement" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.promotion col="col-md-6" icon="fa-graduation-cap" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.local col="col-md-6" icon="fa-map-marker" required=True %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
 
-                <form method="post">
-          {% csrf_token %}
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="{{ form.promotion.id_for_label }}" class="form-label">Promotion <span class="text-danger">*</span></label>
-                {{ form.promotion }}
-                {% if form.promotion.errors %}<div class="text-danger small">{{ form.promotion.errors }}</div>{% endif %}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="{{ form.local.id_for_label }}" class="form-label">Local <span class="text-danger">*</span></label>
-                {{ form.local }}
-                {% if form.local.errors %}<div class="text-danger small">{{ form.local.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
+{% include "components/ecore_form_section_open.html" with icon="fa-tag" title="Identification" subtitle="Code et nom de la classe" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.code col="col-md-4" icon="fa-hashtag" required=True help="Ex. A, B, C" %}
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-8" icon="fa-font" help="Optionnel — affiché si renseigné" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
 
-          <div class="row">
-            <div class="col-md-4">
-              <div class="mb-3">
-                <label for="{{ form.code.id_for_label }}" class="form-label">Code <span class="text-danger">*</span></label>
-                {{ form.code }}
-                {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors }}</div>{% endif %}
-              </div>
-            </div>
-            <div class="col-md-8">
-              <div class="mb-3">
-                <label for="{{ form.nom.id_for_label }}" class="form-label">Nom</label>
-                {{ form.nom }}
-                {% if form.nom.errors %}<div class="text-danger small">{{ form.nom.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-4">
-              <div class="mb-3">
-                <label for="{{ form.effectif_max.id_for_label }}" class="form-label">Effectif maximum</label>
-                {{ form.effectif_max }}
-                {% if form.effectif_max.errors %}<div class="text-danger small">{{ form.effectif_max.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              {{ form.active }}
-              <label class="form-check-label" for="{{ form.active.id_for_label }}">Classe active</label>
-            </div>
-            {% if form.active.errors %}<div class="text-danger small">{{ form.active.errors }}</div>{% endif %}
-          </div>
-
-          {% url 'academics:classe_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-        </form>
-      </div>
+{% include "components/ecore_form_section_open.html" with icon="fa-users" title="Effectif" subtitle="Limite d'étudiants (optionnel)" section_class="mb-0" %}
+<div class="row g-3 align-items-end">
+  {% include "components/ecore_form_field.html" with field=form.effectif_max col="col-md-5" icon="fa-user" input_suffix="élèves" %}
+  <div class="col-md-7">
+    <div class="ecore-form-capacity-hints js-capacity-chips" data-target="#{{ form.effectif_max.id_for_label }}">
+      <span class="ecore-form-capacity-chip" data-cap="25">25</span>
+      <span class="ecore-form-capacity-chip" data-cap="30">30</span>
+      <span class="ecore-form-capacity-chip" data-cap="40">40</span>
+      <span class="ecore-form-capacity-chip" data-cap="50">50</span>
     </div>
+    <div class="form-text mt-1">Valeurs fréquentes pour une classe</div>
   </div>
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'academics:classe_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Classe active" hint="Disponible pour les inscriptions" %}
+<div class="ecore-form-preview mb-3">
+  <div class="ecore-form-preview-icon"><i class="fa fa-users"></i></div>
+  <div class="ecore-form-preview-body">
+    <span class="ecore-form-preview-code" id="preview-code">{{ form.code.value|default:"CODE" }}</span>
+    <span class="ecore-form-preview-name" id="preview-nom">{{ form.nom.value|default:"Nom de la classe" }}</span>
+    <span class="ecore-form-preview-meta" id="preview-meta">{% if form.effectif_max.value %}{{ form.effectif_max.value }} élève{{ form.effectif_max.value|pluralize }}{% else %}Effectif non renseigné{% endif %}</span>
+  </div>
+</div>
+{% include "components/ecore_form_aside_tips.html" with tip1="Une classe est liée à une promotion et un local" tip2="Le code distingue les groupes (A, B, C…)" tip3="L'effectif maximum aide à contrôler les inscriptions" %}
+{% endblock %}
+
+{% block form_extra_js %}
+<script src="{% static 'js/ecore-form-helpers.js' %}"></script>
+<script>
+ecoreFormPreview("classe-form", {
+  code: "#{{ form.code.id_for_label }}",
+  nom: "#{{ form.nom.id_for_label }}",
+  meta: "#{{ form.effectif_max.id_for_label }}",
+  previewCode: "#preview-code",
+  previewNom: "#preview-nom",
+  previewMeta: "#preview-meta",
+  metaSuffix: "élève",
+  metaEmpty: "Effectif non renseigné"
+});
+ecoreFormCapacityChips();
+</script>
 {% endblock %}

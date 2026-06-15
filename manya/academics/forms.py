@@ -57,7 +57,7 @@ class LocalForm(forms.ModelForm):
         widgets = {
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: L14'}),
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Local 14'}),
-            'capacite': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'capacite': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Ex. 40'}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

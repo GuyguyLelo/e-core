@@ -1,91 +1,62 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
+{% block form_breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:prestation_list' %}">Prestations</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-lg-9">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-                {% include "components/messages.html" %}
-                {% include "components/form_errors.html" %}
+{% block form_id %}prestation-form{% endblock %}
 
-                <form method="post" id="prestation-form">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Date</label>
-                            {{ form.date_prestation }}
-                            {{ form.date_prestation.errors }}
-                        </div>
-                        <div class="col-md-8 mb-3">
-                            <label class="form-label">Personnel</label>
-                            {{ form.personnel }}
-                            {{ form.personnel.errors }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Type prestation</label>
-                            {{ form.categorie }}
-                            {{ form.categorie.errors }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Barème</label>
-                            {{ form.bareme }}
-                            {{ form.bareme.errors }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Montant (CDF)</label>
-                            <input type="text" class="form-control" id="id_montant_affiche" readonly>
-                        </div>
-                        <div class="col-md-8 mb-3">
-                            <label class="form-label">Horaire (facultatif)</label>
-                            {{ form.horaire }}
-                            {{ form.horaire.errors }}
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Observation</label>
-                            {{ form.observation }}
-                            {{ form.observation.errors }}
-                        </div>
-                    </div>
-
-                    {% url 'prestation:prestation_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3">
-        <div class="card">
-            <div class="card-header ecore-card-header">
-                <h6 class="mb-0"><i class="fa fa-info-circle me-2"></i>Aide</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-2">1. Choisissez un type de prestation.</p>
-                <p class="mb-2">2. Sélectionnez le barème correspondant.</p>
-                <p class="mb-2">3. Le montant est repris automatiquement.</p>
-                <p class="mb-0 text-muted">Le montant enregistré est figé au moment de la saisie.</p>
-            </div>
-        </div>
-    </div>
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calendar" title="Date & agent" subtitle="Quand et pour quel personnel" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.date_prestation col="col-md-4" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.personnel col="col-md-8" icon="fa-user" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
 
+{% include "components/ecore_form_section_open.html" with icon="fa-tags" title="Barème" subtitle="Type, barème et montant" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.categorie col="col-md-6" icon="fa-tag" required=True label="Type prestation" %}
+  {% include "components/ecore_form_field.html" with field=form.bareme col="col-md-6" icon="fa-money" required=True %}
+  <div class="col-md-4">
+    <label class="form-label" for="id_montant_affiche">Montant (CDF)</label>
+    <div class="input-group">
+      <span class="input-group-text"><i class="fa fa-money"></i></span>
+      <input type="text" class="form-control" id="id_montant_affiche" readonly>
+    </div>
+    <div class="form-text">Reprise automatique du barème</div>
+  </div>
+</div>
+{% include "components/ecore_form_section_close.html" %}
+
+{% include "components/ecore_form_section_open.html" with icon="fa-link" title="Compléments" subtitle="Horaire lié et observations" section_class="mb-0" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.horaire col="col-md-6" icon="fa-clock-o" help="Optionnel" %}
+  {% include "components/ecore_form_field.html" with field=form.observation col="col-12" icon="fa-sticky-note" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'prestation:prestation_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Choisissez d'abord le type de prestation" tip2="Le barème détermine le montant en CDF" tip3="Le montant est figé à l'enregistrement" tip4="Une enveloppe doit exister pour la date" %}
+{% endblock %}
+
+{% block form_extra_js %}
 <script>
 (function() {
   const categorieEl = document.getElementById('id_categorie');
   const baremeEl = document.getElementById('id_bareme');
   const montantEl = document.getElementById('id_montant_affiche');
   const initialBaremeId = "{{ form.instance.bareme_id|default:'' }}";
+  if (!categorieEl || !baremeEl || !montantEl) return;
 
   function moneyFormat(value) {
     if (!value) return '';
@@ -99,9 +70,7 @@
   async function loadBaremes(categorie, selectedId) {
     baremeEl.innerHTML = '<option value="">---------</option>';
     montantEl.value = '';
-    if (!categorie) {
-      return;
-    }
+    if (!categorie) return;
     const response = await fetch('{% url "prestation:api_baremes_by_categorie" %}?categorie=' + encodeURIComponent(categorie));
     const payload = await response.json();
     payload.results.forEach((item) => {

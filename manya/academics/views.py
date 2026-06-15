@@ -226,7 +226,11 @@ def local_create(request):
             return redirect('academics:local_list')
     else:
         form = LocalForm()
-    return render(request, 'academics/local_form.html', {'form': form, 'title': 'Nouveau Local'})
+    return render(request, 'academics/local_form.html', {
+        'form': form,
+        'title': 'Nouveau Local',
+        'subtitle': 'Créer une salle ou un amphithéâtre',
+    })
 
 
 @login_required
@@ -240,7 +244,12 @@ def local_update(request, pk):
             return redirect('academics:local_list')
     else:
         form = LocalForm(instance=local)
-    return render(request, 'academics/local_form.html', {'form': form, 'title': 'Modifier Local', 'object': local})
+    return render(request, 'academics/local_form.html', {
+        'form': form,
+        'title': 'Modifier Local',
+        'subtitle': f'Modifier {local.code}',
+        'object': local,
+    })
 
 
 @login_required

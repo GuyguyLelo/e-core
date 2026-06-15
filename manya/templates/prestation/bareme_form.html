@@ -1,63 +1,49 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
+{% block form_breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:bareme_list' %}">Barèmes</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Type prestation</label>
-                            {{ form.categorie }}
-                            {{ form.categorie.errors }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Période</label>
-                            {{ form.periode }}
-                            {{ form.periode.errors }}
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Intitulé</label>
-                            {{ form.intitule }}
-                            {{ form.intitule.errors }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Montant (CDF)</label>
-                            {{ form.montant }}
-                            {{ form.montant.errors }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Ordre</label>
-                            {{ form.ordre }}
-                            {{ form.ordre.errors }}
-                        </div>
-                        <div class="col-md-4 mb-3 d-flex align-items-center">
-                            <div class="form-check mt-4">
-                                {{ form.active }}
-                                <label class="form-check-label ms-2" for="{{ form.active.id_for_label }}">Actif</label>
-                            </div>
-                        </div>
-                    </div>
+{% block form_id %}bareme-form{% endblock %}
 
-                    {% url 'prestation:bareme_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% block form_extra_notices %}
+
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-tags" title="Classification" subtitle="Type et période" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.categorie col="col-md-6" icon="fa-tag" required=True label="Type prestation" %}
+  {% include "components/ecore_form_field.html" with field=form.periode col="col-md-6" icon="fa-clock-o" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-money" title="Montant" subtitle="Intitulé et tarif" section_class="mb-0" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.intitule col="col-12" icon="fa-font" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.montant col="col-md-4" icon="fa-money" required=True help="Montant en CDF" %}
+  {% include "components/ecore_form_field.html" with field=form.ordre col="col-md-4" icon="fa-sort-numeric-asc" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'prestation:bareme_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Barème actif" hint="Utilisable pour les prestations" %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Le type détermine la catégorie de prestation" tip2="L'ordre organise les listes" tip3="Le montant est en francs congolais" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

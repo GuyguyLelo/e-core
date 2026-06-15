@@ -1,155 +1,106 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
+{% block form_breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:horaire_list' %}">Horaires</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-            <div class="card-body">
-                {% include "components/messages.html" %}
-                {% include "components/form_errors.html" %}
-                {% include "components/active_annee_notice.html" %}
+{% block form_id %}horaire-form{% endblock %}
+{% block form_main_col %}col-lg-12{% endblock %}
+{% block form_aside_wrapper %}{% endblock %}
 
-                <form method="post" id="horaire-form">
-                    {% csrf_token %}
+{% block form_extra_notices %}
+{% include "components/active_annee_notice.html" %}
+{% endblock %}
 
-                    {% if formset.non_form_errors %}
-                    <div class="alert alert-danger ecore-alert">{{ formset.non_form_errors }}</div>
-                    {% endif %}
+{% block form_before_fields %}
+{% if formset.non_form_errors %}
+<div class="alert alert-danger ecore-alert">{{ formset.non_form_errors }}</div>
+{% endif %}
+{% endblock %}
 
-                    <div class="row">
-                        <div class="col-lg-8 mb-3">
-                            <label class="form-label">Titre</label>
-                            {{ form.titre }}
-                            {{ form.titre.errors }}
-                        </div>
-                        <div class="col-lg-4 mb-3">
-                            <label class="form-label">Semestre</label>
-                            {{ form.semestre }}
-                            {{ form.semestre.errors }}
-                        </div>
-                        <div class="col-lg-4 mb-3">
-                            <label class="form-label">Classe</label>
-                            {{ form.classe }}
-                            {{ form.classe.errors }}
-                        </div>
-                        <div class="col-lg-8 mb-3">
-                            <label class="form-label">Observation</label>
-                            {{ form.observation }}
-                            {{ form.observation.errors }}
-                        </div>
-                        <div class="col-lg-2 mb-3 d-flex align-items-center">
-                            <div class="form-check mt-4">
-                                {{ form.active }}
-                                <label class="form-check-label ms-2" for="{{ form.active.id_for_label }}">Actif</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-                    <h6 class="mb-3">Lignes d'horaire</h6>
-                    {{ formset.management_form }}
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle" id="horaire-lignes-table">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Jour</th>
-                                    <th>Heure début</th>
-                                    <th>Heure fin</th>
-                                    <th>Élément constitutif</th>
-                                    <th>Local</th>
-                                    <th>Professeur</th>
-                                    <th>Ordre</th>
-                                    <th>Notes</th>
-                                    <th>Supprimer</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for ligne_form in formset.forms %}
-                                <tr class="horaire-ligne-row{% if ligne_form.errors %} table-warning{% endif %}">
-                                    {{ ligne_form.id }}
-                                    {{ ligne_form.horaire }}
-                                    <td>
-                                        {{ ligne_form.jour }}
-                                        {% if ligne_form.jour.errors %}<div class="text-danger small">{{ ligne_form.jour.errors }}</div>{% endif %}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.heure_debut }}
-                                        {% if ligne_form.heure_debut.errors %}<div class="text-danger small">{{ ligne_form.heure_debut.errors }}</div>{% endif %}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.heure_fin }}
-                                        {% if ligne_form.heure_fin.errors %}<div class="text-danger small">{{ ligne_form.heure_fin.errors }}</div>{% endif %}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.element_constitutif }}
-                                        {% if ligne_form.element_constitutif.errors %}<div class="text-danger small">{{ ligne_form.element_constitutif.errors }}</div>{% endif %}
-                                        {{ ligne_form.ue_code }}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.local }}
-                                        {% if ligne_form.local.errors %}<div class="text-danger small">{{ ligne_form.local.errors }}</div>{% endif %}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.professeur }}
-                                        <span class="professeur-label text-muted">-</span>
-                                        {% if ligne_form.professeur.errors %}<div class="text-danger small">{{ ligne_form.professeur.errors }}</div>{% endif %}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.ordre }}
-                                        {% if ligne_form.ordre.errors %}<div class="text-danger small">{{ ligne_form.ordre.errors }}</div>{% endif %}
-                                    </td>
-                                    <td>
-                                        {{ ligne_form.notes }}
-                                        {% if ligne_form.notes.errors %}<div class="text-danger small">{{ ligne_form.notes.errors }}</div>{% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        {% if ligne_form.DELETE %}{{ ligne_form.DELETE }}{% endif %}
-                                    </td>
-                                </tr>
-                                {% if ligne_form.non_field_errors %}
-                                <tr>
-                                    <td colspan="9" class="text-danger small py-1">{{ ligne_form.non_field_errors }}</td>
-                                </tr>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {% url 'prestation:horaire_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-clock-o" title="En-tête" subtitle="Titre, semestre et classe" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.titre col="col-lg-8" icon="fa-font" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.semestre col="col-lg-4" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.classe col="col-lg-4" icon="fa-users" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.observation col="col-lg-8" icon="fa-sticky-note" %}
+  <div class="col-lg-12">
+    <div class="ecore-dossier-switch">
+      <div>
+        <div class="fw-semibold small">Horaire actif</div>
+        <div class="text-muted small">Visible et utilisable pour les prestations</div>
+      </div>
+      <div class="form-check form-switch mb-0">{{ form.active }}</div>
     </div>
+    {% if form.active.errors %}<div class="text-danger small mt-1">{{ form.active.errors }}</div>{% endif %}
+  </div>
 </div>
+{% include "components/ecore_form_section_close.html" %}
 
+{% include "components/ecore_form_section_open.html" with icon="fa-table" title="Lignes d'horaire" subtitle="Créneaux, EC, locaux et professeurs" section_class="mb-0" %}
+{{ formset.management_form }}
+<div class="table-responsive">
+  <table class="table table-bordered align-middle mb-0" id="horaire-lignes-table">
+    <thead class="table-light">
+      <tr>
+        <th>Jour</th>
+        <th>Début</th>
+        <th>Fin</th>
+        <th>EC</th>
+        <th>Local</th>
+        <th>Professeur</th>
+        <th>Ordre</th>
+        <th>Notes</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ligne_form in formset.forms %}
+      <tr class="horaire-ligne-row{% if ligne_form.errors %} table-warning{% endif %}">
+        {{ ligne_form.id }}
+        {{ ligne_form.horaire }}
+        <td>{{ ligne_form.jour }}{% if ligne_form.jour.errors %}<div class="text-danger small">{{ ligne_form.jour.errors }}</div>{% endif %}</td>
+        <td>{{ ligne_form.heure_debut }}{% if ligne_form.heure_debut.errors %}<div class="text-danger small">{{ ligne_form.heure_debut.errors }}</div>{% endif %}</td>
+        <td>{{ ligne_form.heure_fin }}{% if ligne_form.heure_fin.errors %}<div class="text-danger small">{{ ligne_form.heure_fin.errors }}</div>{% endif %}</td>
+        <td>{{ ligne_form.element_constitutif }}{% if ligne_form.element_constitutif.errors %}<div class="text-danger small">{{ ligne_form.element_constitutif.errors }}</div>{% endif %}{{ ligne_form.ue_code }}</td>
+        <td>{{ ligne_form.local }}{% if ligne_form.local.errors %}<div class="text-danger small">{{ ligne_form.local.errors }}</div>{% endif %}</td>
+        <td>{{ ligne_form.professeur }}<span class="professeur-label text-muted">-</span>{% if ligne_form.professeur.errors %}<div class="text-danger small">{{ ligne_form.professeur.errors }}</div>{% endif %}</td>
+        <td>{{ ligne_form.ordre }}{% if ligne_form.ordre.errors %}<div class="text-danger small">{{ ligne_form.ordre.errors }}</div>{% endif %}</td>
+        <td>{{ ligne_form.notes }}{% if ligne_form.notes.errors %}<div class="text-danger small">{{ ligne_form.notes.errors }}</div>{% endif %}</td>
+        <td class="text-center">{% if ligne_form.DELETE %}{{ ligne_form.DELETE }}{% endif %}</td>
+      </tr>
+      {% if ligne_form.non_field_errors %}
+      <tr><td colspan="9" class="text-danger small py-1">{{ ligne_form.non_field_errors }}</td></tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'prestation:horaire_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_extra_js %}
 {{ ec_professeur_map|json_script:"ec-professeur-map" }}
-
 <script>
 (function() {
   const ecMap = JSON.parse(document.getElementById('ec-professeur-map').textContent);
   const table = document.getElementById('horaire-lignes-table');
+  if (!table) return;
 
   function updateProfesseurRow(row) {
     const ecSelect = row.querySelector('select[name$="-element_constitutif"]');
     const professeurInput = row.querySelector('input[name$="-professeur"]');
     const label = row.querySelector('.professeur-label');
-    if (!ecSelect || !professeurInput || !label) {
-      return;
-    }
+    if (!ecSelect || !professeurInput || !label) return;
     const ecId = ecSelect.value;
     const prof = ecId ? ecMap[ecId] : null;
     if (prof) {
@@ -164,9 +115,7 @@
   }
 
   table.addEventListener('change', function(event) {
-    if (!event.target.matches('select[name$="-element_constitutif"]')) {
-      return;
-    }
+    if (!event.target.matches('select[name$="-element_constitutif"]')) return;
     updateProfesseurRow(event.target.closest('tr'));
   });
 

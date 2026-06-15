@@ -1241,6 +1241,125 @@ body.login-page {
   color: var(--ecore-text-muted);
 }
 
+/* ── Formulaire moderne (page) ── */
+.ecore-form-page .input-group-text,
+.local-form-page .input-group-text {
+  background: var(--ecore-bg);
+  border-color: var(--ecore-border);
+  color: var(--ecore-text-muted);
+}
+
+.ecore-form-capacity-hints,
+.ecore-local-capacity-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ecore-form-capacity-chip,
+.ecore-local-capacity-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--ecore-border);
+  background: var(--ecore-bg);
+  color: var(--ecore-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.ecore-form-capacity-chip:hover,
+.ecore-form-capacity-chip.is-active,
+.ecore-local-capacity-chip:hover,
+.ecore-local-capacity-chip.is-active {
+  background: var(--ecore-accent-soft);
+  border-color: var(--ecore-primary);
+  color: var(--ecore-primary-dark);
+}
+
+.ecore-form-preview,
+.ecore-local-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: var(--ecore-radius);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, var(--ecore-bg) 100%);
+  border: 1px solid var(--ecore-border);
+}
+
+.ecore-form-preview-icon,
+.ecore-local-preview-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ecore-primary);
+  color: #fff;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ecore-form-preview-body,
+.ecore-local-preview-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.ecore-form-preview-code,
+.ecore-local-preview-code {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ecore-primary);
+}
+
+.ecore-form-preview-name,
+.ecore-local-preview-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ecore-text);
+  line-height: 1.25;
+}
+
+.ecore-form-preview-meta,
+.ecore-local-preview-cap {
+  font-size: 0.75rem;
+  color: var(--ecore-text-muted);
+}
+
+.ecore-form-tips li,
+.ecore-local-tips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ecore-text-muted);
+  margin-bottom: 0.55rem;
+  line-height: 1.35;
+}
+
+.ecore-form-tips li:last-child,
+.ecore-local-tips li:last-child {
+  margin-bottom: 0;
+}
+
+.ecore-form-tips .fa-check,
+.ecore-local-tips .fa-check {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
 .ecore-dossier-checklist {
   display: flex;
   flex-direction: column;

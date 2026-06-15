@@ -1,43 +1,42 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
+{% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
+{% block form_breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'prestation:enveloppe_list' %}">Enveloppes budgétaires</a></li>
+<li class="breadcrumb-item"><a href="{% url 'prestation:enveloppe_list' %}">Enveloppes</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-lg-6">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label">Année</label>
-                        {{ form.annee }}
-                        {{ form.annee.errors }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Mois</label>
-                        {{ form.mois }}
-                        {{ form.mois.errors }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Montant de l'enveloppe (CDF)</label>
-                        {{ form.montant }}
-                        {{ form.montant.errors }}
-                    </div>
-                    {% url 'prestation:enveloppe_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% block form_id %}enveloppe-form{% endblock %}
+
+{% block form_extra_notices %}
+
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-money" title="Budget" subtitle="Période et montant alloué" section_class="mb-0" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.annee col="col-md-4" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.mois col="col-md-4" icon="fa-calendar-o" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.montant col="col-md-4" icon="fa-money" required=True help="Enveloppe en CDF" %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'prestation:enveloppe_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Une enveloppe par mois et par année" tip2="Le montant plafonne les prestations" tip3="Vérifiez l'année avant enregistrement" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

@@ -1,147 +1,54 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'deliberations:parametres_lmd_list' %}">Paramètres LMD</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}parametres-lmd-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.promotion.id_for_label }}" class="form-label">
-                                    Promotion <span class="text-danger">*</span>
-                                </label>
-                                {{ form.promotion }}
-                                {% if form.promotion.errors %}
-                                    <div class="text-danger small">{{ form.promotion.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.seuil_validation.id_for_label }}" class="form-label">
-                                    Seuil de validation (/20) <span class="text-danger">*</span>
-                                </label>
-                                {{ form.seuil_validation }}
-                                {% if form.seuil_validation.errors %}
-                                    <div class="text-danger small">{{ form.seuil_validation.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h6 class="mb-3 mt-4">Compensation</h6>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.compensation_intra_ue }}
-                                    <label class="form-check-label" for="{{ form.compensation_intra_ue.id_for_label }}">
-                                        Compensation intra-UE
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.compensation_intra_semestre }}
-                                    <label class="form-check-label" for="{{ form.compensation_intra_semestre.id_for_label }}">
-                                        Compensation intra-semestre
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.compensation_annuelle }}
-                                    <label class="form-check-label" for="{{ form.compensation_annuelle.id_for_label }}">
-                                        Compensation annuelle
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h6 class="mb-3 mt-4">Capitalisation</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.capitalisation_ue }}
-                                    <label class="form-check-label" for="{{ form.capitalisation_ue.id_for_label }}">
-                                        Capitalisation des UE
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.capitalisation_ec }}
-                                    <label class="form-check-label" for="{{ form.capitalisation_ec.id_for_label }}">
-                                        Capitalisation des EC
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h6 class="mb-3 mt-4">Autres paramètres</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.passage_avec_dettes }}
-                                    <label class="form-check-label" for="{{ form.passage_avec_dettes.id_for_label }}">
-                                        Passage avec dettes autorisé
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.seuil_credits_minimum.id_for_label }}" class="form-label">
-                                    Seuil crédits minimum pour passage
-                                </label>
-                                {{ form.seuil_credits_minimum }}
-                                {% if form.seuil_credits_minimum.errors %}
-                                    <div class="text-danger small">{{ form.seuil_credits_minimum.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {% url 'deliberations:parametres_lmd_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-graduation-cap" title="Promotion" subtitle="Paramètres par promotion" %}
+{% include "components/ecore_form_field.html" with field=form.promotion col="col-md-6" icon="fa-sitemap" required=True %}
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-check-circle" title="Seuils" subtitle="Validation et crédits minimum" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.seuil_validation col="col-md-6" icon="fa-star" required=True help="Moyenne sur 20" %}
+  {% include "components/ecore_form_field.html" with field=form.seuil_credits_minimum col="col-md-6" icon="fa-certificate" help="Crédits pour valider" %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-sliders" title="Compensation & capitalisation" subtitle="Règles LMD applicables" section_class="mb-0" %}
+<div class="row g-3">
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Compensation intra-UE</div></div><div class="form-check form-switch mb-0">{{ form.compensation_intra_ue }}</div></div></div>
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Compensation intra-semestre</div></div><div class="form-check form-switch mb-0">{{ form.compensation_intra_semestre }}</div></div></div>
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Compensation annuelle</div></div><div class="form-check form-switch mb-0">{{ form.compensation_annuelle }}</div></div></div>
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Capitalisation UE</div></div><div class="form-check form-switch mb-0">{{ form.capitalisation_ue }}</div></div></div>
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Capitalisation EC</div></div><div class="form-check form-switch mb-0">{{ form.capitalisation_ec }}</div></div></div>
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Passage avec dettes</div></div><div class="form-check form-switch mb-0">{{ form.passage_avec_dettes }}</div></div></div>
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'deliberations:parametres_lmd_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Un jeu de paramètres par promotion" tip2="Les seuils pilotent les délibérations" tip3="Activez uniquement les compensations autorisées" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

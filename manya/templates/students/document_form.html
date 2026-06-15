@@ -1,112 +1,54 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'students:document_list' %}">Documents</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-            <div class="card-body">
-                {% include "components/messages.html" %}
+{% block form_id %}document-form{% endblock %}
+{% block form_enctype %} enctype="multipart/form-data"{% endblock %}
+{% block form_extra_notices %}
 
-                {% if form.errors %}
-                    <div class="alert alert-danger ecore-alert" role="alert">
-                        Veuillez corriger les erreurs ci-dessous.
-                        {{ form.non_field_errors }}
-                    </div>
-                {% endif %}
-                
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.etudiant.id_for_label }}" class="form-label">
-                                    Étudiant <span class="text-danger">*</span>
-                                </label>
-                                {{ form.etudiant }}
-                                {% if form.etudiant.errors %}
-                                    <div class="text-danger small">{{ form.etudiant.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.type_document.id_for_label }}" class="form-label">
-                                    Type de document <span class="text-danger">*</span>
-                                </label>
-                                {{ form.type_document }}
-                                {% if form.type_document.errors %}
-                                    <div class="text-danger small">{{ form.type_document.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.inscription.id_for_label }}" class="form-label">Inscription</label>
-                        {{ form.inscription }}
-                        {% if form.inscription.errors %}
-                            <div class="text-danger small">{{ form.inscription.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.fichier.id_for_label }}" class="form-label">
-                            Fichier <span class="text-danger">*</span>
-                        </label>
-                        {{ form.fichier }}
-                        {% if object and object.fichier %}
-                            <div class="mt-2">
-                                <a href="{{ object.fichier.url }}" target="_blank">Voir le fichier actuel</a>
-                            </div>
-                        {% endif %}
-                        {% if form.fichier.errors %}
-                            <div class="text-danger small">{{ form.fichier.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.valide }}
-                                    <label class="form-check-label" for="{{ form.valide.id_for_label }}">
-                                        Document validé
-                                    </label>
-                                </div>
-                                {% if form.valide.errors %}
-                                    <div class="text-danger small">{{ form.valide.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
-                        {{ form.notes }}
-                        {% if form.notes.errors %}
-                            <div class="text-danger small">{{ form.notes.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'students:document_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-user" title="Étudiant" subtitle="Document rattaché à un étudiant" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.etudiant col="col-md-6" icon="fa-user" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.type_document col="col-md-6" icon="fa-file-text" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-link" title="Inscription" subtitle="Lien optionnel avec une inscription" %}
+{% include "components/ecore_form_field.html" with field=form.inscription col="col-md-6" icon="fa-graduation-cap" %}
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-paperclip" title="Fichier" subtitle="Pièce numérique jointe" %}
+{% include "components/ecore_form_field.html" with field=form.fichier col="col-md-8" icon="fa-upload" %}
+{% if object and object.fichier %}<div class="mt-2"><a href="{{ object.fichier.url }}" target="_blank" rel="noopener">Voir le fichier actuel</a></div>{% endif %}
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-check" title="Validation" subtitle="Contrôle administratif" section_class="mb-0" %}
+<div class="row g-3 align-items-center">
+  <div class="col-md-6"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Document validé</div></div><div class="form-check form-switch mb-0">{{ form.valide }}</div></div></div>
+</div>
+{% include "components/ecore_form_field.html" with field=form.notes col="col-12" icon="fa-sticky-note" label="Notes" %}
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'students:document_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Le fichier peut être ajouté plus tard depuis le dossier" tip2="L'inscription précise l'année concernée" tip3="La validation confirme la conformité" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

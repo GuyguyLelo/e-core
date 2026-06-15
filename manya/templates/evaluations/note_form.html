@@ -1,143 +1,55 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'evaluations:note_list' %}">Notes</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}note-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.etudiant.id_for_label }}" class="form-label">
-                                    Étudiant <span class="text-danger">*</span>
-                                </label>
-                                {{ form.etudiant }}
-                                {% if form.etudiant.errors %}
-                                    <div class="text-danger small">{{ form.etudiant.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.evaluation.id_for_label }}" class="form-label">
-                                    Évaluation <span class="text-danger">*</span>
-                                </label>
-                                {{ form.evaluation }}
-                                {% if form.evaluation.errors %}
-                                    <div class="text-danger small">{{ form.evaluation.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.note.id_for_label }}" class="form-label">Note (/20)</label>
-                                {{ form.note }}
-                                {% if form.note.errors %}
-                                    <div class="text-danger small">{{ form.note.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.note_sur.id_for_label }}" class="form-label">Note sur</label>
-                                {{ form.note_sur }}
-                                {% if form.note_sur.errors %}
-                                    <div class="text-danger small">{{ form.note_sur.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <div class="form-check form-switch mt-4">
-                                    {{ form.absent }}
-                                    <label class="form-check-label" for="{{ form.absent.id_for_label }}">
-                                        Absent
-                                    </label>
-                                </div>
-                                {% if form.absent.errors %}
-                                    <div class="text-danger small">{{ form.absent.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.justifie }}
-                                    <label class="form-check-label" for="{{ form.justifie.id_for_label }}">
-                                        Absence justifiée
-                                    </label>
-                                </div>
-                                {% if form.justifie.errors %}
-                                    <div class="text-danger small">{{ form.justifie.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.justificatif.id_for_label }}" class="form-label">Justificatif</label>
-                        {{ form.justificatif }}
-                        {% if form.justificatif.errors %}
-                            <div class="text-danger small">{{ form.justificatif.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
-                        {{ form.notes }}
-                        {% if form.notes.errors %}
-                            <div class="text-danger small">{{ form.notes.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'evaluations:note_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% block extra_js %}
-<script>
-    // Désactiver le champ note si absent est coché
-    document.getElementById('{{ form.absent.id_for_label }}').addEventListener('change', function() {
-        const noteInput = document.getElementById('{{ form.note.id_for_label }}');
-        if (this.checked) {
-            noteInput.disabled = true;
-            noteInput.value = '';
-        } else {
-            noteInput.disabled = false;
-        }
-    });
-</script>
 {% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-link" title="Lien" subtitle="Étudiant et évaluation" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.etudiant col="col-md-6" icon="fa-user" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.evaluation col="col-md-6" icon="fa-file-text" required=True %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calculator" title="Résultat" subtitle="Note obtenue" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.note col="col-md-4" icon="fa-star" help="Laisser vide si absent" %}
+  {% include "components/ecore_form_field.html" with field=form.note_sur col="col-md-4" icon="fa-sliders" help="Barème (défaut 20)" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-info" title="Absence" subtitle="Statut de présence" section_class="mb-0" %}
+<div class="row g-3">
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Absent</div></div><div class="form-check form-switch mb-0">{{ form.absent }}</div></div></div>
+  <div class="col-md-4"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Justifié</div></div><div class="form-check form-switch mb-0">{{ form.justifie }}</div></div></div>
+</div>
+{% include "components/ecore_form_field.html" with field=form.justificatif col="col-12" icon="fa-align-left" help="Motif d'absence" %}
+{% include "components/ecore_form_field.html" with field=form.notes col="col-12" icon="fa-sticky-note" help="Remarques" %}
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'evaluations:note_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Cochez absent si l'étudiant n'a pas composé" tip2="La justification atténue l'absence" tip3="La note est sur le barème de l'évaluation" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

@@ -1,116 +1,52 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'evaluations:type_evaluation_list' %}">Types d'Évaluation</a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'evaluations:type_evaluation_list' %}">Types d'évaluation</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}type-evaluation-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.code.id_for_label }}" class="form-label">
-                                    Code <span class="text-danger">*</span>
-                                </label>
-                                {{ form.code }}
-                                {% if form.code.errors %}
-                                    <div class="text-danger small">{{ form.code.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.nom.id_for_label }}" class="form-label">
-                                    Nom <span class="text-danger">*</span>
-                                </label>
-                                {{ form.nom }}
-                                {% if form.nom.errors %}
-                                    <div class="text-danger small">{{ form.nom.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.coefficient.id_for_label }}" class="form-label">
-                                    Coefficient par défaut
-                                </label>
-                                {{ form.coefficient }}
-                                {% if form.coefficient.errors %}
-                                    <div class="text-danger small">{{ form.coefficient.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.note_max.id_for_label }}" class="form-label">
-                                    Note maximale
-                                </label>
-                                {{ form.note_max }}
-                                {% if form.note_max.errors %}
-                                    <div class="text-danger small">{{ form.note_max.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.ordre.id_for_label }}" class="form-label">Ordre d'affichage</label>
-                                {{ form.ordre }}
-                                {% if form.ordre.errors %}
-                                    <div class="text-danger small">{{ form.ordre.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                        {{ form.description }}
-                        {% if form.description.errors %}
-                            <div class="text-danger small">{{ form.description.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            {{ form.active }}
-                            <label class="form-check-label" for="{{ form.active.id_for_label }}">
-                                Type actif
-                            </label>
-                        </div>
-                        {% if form.active.errors %}
-                            <div class="text-danger small">{{ form.active.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'evaluations:type_evaluation_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-tag" title="Identification" subtitle="Code et nom du type" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.code col="col-md-4" icon="fa-hashtag" required=True help="Ex. CC, TP, EXAM" %}
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-8" icon="fa-font" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calculator" title="Notation" subtitle="Coefficient et note maximale" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.coefficient col="col-md-4" icon="fa-percent" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.note_max col="col-md-4" icon="fa-star" required=True help="Sur 20" %}
+  {% include "components/ecore_form_field.html" with field=form.ordre col="col-md-4" icon="fa-sort-numeric-asc" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-align-left" title="Description" subtitle="Usage du type d'évaluation" section_class="mb-0" %}
+{% include "components/ecore_form_field.html" with field=form.description col="col-12" %}
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'evaluations:type_evaluation_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Type actif" hint="Proposé lors de la création d'évaluations" %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Le coefficient pondère la moyenne" tip2="La note max est généralement 20" tip3="L'ordre organise les listes déroulantes" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

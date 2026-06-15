@@ -1,122 +1,57 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'deliberations:decision_jury_list' %}">Décisions jury</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}decision-jury-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.etudiant.id_for_label }}" class="form-label">
-                                    Étudiant <span class="text-danger">*</span>
-                                </label>
-                                {{ form.etudiant }}
-                                {% if form.etudiant.errors %}
-                                    <div class="text-danger small">{{ form.etudiant.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.decision.id_for_label }}" class="form-label">
-                                    Décision <span class="text-danger">*</span>
-                                </label>
-                                {{ form.decision }}
-                                {% if form.decision.errors %}
-                                    <div class="text-danger small">{{ form.decision.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.moyenne_semestre.id_for_label }}" class="form-label">Moyenne semestre</label>
-                                {{ form.moyenne_semestre }}
-                                {% if form.moyenne_semestre.errors %}
-                                    <div class="text-danger small">{{ form.moyenne_semestre.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.credits_obtenus.id_for_label }}" class="form-label">Crédits obtenus</label>
-                                {{ form.credits_obtenus }}
-                                {% if form.credits_obtenus.errors %}
-                                    <div class="text-danger small">{{ form.credits_obtenus.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.credits_totaux.id_for_label }}" class="form-label">Crédits totaux</label>
-                                {{ form.credits_totaux }}
-                                {% if form.credits_totaux.errors %}
-                                    <div class="text-danger small">{{ form.credits_totaux.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.rang.id_for_label }}" class="form-label">Rang</label>
-                                {{ form.rang }}
-                                {% if form.rang.errors %}
-                                    <div class="text-danger small">{{ form.rang.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.mention.id_for_label }}" class="form-label">Mention</label>
-                                {{ form.mention }}
-                                {% if form.mention.errors %}
-                                    <div class="text-danger small">{{ form.mention.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.notes_jury.id_for_label }}" class="form-label">Notes du jury</label>
-                        {{ form.notes_jury }}
-                        {% if form.notes_jury.errors %}
-                            <div class="text-danger small">{{ form.notes_jury.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'deliberations:deliberation_detail' object.deliberation.pk as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-link" title="Contexte" subtitle="Délibération et étudiant" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.deliberation col="col-md-4" icon="fa-gavel" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.etudiant col="col-md-4" icon="fa-user" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.inscription col="col-md-4" icon="fa-graduation-cap" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-check" title="Décision" subtitle="Résultat et mention" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.decision col="col-md-4" icon="fa-flag" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.mention col="col-md-4" icon="fa-certificate" %}
+  {% include "components/ecore_form_field.html" with field=form.rang col="col-md-4" icon="fa-sort-numeric-asc" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calculator" title="Résultats" subtitle="Moyenne et crédits" section_class="mb-0" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.moyenne_semestre col="col-md-4" icon="fa-star" %}
+  {% include "components/ecore_form_field.html" with field=form.credits_obtenus col="col-md-4" icon="fa-check-circle" %}
+  {% include "components/ecore_form_field.html" with field=form.credits_totaux col="col-md-4" icon="fa-book" %}
+</div>
+{% include "components/ecore_form_field.html" with field=form.notes_jury col="col-12" icon="fa-sticky-note" help="Observations du jury" %}
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'deliberations:decision_jury_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="L'inscription précise l'année concernée" tip2="La mention est optionnelle" tip3="Les crédits alimentent le relevé" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

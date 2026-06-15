@@ -1,161 +1,60 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'evaluations:evaluation_list' %}">Évaluations</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}evaluation-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.ec.id_for_label }}" class="form-label">
-                                    Élément Constitutif (EC) <span class="text-danger">*</span>
-                                </label>
-                                {{ form.ec }}
-                                {% if form.ec.errors %}
-                                    <div class="text-danger small">{{ form.ec.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.session.id_for_label }}" class="form-label">
-                                    Session <span class="text-danger">*</span>
-                                </label>
-                                {{ form.session }}
-                                {% if form.session.errors %}
-                                    <div class="text-danger small">{{ form.session.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.type_evaluation.id_for_label }}" class="form-label">
-                                    Type d'évaluation <span class="text-danger">*</span>
-                                </label>
-                                {{ form.type_evaluation }}
-                                {% if form.type_evaluation.errors %}
-                                    <div class="text-danger small">{{ form.type_evaluation.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.date_evaluation.id_for_label }}" class="form-label">
-                                    Date d'évaluation <span class="text-danger">*</span>
-                                </label>
-                                {{ form.date_evaluation }}
-                                {% if form.date_evaluation.errors %}
-                                    <div class="text-danger small">{{ form.date_evaluation.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.code.id_for_label }}" class="form-label">Code</label>
-                                {{ form.code }}
-                                <small class="form-text text-muted">Généré automatiquement si vide</small>
-                                {% if form.code.errors %}
-                                    <div class="text-danger small">{{ form.code.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.coefficient.id_for_label }}" class="form-label">
-                                    Coefficient <span class="text-danger">*</span>
-                                </label>
-                                {{ form.coefficient }}
-                                {% if form.coefficient.errors %}
-                                    <div class="text-danger small">{{ form.coefficient.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.note_max.id_for_label }}" class="form-label">Note maximale</label>
-                                {{ form.note_max }}
-                                {% if form.note_max.errors %}
-                                    <div class="text-danger small">{{ form.note_max.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.nom.id_for_label }}" class="form-label">Nom</label>
-                        {{ form.nom }}
-                        <small class="form-text text-muted">Généré automatiquement si vide</small>
-                        {% if form.nom.errors %}
-                            <div class="text-danger small">{{ form.nom.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.responsable.id_for_label }}" class="form-label">Responsable</label>
-                                {{ form.responsable }}
-                                {% if form.responsable.errors %}
-                                    <div class="text-danger small">{{ form.responsable.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    {{ form.active }}
-                                    <label class="form-check-label" for="{{ form.active.id_for_label }}">
-                                        Évaluation active
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
-                        {{ form.notes }}
-                        {% if form.notes.errors %}
-                            <div class="text-danger small">{{ form.notes.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'evaluations:evaluation_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-link" title="Contexte" subtitle="EC, session et type" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.ec col="col-md-4" icon="fa-book" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.session col="col-md-4" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.type_evaluation col="col-md-4" icon="fa-list" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-tag" title="Identification" subtitle="Code, nom et date" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.code col="col-md-4" icon="fa-hashtag" help="Auto si vide" %}
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-4" icon="fa-font" help="Auto si vide" %}
+  {% include "components/ecore_form_field.html" with field=form.date_evaluation col="col-md-4" icon="fa-calendar-check-o" required=True %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calculator" title="Notation" subtitle="Coefficient et note max" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.coefficient col="col-md-4" icon="fa-percent" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.note_max col="col-md-4" icon="fa-star" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.responsable col="col-md-4" icon="fa-user" help="Enseignant responsable" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-sticky-note" title="Notes" subtitle="Observations internes" section_class="mb-0" %}
+{% include "components/ecore_form_field.html" with field=form.notes col="col-12" %}
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'evaluations:evaluation_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Évaluation active" hint="Ouverte à la saisie des notes" %}
+{% include "components/ecore_form_aside_tips.html" with tip1="L'EC détermine la matière évaluée" tip2="Le type fixe la nature (CC, examen…)" tip3="Le responsable est optionnel" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}

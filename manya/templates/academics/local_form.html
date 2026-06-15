@@ -1,68 +1,70 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'academics:local_list' %}">Locaux</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}local-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-map-marker" title="Identification" subtitle="Code court et libellé du local" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.code col="col-md-4" icon="fa-hashtag" required=True help="Ex. L14, A101, AMPHI-1" %}
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-8" icon="fa-building-o" required=True help="Nom affiché dans les listes" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
 
-                <form method="post">
-          {% csrf_token %}
-          <div class="row">
-            <div class="col-md-4">
-              <div class="mb-3">
-                <label for="{{ form.code.id_for_label }}" class="form-label">Code <span class="text-danger">*</span></label>
-                {{ form.code }}
-                {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors }}</div>{% endif %}
-              </div>
-            </div>
-            <div class="col-md-8">
-              <div class="mb-3">
-                <label for="{{ form.nom.id_for_label }}" class="form-label">Nom <span class="text-danger">*</span></label>
-                {{ form.nom }}
-                {% if form.nom.errors %}<div class="text-danger small">{{ form.nom.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-4">
-              <div class="mb-3">
-                <label for="{{ form.capacite.id_for_label }}" class="form-label">Capacité</label>
-                {{ form.capacite }}
-                {% if form.capacite.errors %}<div class="text-danger small">{{ form.capacite.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              {{ form.active }}
-              <label class="form-check-label" for="{{ form.active.id_for_label }}">Local actif</label>
-            </div>
-            {% if form.active.errors %}<div class="text-danger small">{{ form.active.errors }}</div>{% endif %}
-          </div>
-
-          {% url 'academics:local_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-        </form>
-      </div>
+{% include "components/ecore_form_section_open.html" with icon="fa-users" title="Capacité" subtitle="Nombre de places (optionnel)" section_class="mb-0" %}
+<div class="row g-3 align-items-end">
+  {% include "components/ecore_form_field.html" with field=form.capacite col="col-md-5" icon="fa-user" input_suffix="places" %}
+  <div class="col-md-7">
+    <div class="ecore-form-capacity-hints js-capacity-chips" data-target="#{{ form.capacite.id_for_label }}">
+      <span class="ecore-form-capacity-chip" data-cap="30">30</span>
+      <span class="ecore-form-capacity-chip" data-cap="40">40</span>
+      <span class="ecore-form-capacity-chip" data-cap="50">50</span>
+      <span class="ecore-form-capacity-chip" data-cap="80">80</span>
+      <span class="ecore-form-capacity-chip" data-cap="120">120</span>
     </div>
+    <div class="form-text mt-1">Cliquez sur une valeur fréquente</div>
   </div>
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'academics:local_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Local actif" hint="Visible pour l'affectation aux classes" %}
+<div class="ecore-form-preview mb-3">
+  <div class="ecore-form-preview-icon"><i class="fa fa-university"></i></div>
+  <div class="ecore-form-preview-body">
+    <span class="ecore-form-preview-code" id="preview-code">{{ form.code.value|default:"CODE" }}</span>
+    <span class="ecore-form-preview-name" id="preview-nom">{{ form.nom.value|default:"Nom du local" }}</span>
+    <span class="ecore-form-preview-meta" id="preview-cap">{% if form.capacite.value %}{{ form.capacite.value }} place{{ form.capacite.value|pluralize }}{% else %}Capacité non renseignée{% endif %}</span>
+  </div>
+</div>
+{% include "components/ecore_form_aside_tips.html" with tip1="Le code doit être unique" tip2="Un local inactif n'apparaît plus dans les affectations" tip3="La capacité aide au choix du local" %}
+{% endblock %}
+
+{% block form_extra_js %}
+<script src="{% static 'js/ecore-form-helpers.js' %}"></script>
+<script>
+ecoreFormPreview("local-form", {
+  code: "#{{ form.code.id_for_label }}",
+  nom: "#{{ form.nom.id_for_label }}",
+  meta: "#{{ form.capacite.id_for_label }}",
+  previewCode: "#preview-code",
+  previewNom: "#preview-nom",
+  previewMeta: "#preview-cap",
+  metaSuffix: "place",
+  metaEmpty: "Capacité non renseignée"
+});
+ecoreFormCapacityChips();
+</script>
 {% endblock %}

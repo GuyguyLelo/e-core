@@ -1,0 +1,23 @@
+<div class="ecore-form-aside-card sticky-top" style="top: 1rem;">
+  <h6><i class="fa fa-sliders me-1"></i> Paramètres</h6>
+  <div class="ecore-dossier-switch mb-3">
+    <div>
+      <div class="fw-semibold small">{{ title }}</div>
+      {% if hint %}<div class="text-muted small">{{ hint }}</div>{% endif %}
+    </div>
+    <div class="form-check form-switch mb-0">
+      {{ field }}
+    </div>
+  </div>
+  {% if field.errors %}<div class="text-danger small mb-3">{{ field.errors }}</div>{% endif %}
+  {% if preview %}
+  <div class="ecore-form-preview">
+    <div class="ecore-form-preview-icon"><i class="fa {{ preview_icon|default:'fa-tag' }}"></i></div>
+    <div class="ecore-form-preview-body">
+      <span class="ecore-form-preview-code">{{ preview_code|default:"CODE" }}</span>
+      <span class="ecore-form-preview-name">{{ preview_name|default:"Libellé" }}</span>
+      {% if preview_meta %}<span class="ecore-form-preview-meta">{{ preview_meta }}</span>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>

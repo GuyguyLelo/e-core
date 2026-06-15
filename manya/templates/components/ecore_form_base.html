@@ -1,0 +1,44 @@
+{% extends "layout/master.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - e-Core{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+{% block form_breadcrumb %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="ecore-form-page">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      {% include "components/messages.html" %}
+      {% include "components/form_errors.html" %}
+      {% block form_extra_notices %}{% endblock %}
+
+      <p class="ecore-required-note mb-4">
+        <span class="text-danger">*</span> Champs obligatoires
+      </p>
+
+      <form method="{% block form_method %}post{% endblock %}" id="{% block form_id %}ecore-form{% endblock %}"{% block form_enctype %}{% endblock %}>
+        {% csrf_token %}
+        {% block form_before_fields %}{% endblock %}
+
+        <div class="row g-4">
+          <div class="{% block form_main_col %}col-lg-8{% endblock %}">
+            {% block form_main %}{% endblock %}
+            {% block form_actions %}{% endblock %}
+          </div>
+          {% block form_aside_wrapper %}
+          <div class="col-lg-4">
+            {% block form_aside %}{% endblock %}
+          </div>
+          {% endblock %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% block form_extra_js %}{% endblock %}{% endblock %}

@@ -1,101 +1,53 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+{% block form_breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-      <div class="card-body">
-        {% include "components/messages.html" %}
+{% block form_id %}deliberation-form{% endblock %}
 
-        {% include "components/form_errors.html" %}
+{% block form_extra_notices %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.session.id_for_label }}" class="form-label">
-                                    Session <span class="text-danger">*</span>
-                                </label>
-                                {{ form.session }}
-                                {% if form.session.errors %}
-                                    <div class="text-danger small">{{ form.session.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.date_deliberation.id_for_label }}" class="form-label">
-                                    Date de délibération <span class="text-danger">*</span>
-                                </label>
-                                {{ form.date_deliberation }}
-                                {% if form.date_deliberation.errors %}
-                                    <div class="text-danger small">{{ form.date_deliberation.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.president_jury.id_for_label }}" class="form-label">Président du jury</label>
-                                {{ form.president_jury }}
-                                {% if form.president_jury.errors %}
-                                    <div class="text-danger small">{{ form.president_jury.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.statut.id_for_label }}" class="form-label">
-                                    Statut <span class="text-danger">*</span>
-                                </label>
-                                {{ form.statut }}
-                                {% if form.statut.errors %}
-                                    <div class="text-danger small">{{ form.statut.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.membres_jury.id_for_label }}" class="form-label">Membres du jury</label>
-                        {{ form.membres_jury }}
-                        <small class="form-text text-muted">Maintenez Ctrl (Cmd sur Mac) pour sélectionner plusieurs membres</small>
-                        {% if form.membres_jury.errors %}
-                            <div class="text-danger small">{{ form.membres_jury.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes du jury</label>
-                        {{ form.notes }}
-                        {% if form.notes.errors %}
-                            <div class="text-danger small">{{ form.notes.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% url 'deliberations:deliberation_list' as cancel_url %}
-                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
-                </form>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block form_before_fields %}
+
+{% endblock %}
+
+{% block form_main_col %}col-lg-8{% endblock %}
+
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calendar" title="Session" subtitle="Session et date" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.session col="col-md-8" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.date_deliberation col="col-md-4" icon="fa-gavel" required=True %}
 </div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-users" title="Jury" subtitle="Présidence et membres" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.president_jury col="col-md-6" icon="fa-user" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.membres_jury col="col-md-6" icon="fa-users" help="Maintenez Ctrl pour sélection multiple" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-info" title="Suivi" subtitle="Statut et compte-rendu" section_class="mb-0" %}
+<div class="row g-3">
+  {% include "components/ecore_form_field.html" with field=form.statut col="col-md-4" icon="fa-flag" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.notes col="col-12" icon="fa-sticky-note" help="Procès-verbal ou remarques" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% url 'deliberations:deliberation_list' as cancel_url %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+{% include "components/ecore_form_aside_tips.html" with tip1="La session doit être prête pour délibérer" tip2="Le président conduit la séance" tip3="Le statut suit l'avancement" %}
+{% endblock %}
+{% block form_extra_js %}
+
 {% endblock %}
