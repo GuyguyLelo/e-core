@@ -7,7 +7,7 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'evaluations:note_list' %}">Notes</a></li>
+<li class="breadcrumb-item"><a href="{% url 'evaluations:note_consultation' %}">Consultation des notes</a></li>
 <li class="breadcrumb-item f-w-400 active">Supprimer</li>
 {% endblock %}
 
@@ -35,7 +35,7 @@
                 
                 <form method="post">
                     {% csrf_token %}
-                    {% url 'evaluations:note_list' as cancel_url %}
+                    {% url 'evaluations:note_consultation' as cancel_url %}
                     {% include "components/form_actions.html" with cancel_url=cancel_url submit_label="Confirmer la suppression" submit_class="btn-danger" submit_icon="fa-trash" %}
                 </form>
             </div>

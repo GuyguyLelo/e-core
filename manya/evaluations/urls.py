@@ -25,6 +25,7 @@ urlpatterns = [
     
     # Notes
     path('notes/', note_list, name='note_list'),
+    path('notes/consultation/', note_consultation, name='note_consultation'),
     path('notes/nouvelle/', note_create, name='note_create'),
     path('notes/<int:pk>/modifier/', note_update, name='note_update'),
     path('notes/<int:pk>/supprimer/', note_delete, name='note_delete'),

@@ -1,79 +1,252 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Notes - e-Core{% endblock %}
-{% block page_title %}Notes{% endblock %}
+{% block title %}Saisie des notes - e-Core{% endblock %}
+{% block page_title %}Saisie des notes{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'evaluations:evaluation_list' %}">Évaluations</a></li>
-<li class="breadcrumb-item f-w-400 active">Notes</li>
+<li class="breadcrumb-item f-w-400 active">Saisie des notes</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
   <div class="col-12">
     <div class="card">
-      {% url 'evaluations:note_create' as create_url %}
-      {% include "components/page_toolbar.html" with toolbar_title="Notes" toolbar_subtitle="Résultats saisis par évaluation" create_url=create_url create_label="Nouvelle note" %}
+      {% url 'evaluations:note_consultation' as consult_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Saisie des notes" toolbar_subtitle="Session, cours et classe puis saisie par tableau" %}
       <div class="card-body">
         {% include "components/messages.html" %}
-        {% include "components/list_count_banner.html" with items=notes count_label="note(s)" banner_icon="fa-pencil-square-o" %}
 
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th>Étudiant</th>
-                <th>Évaluation</th>
-                <th>Note</th>
-                <th>Note sur</th>
-                <th>Présence</th>
-                <th>Date saisie</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for note in notes %}
-              <tr>
-                <td>
-                  <span class="fw-semibold text-primary d-block">{{ note.etudiant.numero_etudiant }}</span>
-                  <span class="text-muted small">{{ note.etudiant.nom_complet }}</span>
-                </td>
-                <td>{{ note.evaluation.code }}</td>
-                <td>
-                  {% if note.absent %}
-                    <span class="badge badge-danger">Absent</span>
-                  {% else %}
-                    <strong>{{ note.note|default:"—" }}/20</strong>
-                  {% endif %}
-                </td>
-                <td>{{ note.note_sur|default:"20" }}</td>
-                <td>
-                  {% if note.absent %}
-                    <span class="badge badge-{% if note.justifie %}warning{% else %}danger{% endif %}">
-                      {% if note.justifie %}Justifié{% else %}Non justifié{% endif %}
-                    </span>
-                  {% else %}
-                    <span class="badge badge-success">Présent</span>
-                  {% endif %}
-                </td>
-                <td>{{ note.date_saisie|date:"d/m/Y H:i" }}</td>
-                <td class="text-end">
-                  {% url 'evaluations:note_update' note.pk as edit_link %}
-                  {% url 'evaluations:note_delete' note.pk as del_link %}
-                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="7" class="text-center text-muted py-5">Aucune note enregistrée</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="alert alert-info ecore-alert mb-4" role="alert">
+          <i class="fa fa-info-circle"></i>
+          Choisissez la <strong>session</strong>, le <strong>cours</strong> (élément constitutif) et la <strong>classe</strong>.
+          La liste des étudiants inscrits s'affiche automatiquement pour la saisie des notes.
         </div>
-        {% include "components/pagination.html" with items=notes %}
+
+        {% include "components/active_annee_notice.html" %}
+
+        <form method="get" id="note-filters" class="ecore-filter-bar mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label" for="id_session">Session <span class="text-danger">*</span></label>
+              <select name="session" id="id_session" class="form-select" required>
+                <option value="">— Choisir —</option>
+                {% for session in sessions %}
+                <option value="{{ session.pk }}"{% if selected.session == session.pk %} selected{% endif %}>
+                  {{ session.code }} — {{ session.nom }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_ec">Cours (EC) <span class="text-danger">*</span></label>
+              <select name="ec" id="id_ec" class="form-select"{% if not selected.session %} disabled{% endif %} required>
+                <option value="">— Choisir —</option>
+                {% for ec in ecs %}
+                <option value="{{ ec.pk }}"{% if selected.ec == ec.pk %} selected{% endif %}>
+                  {{ ec.code }} — {{ ec.nom }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_classe">Classe <span class="text-danger">*</span></label>
+              <select name="classe" id="id_classe" class="form-select"{% if not selected.session %} disabled{% endif %} required>
+                <option value="">— Choisir —</option>
+                {% for classe in classes %}
+                <option value="{{ classe.pk }}"{% if selected.classe == classe.pk %} selected{% endif %}>
+                  {{ classe.code }}{% if classe.nom %} — {{ classe.nom }}{% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2">
+              <a href="{% url 'evaluations:note_consultation' %}" class="btn btn-outline-secondary">
+                <i class="fa fa-list"></i> Consulter toutes les notes
+              </a>
+              <a href="{% url 'evaluations:evaluation_list' %}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left"></i> Retour
+              </a>
+            </div>
+          </div>
+        </form>
+
+        {% if selected.classe and session_obj and ec_obj and classe_obj %}
+        <div class="ecore-form-section mb-0">
+          <div class="ecore-form-section-header">
+            <span class="ecore-form-section-icon"><i class="fa fa-users"></i></span>
+            <div>
+              <h6 class="ecore-form-section-title">Étudiants — {{ classe_obj }}</h6>
+              <p class="ecore-form-section-subtitle">
+                {{ etudiants_notes|length }} étudiant{{ etudiants_notes|length|pluralize }}
+                — {{ ec_obj.code }} — {{ session_obj.code }}
+              </p>
+            </div>
+          </div>
+          <div class="ecore-form-section-body p-0">
+            {% if not evaluations %}
+            <div class="px-3 py-4 text-center text-muted">
+              <i class="fa fa-exclamation-circle fa-2x mb-2 d-block opacity-50"></i>
+              Aucune évaluation active pour ce cours dans cette session.
+              <a href="{% url 'evaluations:evaluation_create' %}" class="d-block mt-2">Créer une évaluation</a>
+            </div>
+            {% elif not annee %}
+            <div class="px-3 py-4 text-center text-muted">
+              Définissez une année académique active pour afficher les inscriptions.
+            </div>
+            {% else %}
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="session" value="{{ selected.session }}">
+              <input type="hidden" name="ec" value="{{ selected.ec }}">
+              <input type="hidden" name="classe" value="{{ selected.classe }}">
+
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">N° étudiant</th>
+                      <th rowspan="2">Nom</th>
+                      <th rowspan="2">Prénom</th>
+                      {% for evaluation in evaluations %}
+                      <th colspan="3" class="text-center border-start">
+                        {{ evaluation.type_evaluation.nom }}
+                        <span class="d-block small fw-normal text-muted">/{{ evaluation.note_max }}</span>
+                      </th>
+                      {% endfor %}
+                    </tr>
+                    <tr>
+                      {% for evaluation in evaluations %}
+                      <th class="border-start small">Note</th>
+                      <th class="small">Abs.</th>
+                      <th class="small">Just.</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in etudiants_notes %}
+                    <tr>
+                      <td><span class="fw-semibold text-primary">{{ item.etudiant.numero_etudiant }}</span></td>
+                      <td>{{ item.etudiant.nom }}</td>
+                      <td>{{ item.etudiant.prenom }}</td>
+                      {% for ne in item.notes_eval %}
+                      <td class="border-start">
+                        <input type="number"
+                               name="note_{{ item.etudiant.id }}_{{ ne.evaluation.id }}"
+                               class="form-control form-control-sm note-input"
+                               step="0.01"
+                               min="0"
+                               max="{{ ne.evaluation.note_max }}"
+                               value="{% if ne.note and not ne.note.absent %}{{ ne.note.note }}{% endif %}"
+                               data-student="{{ item.etudiant.id }}"
+                               data-evaluation="{{ ne.evaluation.id }}"
+                               {% if ne.note and ne.note.absent %}disabled{% endif %}>
+                      </td>
+                      <td>
+                        <div class="form-check d-flex justify-content-center mb-0">
+                          <input type="checkbox"
+                                 name="absent_{{ item.etudiant.id }}_{{ ne.evaluation.id }}"
+                                 class="form-check-input absent-checkbox"
+                                 {% if ne.note and ne.note.absent %}checked{% endif %}
+                                 data-student="{{ item.etudiant.id }}"
+                                 data-evaluation="{{ ne.evaluation.id }}">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="form-check d-flex justify-content-center mb-0">
+                          <input type="checkbox"
+                                 name="justifie_{{ item.etudiant.id }}_{{ ne.evaluation.id }}"
+                                 class="form-check-input"
+                                 {% if ne.note and ne.note.justifie %}checked{% endif %}>
+                        </div>
+                      </td>
+                      {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="{{ note_table_cols }}" class="text-center text-muted py-4">
+                        <i class="fa fa-user-times fa-2x mb-2 d-block opacity-50"></i>
+                        Aucun étudiant inscrit dans cette classe pour l'année active.
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              {% if etudiants_notes %}
+              <div class="p-3 border-top bg-light">
+                <button type="submit" name="enregistrer_notes" class="btn btn-primary">
+                  <i class="fa fa-save"></i> Enregistrer les notes
+                </button>
+              </div>
+              {% endif %}
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const form = document.getElementById("note-filters");
+  if (!form) return;
+
+  function reloadWithFilters() {
+    const params = new URLSearchParams(new FormData(form));
+    window.location = "?" + params.toString();
+  }
+
+  const sessionEl = document.getElementById("id_session");
+  const ecEl = document.getElementById("id_ec");
+  const classeEl = document.getElementById("id_classe");
+
+  if (sessionEl) {
+    sessionEl.addEventListener("change", function () {
+      if (ecEl) ecEl.value = "";
+      if (classeEl) classeEl.value = "";
+      reloadWithFilters();
+    });
+  }
+
+  if (ecEl) {
+    ecEl.addEventListener("change", function () {
+      if (classeEl && !classeEl.value) {
+        reloadWithFilters();
+        return;
+      }
+      reloadWithFilters();
+    });
+  }
+
+  if (classeEl) {
+    classeEl.addEventListener("change", reloadWithFilters);
+  }
+
+  document.querySelectorAll(".absent-checkbox").forEach(function (checkbox) {
+    checkbox.addEventListener("change", function () {
+      const sid = this.dataset.student;
+      const eid = this.dataset.evaluation;
+      const noteInput = document.querySelector(
+        'input.note-input[data-student="' + sid + '"][data-evaluation="' + eid + '"]'
+      );
+      if (!noteInput) return;
+      if (this.checked) {
+        noteInput.disabled = true;
+        noteInput.value = "";
+      } else {
+        noteInput.disabled = false;
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

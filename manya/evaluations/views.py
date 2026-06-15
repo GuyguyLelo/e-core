@@ -5,11 +5,62 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.urls import reverse
+from urllib.parse import urlencode
 from decimal import Decimal
 from .models import TypeEvaluation, Session, Evaluation, Note
 from students.models import Inscription, Student
-from academics.models import ElementConstitutif
+from academics.models import AnneeAcademique, Classe, ElementConstitutif
+from academics.utils import NO_ACTIVE_ANNEE_ERROR
 from .forms import TypeEvaluationForm, SessionForm, EvaluationForm, NoteForm
+
+
+def _note_selection_from_request(request):
+    """Extrait session, cours (EC) et classe depuis GET ou POST."""
+    selected = {}
+    for key in ('session', 'ec', 'classe'):
+        value = request.GET.get(key) or request.POST.get(key)
+        if value and str(value).isdigit():
+            selected[key] = int(value)
+    return selected
+
+
+def _redirect_note_list(selected):
+    base = reverse('evaluations:note_list')
+    if selected:
+        return redirect(f'{base}?{urlencode(selected)}')
+    return redirect(base)
+
+
+def _enregistrer_notes_etudiants(request, inscriptions, evaluations):
+    """Enregistre les notes saisies pour une liste d'inscriptions et d'évaluations."""
+    for inscription in inscriptions:
+        etudiant = inscription.etudiant
+        for evaluation in evaluations:
+            note_value = request.POST.get(f'note_{etudiant.id}_{evaluation.id}')
+            absent = request.POST.get(f'absent_{etudiant.id}_{evaluation.id}') == 'on'
+            justifie = request.POST.get(f'justifie_{etudiant.id}_{evaluation.id}') == 'on'
+
+            if not note_value and not absent:
+                continue
+
+            note_obj, _created = Note.objects.get_or_create(
+                etudiant=etudiant,
+                evaluation=evaluation,
+                defaults={'saisie_par': request.user},
+            )
+            if absent:
+                note_obj.absent = True
+                note_obj.note = None
+                note_obj.justifie = justifie
+            else:
+                note_obj.absent = False
+                note_obj.note = Decimal(note_value) if note_value else None
+                note_obj.justifie = False
+                note_obj.note_sur = evaluation.note_max
+
+            note_obj.modifie_par = request.user
+            note_obj.save()
 
 
 # ========== TYPES D'EVALUATION ==========
@@ -153,11 +204,112 @@ def evaluation_delete(request, pk):
 # ========== NOTES ==========
 @login_required
 def note_list(request):
-    notes = Note.objects.select_related('etudiant', 'evaluation').all().order_by('evaluation__id', 'etudiant__numero_etudiant')
+    """Saisie des notes : session → cours (EC) → classe → tableau des étudiants."""
+    selected = _note_selection_from_request(request)
+    annee = AnneeAcademique.get_active()
+
+    sessions = (
+        Session.objects.filter(active=True)
+        .select_related('semestre', 'semestre__promotion')
+        .order_by('-semestre__promotion', '-numero')
+    )
+
+    ecs = ElementConstitutif.objects.none()
+    classes = Classe.objects.none()
+    evaluations = Evaluation.objects.none()
+    etudiants_notes = []
+    session_obj = None
+    ec_obj = None
+    classe_obj = None
+
+    if selected.get('session'):
+        session_obj = get_object_or_404(Session, pk=selected['session'])
+        semestre = session_obj.semestre
+        ecs = (
+            ElementConstitutif.objects.filter(ue__semestre=semestre, active=True)
+            .select_related('ue')
+            .order_by('ue__ordre', 'ordre', 'code')
+        )
+        classes = Classe.objects.filter(
+            promotion=semestre.promotion,
+            active=True,
+        ).order_by('code')
+
+    if selected.get('session') and selected.get('ec'):
+        ec_obj = get_object_or_404(ElementConstitutif, pk=selected['ec'])
+        evaluations = (
+            Evaluation.objects.filter(
+                ec=ec_obj,
+                session_id=selected['session'],
+                active=True,
+            )
+            .select_related('type_evaluation')
+            .order_by('type_evaluation__ordre', 'type_evaluation__nom')
+        )
+
+    if all(selected.get(k) for k in ('session', 'ec', 'classe')):
+        classe_obj = get_object_or_404(Classe, pk=selected['classe'])
+
+        if not annee:
+            messages.error(request, NO_ACTIVE_ANNEE_ERROR)
+        else:
+            inscriptions = (
+                Inscription.objects.filter(
+                    classe=classe_obj,
+                    annee_academique=annee,
+                )
+                .exclude(statut='desinscrit')
+                .select_related('etudiant')
+                .order_by('etudiant__numero_etudiant')
+            )
+
+            if request.method == 'POST' and 'enregistrer_notes' in request.POST:
+                if evaluations.exists():
+                    _enregistrer_notes_etudiants(request, inscriptions, evaluations)
+                    messages.success(
+                        request,
+                        f'Notes enregistrées pour {ec_obj.code} — {classe_obj.code}.',
+                    )
+                return _redirect_note_list(selected)
+
+            for inscription in inscriptions:
+                etudiant = inscription.etudiant
+                notes_eval = []
+                for evaluation in evaluations:
+                    note = Note.objects.filter(etudiant=etudiant, evaluation=evaluation).first()
+                    notes_eval.append({'evaluation': evaluation, 'note': note})
+                etudiants_notes.append({
+                    'etudiant': etudiant,
+                    'notes_eval': notes_eval,
+                })
+
+    return render(request, 'evaluations/note_list.html', {
+        'sessions': sessions,
+        'ecs': ecs,
+        'classes': classes,
+        'evaluations': evaluations,
+        'etudiants_notes': etudiants_notes,
+        'selected': selected,
+        'session_obj': session_obj,
+        'ec_obj': ec_obj,
+        'classe_obj': classe_obj,
+        'annee': annee,
+        'note_table_cols': 3 + evaluations.count() * 3,
+    })
+
+
+@login_required
+def note_consultation(request):
+    """Consultation de toutes les notes saisies."""
+    notes = (
+        Note.objects.select_related('etudiant', 'evaluation', 'evaluation__ec')
+        .all()
+        .order_by('evaluation__id', 'etudiant__numero_etudiant')
+    )
     paginator = Paginator(notes, 20)
     page = request.GET.get('page')
     notes = paginator.get_page(page)
-    return render(request, 'evaluations/note_list.html', {'notes': notes})
+    return render(request, 'evaluations/note_consultation.html', {'notes': notes})
 
 
 @login_required
@@ -169,7 +321,7 @@ def note_create(request):
             note.saisie_par = request.user
             note.save()
             messages.success(request, 'Note saisie avec succès!')
-            return redirect('evaluations:note_list')
+            return redirect('evaluations:note_consultation')
     else:
         form = NoteForm()
     return render(request, 'evaluations/note_form.html', {'form': form, 'title': 'Nouvelle Note'})
@@ -185,7 +337,7 @@ def note_update(request, pk):
             note_obj.modifie_par = request.user
             note_obj.save()
             messages.success(request, 'Note modifiée avec succès!')
-            return redirect('evaluations:note_list')
+            return redirect('evaluations:note_consultation')
     else:
         form = NoteForm(instance=note)
     return render(request, 'evaluations/note_form.html', {'form': form, 'title': 'Modifier Note', 'object': note})
@@ -197,7 +349,7 @@ def note_delete(request, pk):
     if request.method == 'POST':
         note.delete()
         messages.success(request, 'Note supprimée avec succès!')
-        return redirect('evaluations:note_list')
+        return redirect('evaluations:note_consultation')
     return render(request, 'evaluations/note_confirm_delete.html', {'note': note})
 
 
