@@ -10,9 +10,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from .models import Card, Personnel, Position, Category
-from .forms import CardForm, PersonnelForm, PersonnelImportForm
+from .forms import CardForm, PersonnelForm, PersonnelImportForm, PersonnelListFilterForm
 from .utils import generate_card_image
 
 # --- PERSONNEL VIEWS ---
@@ -161,8 +162,46 @@ class PersonnelListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Personnel
     template_name = 'personnel/personnel_list.html'
     context_object_name = 'personnels'
-    paginate_by = 10
+    paginate_by = 15
     permission_required = 'cards.view_personnel'
+
+    def get_queryset(self):
+        qs = (
+            Personnel.objects.select_related('category', 'position')
+            .order_by('last_name', 'first_name')
+        )
+        self.filter_form = PersonnelListFilterForm(self.request.GET or None)
+        if self.filter_form.is_valid():
+            q = self.filter_form.cleaned_data.get('q')
+            if q:
+                qs = qs.filter(
+                    Q(matricule__icontains=q)
+                    | Q(last_name__icontains=q)
+                    | Q(first_name__icontains=q)
+                    | Q(email__icontains=q)
+                    | Q(phone__icontains=q)
+                )
+            category = self.filter_form.cleaned_data.get('category')
+            if category:
+                qs = qs.filter(category=category)
+            position = self.filter_form.cleaned_data.get('position')
+            if position:
+                qs = qs.filter(position=position)
+            contract_type = self.filter_form.cleaned_data.get('contract_type')
+            if contract_type:
+                qs = qs.filter(contract_type=contract_type)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if not hasattr(self, 'filter_form'):
+            self.filter_form = PersonnelListFilterForm(self.request.GET or None)
+        query_params = self.request.GET.copy()
+        query_params.pop('page', None)
+        context['filter_form'] = self.filter_form
+        context['filter_query'] = query_params.urlencode()
+        context['has_filters'] = any(query_params.values())
+        return context
 
 class PersonnelDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Personnel
@@ -172,9 +211,31 @@ class PersonnelDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from academics.models import ElementConstitutif
+        from prestation.models import HoraireLigne
         from prestation.services import get_baremes_initiaux_personnel
 
-        context["baremes_initiaux"] = get_baremes_initiaux_personnel(self.object)
+        personnel = self.object
+        context["baremes_initiaux"] = get_baremes_initiaux_personnel(personnel)
+        context["horaire_lignes"] = (
+            HoraireLigne.objects.filter(professeur=personnel)
+            .select_related(
+                "horaire",
+                "horaire__classe",
+                "horaire__classe__promotion",
+                "horaire__annee_academique",
+                "horaire__semestre",
+                "element_constitutif",
+                "local",
+            )
+            .order_by("horaire__annee_academique__code", "jour", "heure_debut")
+        )
+        context["ecs_enseignes"] = (
+            ElementConstitutif.objects.filter(professeur=personnel)
+            .select_related("ue", "ue__filiere", "ue__semestre")
+            .order_by("ue__semestre__numero", "ue__ordre", "ordre")
+        )
+        context["cartes"] = personnel.cards.all().order_by("-issue_date")
         return context
 
 class PersonnelCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

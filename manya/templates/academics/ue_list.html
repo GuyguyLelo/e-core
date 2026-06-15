@@ -18,6 +18,30 @@
       {% include "components/page_toolbar.html" with toolbar_title="Unités d'Enseignement" toolbar_subtitle="Modules regroupant les éléments constitutifs" create_url=create_url create_label="Nouvelle UE" %}
       <div class="card-body">
         {% include "components/messages.html" %}
+
+        <form method="get" class="ecore-filter-bar ecore-filter-bar--compact mb-3">
+          <div class="ecore-filter-row">
+            <div class="ecore-filter-field">
+              <label class="form-label" for="{{ filter_form.semestre.id_for_label }}">Semestre</label>
+              {{ filter_form.semestre }}
+            </div>
+            <div class="ecore-filter-field">
+              <label class="form-label" for="{{ filter_form.filiere.id_for_label }}">Filière</label>
+              {{ filter_form.filiere }}
+            </div>
+            <div class="ecore-filter-field ecore-filter-field--actions">
+              <button type="submit" class="btn btn-outline-primary btn-icon" title="Filtrer">
+                <i class="fa fa-filter"></i>
+              </button>
+              {% if has_filters %}
+              <a href="{% url 'academics:ue_list' %}" class="btn btn-outline-secondary btn-icon" title="Réinitialiser">
+                <i class="fa fa-times"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+
         {% include "components/list_count_banner.html" with items=ues count_label="UE" banner_icon="fa-book" %}
 
         <div class="table-responsive">
@@ -27,6 +51,7 @@
                 <th>Code</th>
                 <th>Nom</th>
                 <th>Semestre</th>
+                <th>Filière</th>
                 <th>Crédits ECTS</th>
                 <th>Coefficient</th>
                 <th>Seuil</th>
@@ -39,6 +64,7 @@
                 <td><span class="fw-semibold text-primary">{{ ue.code }}</span></td>
                 <td>{{ ue.nom }}</td>
                 <td>{{ ue.semestre.code }}</td>
+                <td>{% if ue.filiere %}<span class="badge badge-light-primary">{{ ue.filiere.code }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                 <td><span class="badge badge-ecore">{{ ue.credits_ects }} ECTS</span></td>
                 <td>{{ ue.coefficient }}</td>
                 <td>{{ ue.seuil_validation }}/20</td>
@@ -49,12 +75,12 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="7" class="text-center text-muted py-5">Aucune UE enregistrée</td></tr>
+              <tr><td colspan="8" class="text-center text-muted py-5">Aucune UE enregistrée</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        {% include "components/pagination.html" with items=ues %}
+        {% include "components/pagination.html" with items=ues query_string=filter_query %}
       </div>
     </div>
   </div>

@@ -1,13 +1,13 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Types de Documents - e-Core{% endblock %}
-{% block page_title %}Types de Documents{% endblock %}
+{% block title %}Éléments du dossier - e-Core{% endblock %}
+{% block page_title %}Éléments du dossier{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
-<li class="breadcrumb-item f-w-400 active">Types de Documents</li>
+<li class="breadcrumb-item f-w-400 active">Éléments du dossier</li>
 {% endblock %}
 
 {% block content %}
@@ -15,7 +15,7 @@
   <div class="col-12">
     <div class="card">
       {% url 'students:type_document_create' as create_url %}
-      {% include "components/page_toolbar.html" with toolbar_title="Types de Documents" toolbar_subtitle="Pièces requises pour les dossiers étudiants" create_url=create_url create_label="Nouveau type" %}
+      {% include "components/page_toolbar.html" with toolbar_title="Éléments du dossier" toolbar_subtitle="Pièces requises pour les dossiers étudiants" create_url=create_url create_label="Nouvel élément" %}
       <div class="card-body">
         {% include "components/messages.html" %}
 
@@ -58,7 +58,7 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-center text-muted py-5">Aucun type de document enregistré</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-5">Aucun élément du dossier enregistré</td></tr>
               {% endfor %}
             </tbody>
           </table>

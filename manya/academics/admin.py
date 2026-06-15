@@ -56,8 +56,8 @@ class SemestreAdmin(admin.ModelAdmin):
 
 @admin.register(UniteEnseignement)
 class UniteEnseignementAdmin(admin.ModelAdmin):
-    list_display = ['code', 'nom', 'semestre', 'credits_ects', 'coefficient', 'seuil_validation', 'active']
-    list_filter = ['semestre', 'active', 'compensation_autorisee', 'capitalisable']
+    list_display = ['code', 'nom', 'semestre', 'filiere', 'credits_ects', 'coefficient', 'seuil_validation', 'active']
+    list_filter = ['semestre', 'filiere', 'active', 'compensation_autorisee', 'capitalisable']
     search_fields = ['code', 'nom']
 
 

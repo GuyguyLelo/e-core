@@ -115,12 +115,13 @@ class UniteEnseignementForm(forms.ModelForm):
     class Meta:
         model = UniteEnseignement
         fields = [
-            'semestre', 'code', 'nom', 'description', 'credits_ects',
+            'semestre', 'filiere', 'code', 'nom', 'description', 'credits_ects',
             'coefficient', 'seuil_validation', 'compensation_autorisee',
-            'capitalisable', 'ordre', 'active'
+            'capitalisable', 'categorie', 'ordre', 'active'
         ]
         widgets = {
             'semestre': forms.Select(attrs={'class': 'form-control'}),
+            'filiere': forms.Select(attrs={'class': 'form-control'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code UE'}),
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de l\'UE'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -129,6 +130,7 @@ class UniteEnseignementForm(forms.ModelForm):
             'seuil_validation': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0, 'max': 20, 'value': 10.0}),
             'compensation_autorisee': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'capitalisable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'categorie': forms.Select(attrs={'class': 'form-control'}),
             'ordre': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'value': 1}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -164,3 +166,29 @@ class ElementConstitutifForm(forms.ModelForm):
             "position", "category"
         ).order_by("last_name", "first_name")
         self.fields["professeur"].required = False
+
+
+class UEListFilterForm(forms.Form):
+    semestre = forms.ModelChoiceField(
+        queryset=Semestre.objects.filter(active=True).order_by('numero'),
+        required=False,
+        label="Semestre",
+        empty_label="Tous les semestres",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    filiere = forms.ModelChoiceField(
+        queryset=Filiere.objects.filter(active=True).order_by('code'),
+        required=False,
+        label="Filière",
+        empty_label="Toutes les filières",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['semestre'].label_from_instance = lambda obj: (
+            f"{obj.code} — {obj.nom} ({UniteEnseignement.objects.filter(semestre=obj).count()})"
+        )
+        self.fields['filiere'].label_from_instance = lambda obj: (
+            f"{obj.nom} ({UniteEnseignement.objects.filter(filiere=obj).count()})"
+        )

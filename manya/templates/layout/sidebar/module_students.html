@@ -1,5 +1,5 @@
 {% load perm_tags %}
-{% has_any_perm 'students.view_student' 'students.view_inscription' 'students.view_documentetudiant' as can_students %}
+{% has_any_perm 'students.view_student' 'students.view_inscription' 'students.view_typedocument' as can_students %}
 {% if can_students %}
 <li class="sidebar-list">
     <i class="fa fa-thumb-tack"></i>
@@ -10,8 +10,7 @@
     <ul class="sidebar-submenu">
         {% has_perm 'students.view_student' as p_student %}{% if p_student %}<li><a href="{% url 'students:student_list' %}">Liste des étudiants</a></li>{% endif %}
         {% has_perm 'students.view_inscription' as p_inscription %}{% if p_inscription %}<li><a href="{% url 'students:inscription_list' %}">Inscriptions</a></li>{% endif %}
-        {% has_perm 'students.view_documentetudiant' as p_doc %}{% if p_doc %}<li><a href="{% url 'students:document_list' %}">Documents</a></li>{% endif %}
-        {% has_perm 'students.view_typedocument' as p_type %}{% if p_type %}<li><a href="{% url 'students:type_document_list' %}">Types de documents</a></li>{% endif %}
+        {% has_perm 'students.view_typedocument' as p_type %}{% if p_type %}<li><a href="{% url 'students:type_document_list' %}">Éléments du dossier</a></li>{% endif %}
     </ul>
 </li>
 {% endif %}

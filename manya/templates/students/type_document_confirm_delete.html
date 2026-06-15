@@ -1,13 +1,13 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Supprimer Type de Document - e-Core{% endblock %}
+{% block title %}Supprimer un élément du dossier - e-Core{% endblock %}
 
-{% block page_title %}Supprimer Type de Document{% endblock %}
+{% block page_title %}Supprimer un élément du dossier{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'students:type_document_list' %}">Types de Documents</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:type_document_list' %}">Éléments du dossier</a></li>
 <li class="breadcrumb-item f-w-400 active">Supprimer</li>
 {% endblock %}
 
@@ -21,7 +21,7 @@
 
                 <div class="alert alert-warning ecore-alert" role="alert">
                     <i class="fa fa-exclamation-triangle"></i>
-                    <strong>Attention !</strong> Vous êtes sur le point de supprimer le type de document suivant :
+                    <strong>Attention !</strong> Vous êtes sur le point de supprimer l'élément du dossier suivant :
                 </div>
                 
                 <div class="mb-4">

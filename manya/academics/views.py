@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from django.db.models import Prefetch
 from .models import (
     Section, Filiere, Promotion, Classe, Local,
     AnneeAcademique, Semestre,
@@ -14,8 +15,9 @@ from .models import (
 from .forms import (
     SectionForm, FiliereForm, PromotionForm, ClasseForm, LocalForm,
     AnneeAcademiqueForm, SemestreForm,
-    UniteEnseignementForm, ElementConstitutifForm
+    UniteEnseignementForm, ElementConstitutifForm, UEListFilterForm
 )
+from students.models import Inscription
 
 
 # ========== SECTIONS ==========
@@ -167,6 +169,56 @@ def promotion_list(request):
     page = request.GET.get('page')
     promotions = paginator.get_page(page)
     return render(request, 'academics/promotion_list.html', {'promotions': promotions})
+
+
+@login_required
+def promotion_detail(request, pk):
+    """Fiche détaillée d'une promotion : classes et étudiants inscrits."""
+    promotion = get_object_or_404(
+        Promotion.objects.select_related('filiere', 'filiere__section'),
+        pk=pk,
+    )
+    annee_active = AnneeAcademique.get_active()
+
+    classes = (
+        Classe.objects.filter(promotion=promotion)
+        .select_related('local')
+        .order_by('code')
+    )
+
+    inscriptions_annee = Inscription.objects.none()
+    if annee_active:
+        inscriptions_annee = (
+            Inscription.objects.filter(
+                classe__promotion=promotion,
+                annee_academique=annee_active,
+            )
+            .exclude(statut='desinscrit')
+            .select_related('etudiant', 'classe')
+            .order_by('classe__code', 'etudiant__numero_etudiant')
+        )
+
+    effectifs_par_classe = {}
+    if annee_active:
+        for ins in inscriptions_annee:
+            if ins.classe_id:
+                effectifs_par_classe[ins.classe_id] = effectifs_par_classe.get(ins.classe_id, 0) + 1
+
+    classes_data = [
+        {
+            'classe': classe,
+            'effectif': effectifs_par_classe.get(classe.pk, 0),
+        }
+        for classe in classes
+    ]
+
+    return render(request, 'academics/promotion_detail.html', {
+        'promotion': promotion,
+        'annee_active': annee_active,
+        'classes_data': classes_data,
+        'inscriptions': inscriptions_annee,
+        'total_inscriptions': inscriptions_annee.count(),
+    })
 
 
 @login_required
@@ -404,11 +456,32 @@ def semestre_delete(request, pk):
 # ========== UNITES D'ENSEIGNEMENT ==========
 @login_required
 def ue_list(request):
-    ues = UniteEnseignement.objects.select_related('semestre').all().order_by('semestre', 'ordre', 'code')
+    filter_form = UEListFilterForm(request.GET or None)
+    ues = UniteEnseignement.objects.select_related('semestre', 'filiere').all()
+
+    if filter_form.is_valid():
+        semestre = filter_form.cleaned_data.get('semestre')
+        if semestre:
+            ues = ues.filter(semestre=semestre)
+        filiere = filter_form.cleaned_data.get('filiere')
+        if filiere:
+            ues = ues.filter(filiere=filiere)
+
+    ues = ues.order_by('semestre', 'filiere', 'ordre', 'code')
     paginator = Paginator(ues, 10)
     page = request.GET.get('page')
     ues = paginator.get_page(page)
-    return render(request, 'academics/ue_list.html', {'ues': ues})
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    filter_query = query_params.urlencode()
+
+    return render(request, 'academics/ue_list.html', {
+        'ues': ues,
+        'filter_form': filter_form,
+        'filter_query': filter_query,
+        'has_filters': any(query_params.values()),
+    })
 
 
 @login_required
@@ -451,11 +524,42 @@ def ue_delete(request, pk):
 # ========== ELEMENTS CONSTITUTIFS ==========
 @login_required
 def ec_list(request):
-    ecs = ElementConstitutif.objects.select_related('ue', 'professeur').all().order_by('ue', 'ordre', 'code')
-    paginator = Paginator(ecs, 10)
+    filter_form = UEListFilterForm(request.GET or None)
+
+    ec_qs = ElementConstitutif.objects.select_related('professeur').order_by('ordre', 'code')
+    ues = (
+        UniteEnseignement.objects.select_related('semestre', 'filiere')
+        .prefetch_related(Prefetch('ecs', queryset=ec_qs))
+        .filter(ecs__isnull=False)
+        .distinct()
+    )
+
+    if filter_form.is_valid():
+        semestre = filter_form.cleaned_data.get('semestre')
+        if semestre:
+            ues = ues.filter(semestre=semestre)
+        filiere = filter_form.cleaned_data.get('filiere')
+        if filiere:
+            ues = ues.filter(filiere=filiere)
+
+    ues = ues.order_by('semestre', 'filiere', 'ordre', 'code')
+    ec_total = ElementConstitutif.objects.filter(ue__in=ues).count()
+
+    paginator = Paginator(ues, 10)
     page = request.GET.get('page')
-    ecs = paginator.get_page(page)
-    return render(request, 'academics/ec_list.html', {'ecs': ecs})
+    ues = paginator.get_page(page)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    filter_query = query_params.urlencode()
+
+    return render(request, 'academics/ec_list.html', {
+        'ues': ues,
+        'ec_total': ec_total,
+        'filter_form': filter_form,
+        'filter_query': filter_query,
+        'has_filters': any(query_params.values()),
+    })
 
 
 @login_required

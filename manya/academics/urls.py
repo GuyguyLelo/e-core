@@ -25,6 +25,7 @@ urlpatterns = [
     # Promotions
     path('promotions/', promotion_list, name='promotion_list'),
     path('promotions/nouvelle/', promotion_create, name='promotion_create'),
+    path('promotions/<int:pk>/', promotion_detail, name='promotion_detail'),
     path('promotions/<int:pk>/modifier/', promotion_update, name='promotion_update'),
     path('promotions/<int:pk>/supprimer/', promotion_delete, name='promotion_delete'),
 

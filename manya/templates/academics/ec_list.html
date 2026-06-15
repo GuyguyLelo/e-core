@@ -15,19 +15,47 @@
   <div class="col-12">
     <div class="card">
       {% url 'academics:ec_create' as create_url %}
-      {% include "components/page_toolbar.html" with toolbar_title="Éléments Constitutifs" toolbar_subtitle="Cours et matières rattachés aux UE" create_url=create_url create_label="Nouvel EC" %}
+      {% include "components/page_toolbar.html" with toolbar_title="Éléments Constitutifs" toolbar_subtitle="Cours et matières regroupés par unité d'enseignement" create_url=create_url create_label="Nouvel EC" %}
       <div class="card-body">
         {% include "components/messages.html" %}
-        {% include "components/list_count_banner.html" with items=ecs count_label="EC" banner_icon="fa-list-alt" %}
+
+        <form method="get" class="ecore-filter-bar ecore-filter-bar--compact mb-3">
+          <div class="ecore-filter-row">
+            <div class="ecore-filter-field">
+              <label class="form-label" for="{{ filter_form.semestre.id_for_label }}">Semestre</label>
+              {{ filter_form.semestre }}
+            </div>
+            <div class="ecore-filter-field">
+              <label class="form-label" for="{{ filter_form.filiere.id_for_label }}">Filière</label>
+              {{ filter_form.filiere }}
+            </div>
+            <div class="ecore-filter-field ecore-filter-field--actions">
+              <button type="submit" class="btn btn-outline-primary btn-icon" title="Filtrer">
+                <i class="fa fa-filter"></i>
+              </button>
+              {% if has_filters %}
+              <a href="{% url 'academics:ec_list' %}" class="btn btn-outline-secondary btn-icon" title="Réinitialiser">
+                <i class="fa fa-times"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+
+        {% if ues %}
+        <div class="ecore-info-banner mb-4">
+          <i class="fa fa-list-alt me-2"></i>
+          {{ ec_total }} EC réparti{{ ec_total|pluralize }} dans {{ ues.paginator.count }} UE
+        </div>
+        {% endif %}
 
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover align-middle mb-0 ecore-maquette-table">
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Nom</th>
+                <th>Intitulé</th>
                 <th>Professeur</th>
-                <th>UE</th>
                 <th>Crédits ECTS</th>
                 <th>Coefficient</th>
                 <th>VH</th>
@@ -36,21 +64,41 @@
               </tr>
             </thead>
             <tbody>
-              {% for ec in ecs %}
-              <tr>
-                <td><span class="fw-semibold text-primary">{{ ec.code }}</span></td>
+              {% for ue in ues %}
+              <tr class="ecore-maquette-ue-row">
+                <td colspan="8">
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-semibold text-primary">{{ ue.code }}</span>
+                    <span>{{ ue.nom }}</span>
+                    <span class="badge badge-light-secondary">{{ ue.semestre.code }}</span>
+                    {% if ue.filiere %}
+                      <span class="badge badge-light-primary">{{ ue.filiere.code }}</span>
+                    {% endif %}
+                    <span class="badge badge-ecore">{{ ue.credits_ects }} ECTS</span>
+                    <span class="text-muted small">{{ ue.ecs.all|length }} EC</span>
+                    <span class="ms-auto">
+                      {% url 'academics:ue_update' ue.pk as ue_edit_link %}
+                      <a href="{{ ue_edit_link }}" class="btn btn-sm btn-outline-primary" title="Modifier l'UE">
+                        <i class="fa fa-pencil"></i>
+                      </a>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+              {% for ec in ue.ecs.all %}
+              <tr class="ecore-maquette-ec-row">
+                <td><span class="fw-semibold">{{ ec.code }}</span></td>
                 <td>{{ ec.nom }}</td>
                 <td>
                   {% if ec.professeur %}
                     {{ ec.professeur.last_name }} {{ ec.professeur.first_name }}
                   {% else %}
-                    -
+                    <span class="text-muted">—</span>
                   {% endif %}
                 </td>
-                <td>{{ ec.ue.code }}</td>
                 <td><span class="badge badge-ecore">{{ ec.credits_ects }} ECTS</span></td>
                 <td>{{ ec.coefficient }}</td>
-                <td>{{ ec.volume_horaire|default:"-" }}h</td>
+                <td>{{ ec.volume_horaire|default:"—" }}{% if ec.volume_horaire %}h{% endif %}</td>
                 <td>{{ ec.seuil_validation }}/20</td>
                 <td class="text-end">
                   {% url 'academics:ec_update' ec.pk as edit_link %}
@@ -58,13 +106,14 @@
                   {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
                 </td>
               </tr>
+              {% endfor %}
               {% empty %}
-              <tr><td colspan="9" class="text-center text-muted py-5">Aucun EC enregistré</td></tr>
+              <tr><td colspan="8" class="text-center text-muted py-5">Aucun EC enregistré</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        {% include "components/pagination.html" with items=ecs %}
+        {% include "components/pagination.html" with items=ues query_string=filter_query %}
       </div>
     </div>
   </div>

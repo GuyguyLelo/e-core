@@ -1107,6 +1107,62 @@ body.login-page {
   justify-content: center;
 }
 
+/* Maquette LMD — EC regroupés par UE */
+.ecore-maquette-table .ecore-maquette-ue-row {
+  background: var(--ecore-surface-2);
+  border-top: 2px solid var(--ecore-border-strong);
+}
+
+.ecore-maquette-table .ecore-maquette-ue-row td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.ecore-maquette-table .ecore-maquette-ec-row td:first-child {
+  padding-left: 1.75rem;
+}
+
+.ecore-maquette-table .ecore-maquette-ec-row td:nth-child(2) {
+  padding-left: 0.25rem;
+}
+
+/* Barèmes prestations — liste compacte */
+.ecore-info-banner--compact {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem !important;
+}
+
+.ecore-bareme-table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.ecore-bareme-table tbody td {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.ecore-bareme-category-row td {
+  background: var(--ecore-surface-2);
+  border-top: 1px solid var(--ecore-border-strong);
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+}
+
+.ecore-bareme-table .badge.small {
+  font-size: 0.7rem;
+  padding: 0.2em 0.45em;
+}
+
+#bareme-form .ecore-required-note {
+  margin-bottom: 0.75rem !important;
+}
+
 /* ── Formulaires par sections ── */
 .ecore-form-section {
   border: 1px solid var(--ecore-border);
@@ -1162,6 +1218,60 @@ body.login-page {
 
 .ecore-form-section-compact .ecore-form-section-body {
   padding: 0.85rem 1rem 1rem;
+}
+
+.ecore-student-photo-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.18);
+}
+
+.ecore-student-photo-placeholder {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e8ecf2 0%, #f0f2f6 100%);
+  border: 2px dashed rgba(14, 165, 233, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ecore-text-muted);
+  font-size: 1.75rem;
+}
+
+.ecore-student-photo-upload {
+  border: 1px dashed rgba(14, 165, 233, 0.28);
+  border-radius: var(--ecore-radius);
+  padding: 0.65rem 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  font-size: 0.8rem;
+}
+
+.ecore-student-photo-upload span {
+  display: block;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.ecore-student-photo-upload:hover,
+.ecore-student-photo-upload.is-dragover {
+  border-color: var(--ecore-primary);
+  background: rgba(14, 165, 233, 0.06);
+}
+
+.ecore-student-photo-aside h6 {
+  margin-bottom: 0.5rem;
+}
+
+body.dark-only .ecore-student-photo-placeholder {
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .ecore-form-inline-switch {

@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from academics.models import Classe, AnneeAcademique
 from .constants import NATIONALITE_CHOICES, NATIONALITE_DEFAULT
+from .matricule import MATRICULE_REGEX, MATRICULE_HELP
 import os
 
 
@@ -26,7 +27,10 @@ class Student(models.Model):
         max_length=20,
         unique=True,
         verbose_name="Numéro étudiant",
-        validators=[RegexValidator(regex=r'^[A-Z0-9]+$', message='Le numéro étudiant doit contenir uniquement des lettres majuscules et des chiffres')]
+        validators=[RegexValidator(
+            regex=MATRICULE_REGEX,
+            message=f"Matricule invalide. {MATRICULE_HELP}",
+        )],
     )
     nom = models.CharField(max_length=100, verbose_name="Nom")
     prenom = models.CharField(max_length=100, verbose_name="Prénom")

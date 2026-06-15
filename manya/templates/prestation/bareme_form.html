@@ -8,29 +8,27 @@
 {% endblock %}
 
 {% block form_id %}bareme-form{% endblock %}
-
-{% block form_extra_notices %}
-
-{% endblock %}
-
-{% block form_before_fields %}
-
-{% endblock %}
-
-{% block form_main_col %}col-lg-8{% endblock %}
+{% block form_main_col %}col-lg-12{% endblock %}
 
 {% block form_main %}
-{% include "components/ecore_form_section_open.html" with icon="fa-tags" title="Classification" subtitle="Type et période" %}
-<div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.categorie col="col-md-6" icon="fa-tag" required=True label="Type prestation" %}
-  {% include "components/ecore_form_field.html" with field=form.periode col="col-md-6" icon="fa-clock-o" required=True %}
+{% include "components/ecore_form_section_open.html" with icon="fa-money" title="Barème" subtitle="Type, tarif et ordre d'affichage" section_class="mb-0 ecore-form-section-compact" %}
+<div class="row g-2">
+  {% include "components/ecore_form_field.html" with field=form.categorie col="col-md-3 col-lg-3" icon="fa-tag" required=True label="Type prestation" %}
+  {% include "components/ecore_form_field.html" with field=form.periode col="col-md-3 col-lg-2" icon="fa-clock-o" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.ordre col="col-md-2 col-lg-1" icon="fa-sort-numeric-asc" %}
+  <div class="col-md-4 col-lg-2 d-flex align-items-end">
+    <div class="ecore-dossier-switch w-100 mb-1">
+      <div>
+        <div class="fw-semibold small">Actif</div>
+        <div class="text-muted small">Utilisable</div>
+      </div>
+      <div class="form-check form-switch mb-0">{{ form.active }}</div>
+    </div>
+  </div>
 </div>
-{% include "components/ecore_form_section_close.html" %}
-{% include "components/ecore_form_section_open.html" with icon="fa-money" title="Montant" subtitle="Intitulé et tarif" section_class="mb-0" %}
-<div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.intitule col="col-12" icon="fa-font" required=True %}
-  {% include "components/ecore_form_field.html" with field=form.montant col="col-md-4" icon="fa-money" required=True help="Montant en CDF" %}
-  {% include "components/ecore_form_field.html" with field=form.ordre col="col-md-4" icon="fa-sort-numeric-asc" %}
+<div class="row g-2 mt-1">
+  {% include "components/ecore_form_field.html" with field=form.intitule col="col-md-8 col-lg-7" icon="fa-font" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.montant col="col-md-4 col-lg-3" icon="fa-money" required=True help="CDF" %}
 </div>
 {% include "components/ecore_form_section_close.html" %}
 {% endblock %}
@@ -40,10 +38,6 @@
 {% include "components/form_actions.html" with cancel_url=cancel_url %}
 {% endblock %}
 
-{% block form_aside %}
-{% include "components/ecore_form_aside_switch.html" with field=form.active title="Barème actif" hint="Utilisable pour les prestations" %}
-{% include "components/ecore_form_aside_tips.html" with tip1="Le type détermine la catégorie de prestation" tip2="L'ordre organise les listes" tip3="Le montant est en francs congolais" %}
-{% endblock %}
-{% block form_extra_js %}
+{% block form_aside_wrapper %}{% endblock %}
 
-{% endblock %}
+{% block form_extra_js %}{% endblock %}

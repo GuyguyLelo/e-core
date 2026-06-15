@@ -187,6 +187,14 @@ class Semestre(models.Model):
 class UniteEnseignement(models.Model):
     """Unité d'Enseignement (UE) - composée de plusieurs EC"""
     semestre = models.ForeignKey(Semestre, on_delete=models.CASCADE, related_name='ues', verbose_name="Semestre")
+    filiere = models.ForeignKey(
+        Filiere,
+        on_delete=models.CASCADE,
+        related_name='ues',
+        null=True,
+        blank=True,
+        verbose_name="Filière",
+    )
     code = models.CharField(max_length=20, verbose_name="Code")
     nom = models.CharField(max_length=200, verbose_name="Nom")
     description = models.TextField(blank=True, null=True, verbose_name="Description")
@@ -226,8 +234,8 @@ class UniteEnseignement(models.Model):
     class Meta:
         verbose_name = "Unité d'Enseignement"
         verbose_name_plural = "Unités d'Enseignement"
-        unique_together = [['semestre', 'code']]
-        ordering = ['semestre', 'ordre', 'code']
+        unique_together = [['semestre', 'filiere', 'code']]
+        ordering = ['semestre', 'filiere', 'ordre', 'code']
 
     def __str__(self):
         return f"{self.code} - {self.nom} ({self.credits_ects} ECTS)"

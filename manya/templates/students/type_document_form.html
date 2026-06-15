@@ -3,7 +3,7 @@
 
 {% block form_breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'students:type_document_list' %}">Types de Documents</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:type_document_list' %}">Éléments du dossier</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
@@ -40,8 +40,8 @@
 {% endblock %}
 
 {% block form_aside %}
-{% include "components/ecore_form_aside_switch.html" with field=form.obligatoire title="Document obligatoire" hint="Requis pour un dossier complet" %}
-{% include "components/ecore_form_aside_switch.html" with field=form.active title="Type actif" hint="Proposé dans les dossiers" %}
+{% include "components/ecore_form_aside_switch.html" with field=form.obligatoire title="Élément obligatoire" hint="Requis pour un dossier complet" %}
+{% include "components/ecore_form_aside_switch.html" with field=form.active title="Élément actif" hint="Proposé dans les dossiers" %}
 {% include "components/ecore_form_aside_tips.html" with tip1="L'ordre contrôle l'affichage dans le dossier" tip2="Obligatoire = compte pour le statut Complet" tip3="Un type inactif disparaît des checklists" %}
 {% endblock %}
 {% block form_extra_js %}

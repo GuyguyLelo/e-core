@@ -1,0 +1,206 @@
+{% extends "layout/master.html" %}
+{% load static perm_tags %}
+
+{% block title %}{{ promotion.code }} — Promotion - e-Core{% endblock %}
+{% block page_title %}Fiche promotion{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'academics:section_list' %}">Structure</a></li>
+<li class="breadcrumb-item"><a href="{% url 'academics:promotion_list' %}">Promotions</a></li>
+<li class="breadcrumb-item f-w-400 active">{{ promotion.code }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card ecore-profile-card">
+      <div class="card-body text-center">
+        <div class="ecore-profile-photo ecore-profile-photo--placeholder mb-3 mx-auto">
+          <i class="fa fa-graduation-cap fa-3x"></i>
+        </div>
+        <h5 class="mb-1">{{ promotion.nom }}</h5>
+        <p class="text-muted mb-2">{{ promotion.code }}</p>
+        <span class="badge badge-{% if promotion.active %}success{% else %}danger{% endif %} mb-3">
+          {% if promotion.active %}Active{% else %}Inactive{% endif %}
+        </span>
+        <div class="d-grid gap-2">
+          {% has_perm 'academics.change_promotion' as p_edit %}
+          {% if p_edit %}
+          <a href="{% url 'academics:promotion_update' promotion.pk %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-edit"></i> Modifier
+          </a>
+          {% endif %}
+          <a href="{% url 'academics:promotion_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fa fa-arrow-left"></i> Retour à la liste
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="row g-3 text-center">
+          <div class="col-6">
+            <div class="metric-label">Classes</div>
+            <div class="metric-value text-primary fs-4">{{ classes_data|length }}</div>
+          </div>
+          <div class="col-6">
+            <div class="metric-label">Inscrits</div>
+            <div class="metric-value text-primary fs-4">{{ total_inscriptions }}</div>
+            {% if annee_active %}
+            <div class="small text-muted">{{ annee_active.code }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header ecore-card-header">
+        <h5 class="mb-0"><i class="fa fa-sitemap me-2 text-primary"></i>Rattachement académique</h5>
+      </div>
+      <div class="card-body">
+        <div class="row ecore-detail-grid">
+          <div class="col-md-6">
+            <div class="ecore-detail-item">
+              <span class="ecore-detail-label">Section</span>
+              <span class="ecore-detail-value">{{ promotion.filiere.section.nom|default:"—" }}</span>
+            </div>
+            <div class="ecore-detail-item">
+              <span class="ecore-detail-label">Filière</span>
+              <span class="ecore-detail-value">{{ promotion.filiere.code }} — {{ promotion.filiere.nom }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="ecore-detail-item">
+              <span class="ecore-detail-label">Ordre dans la filière</span>
+              <span class="ecore-detail-value">{{ promotion.ordre }}</span>
+            </div>
+            <div class="ecore-detail-item mb-0">
+              <span class="ecore-detail-label">Année académique active</span>
+              <span class="ecore-detail-value">
+                {% if annee_active %}{{ annee_active.code }}{% else %}<span class="text-muted">Non définie</span>{% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header ecore-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h5 class="mb-0"><i class="fa fa-users me-2 text-primary"></i>Classes</h5>
+        {% has_perm 'academics.add_classe' as p_classe %}
+        {% if p_classe %}
+        <a href="{% url 'academics:classe_create' %}" class="btn btn-sm btn-outline-primary">
+          <i class="fa fa-plus"></i> Nouvelle classe
+        </a>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Local</th>
+                <th>Effectif max</th>
+                <th>Inscrits</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in classes_data %}
+              <tr>
+                <td><span class="fw-semibold text-primary">{{ item.classe.code }}</span></td>
+                <td>{{ item.classe.nom|default:"—" }}</td>
+                <td>{{ item.classe.local.nom }}</td>
+                <td>{{ item.classe.effectif_max|default:"—" }}</td>
+                <td>
+                  <span class="badge badge-ecore">{{ item.effectif }}</span>
+                </td>
+                <td>
+                  {% if item.classe.active %}
+                    <span class="badge badge-success">Active</span>
+                  {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">Aucune classe pour cette promotion</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header ecore-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h5 class="mb-0"><i class="fa fa-user-graduate me-2 text-primary"></i>Étudiants inscrits</h5>
+        {% if annee_active %}
+        <span class="small text-muted">Année {{ annee_active.code }}</span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% if not annee_active %}
+        <div class="p-4 text-center text-muted">
+          Aucune année académique active — les inscriptions ne sont pas affichées.
+        </div>
+        {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>N° étudiant</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Classe</th>
+                <th>Statut</th>
+                <th class="text-end">Fiche</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ins in inscriptions %}
+              <tr>
+                <td><span class="fw-semibold text-primary">{{ ins.etudiant.numero_etudiant }}</span></td>
+                <td>{{ ins.etudiant.nom }}</td>
+                <td>{{ ins.etudiant.prenom }}</td>
+                <td>{{ ins.classe.code }}</td>
+                <td>
+                  <span class="badge badge-{% if ins.statut == 'inscrit' %}success{% else %}warning{% endif %}">
+                    {{ ins.get_statut_display }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% has_perm 'students.view_student' as p_student %}
+                  {% if p_student %}
+                  <a href="{% url 'students:student_detail' ins.etudiant.pk %}" class="btn btn-sm btn-ecore-info" title="Voir la fiche">
+                    <i class="fa fa-eye"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  Aucun étudiant inscrit pour cette promotion sur l'année active.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

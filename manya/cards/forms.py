@@ -1,5 +1,60 @@
 from django import forms
+from django.db.models import Case, IntegerField, Value, When
+
 from .models import Card, Personnel, Position, Category
+
+PERSONNEL_CATEGORY_ORDER = [
+    "Enseignant",
+    "Personnel Administratif",
+    "Personnel technique",
+    "Autres",
+]
+
+
+def is_autres_category(category):
+    if not category:
+        return False
+    return category.name.strip().lower().startswith("autre")
+
+
+class PersonnelListFilterForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label="Rechercher",
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-sm",
+            "placeholder": "Nom, prénom, matricule, email…",
+        }),
+    )
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        empty_label="Toutes les catégories",
+        label="Catégorie",
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    position = forms.ModelChoiceField(
+        queryset=Position.objects.all(),
+        required=False,
+        empty_label="Tous les postes",
+        label="Poste / Fonction",
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    contract_type = forms.ChoiceField(
+        required=False,
+        choices=[("", "Tous les contrats")] + list(Personnel.CONTRACT_TYPE_CHOICES),
+        label="Type de contrat",
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].label_from_instance = (
+            lambda obj: f"{obj.name} ({obj.personnel_set.count()})"
+        )
+        self.fields["position"].label_from_instance = (
+            lambda obj: f"{obj.name} ({obj.personnel_set.count()})"
+        )
 
 
 class PersonnelForm(forms.ModelForm):
@@ -24,7 +79,7 @@ class PersonnelForm(forms.ModelForm):
             'place_of_birth': forms.TextInput(attrs={'class': 'form-control'}),
             'nationality': forms.TextInput(attrs={'class': 'form-control'}),
             'marital_status': forms.Select(attrs={'class': 'form-select'}),
-            'current_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'current_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'phone': forms.TextInput(attrs={'type': 'tel', 'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'position': forms.Select(attrs={'class': 'form-select'}),
@@ -41,7 +96,7 @@ class PersonnelForm(forms.ModelForm):
             'identity_photo_digital': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'contract_copy_attached': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'other_pieces_attached': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'other_pieces_details': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'other_pieces_details': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'matricule': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'photo': forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-control', 'capture': 'user'}),
             'contract_file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
@@ -49,7 +104,7 @@ class PersonnelForm(forms.ModelForm):
             'admin_received_by': forms.TextInput(attrs={'class': 'form-control'}),
             'admin_function': forms.TextInput(attrs={'class': 'form-control'}),
             'admin_received_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'admin_observations': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'admin_observations': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -59,7 +114,21 @@ class PersonnelForm(forms.ModelForm):
         self.fields['first_name'].required = True
         self.fields['last_name'].required = True
         self.fields['sex'].required = True
+        self.fields['education_level'].required = True
+        self.fields['photo'].required = False
         self.fields['sex'].choices = Personnel.SEX_CHOICES
+
+        order_cases = [
+            When(name=name, then=Value(index))
+            for index, name in enumerate(PERSONNEL_CATEGORY_ORDER)
+        ]
+        self.fields['category'].queryset = (
+            Category.objects.annotate(
+                _order=Case(*order_cases, default=Value(99), output_field=IntegerField())
+            )
+            .order_by('_order', 'name')
+        )
+        self.fields['category'].empty_label = "Sélectionner une catégorie"
 
         self.baremes_disponibles = list(
             BaremePrestation.objects.filter(active=True).order_by(
@@ -103,8 +172,8 @@ class PersonnelForm(forms.ModelForm):
             if qs.exists():
                 raise forms.ValidationError("Un personnel avec ce prénom et ce nom est déjà enregistré.")
 
-        if category and category.name.lower() == "autre" and not category_other:
-            self.add_error('category_other', "Veuillez préciser la catégorie quand « Autre » est sélectionné.")
+        if category and is_autres_category(category) and not category_other:
+            self.add_error('category_other', "Veuillez préciser la catégorie quand « Autres » est sélectionné.")
 
         if other_pieces_attached and not other_pieces_details:
             self.add_error('other_pieces_details', "Veuillez préciser les autres pièces jointes.")

@@ -5,10 +5,33 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import Student, Inscription, TypeDocument, DocumentEtudiant, DossierEtudiant
 from academics.models import Section, Filiere, Promotion, Classe, AnneeAcademique
-from academics.utils import ActiveAnneeModelFormMixin
+from academics.utils import ActiveAnneeModelFormMixin, NO_ACTIVE_ANNEE_ERROR
+from students.matricule import MATRICULE_HELP
 
 
 class StudentForm(forms.ModelForm):
+    filiere = forms.ModelChoiceField(
+        queryset=Filiere.objects.none(),
+        required=False,
+        label="Filière",
+        empty_label="Choisir…",
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_filiere'}),
+    )
+    promotion = forms.ModelChoiceField(
+        queryset=Promotion.objects.none(),
+        required=False,
+        label="Promotion",
+        empty_label="Choisir…",
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_promotion'}),
+    )
+    classe = forms.ModelChoiceField(
+        queryset=Classe.objects.none(),
+        required=False,
+        label="Classe",
+        empty_label="Choisir…",
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_classe'}),
+    )
+
     class Meta:
         model = Student
         fields = [
@@ -17,7 +40,11 @@ class StudentForm(forms.ModelForm):
             'email', 'adresse', 'photo', 'statut'
         ]
         widgets = {
-            'numero_etudiant': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: ETU2024001'}),
+            'numero_etudiant': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 2026R001',
+                'style': 'text-transform: uppercase',
+            }),
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de famille'}),
             'prenom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Prénom'}),
             'date_naissance': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -26,16 +53,120 @@ class StudentForm(forms.ModelForm):
             'sexe': forms.Select(attrs={'class': 'form-select'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+213 XXX XXX XXX'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@example.com'}),
-            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Adresse complète'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Adresse complète'}),
             'photo': forms.FileInput(attrs={'class': 'd-none', 'accept': 'image/*'}),
             'statut': forms.Select(attrs={'class': 'form-select'}),
         }
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         sexe_field = self.fields['sexe']
         sexe_field.choices = [('', 'Choisir...')] + list(sexe_field.choices)
+
+        self.fields['filiere'].queryset = Filiere.objects.filter(active=True).order_by('code')
+        self.fields['promotion'].queryset = Promotion.objects.none()
+        self.fields['classe'].queryset = Classe.objects.none()
+
+        annee = AnneeAcademique.get_active()
+        inscription = None
+        if self.instance.pk and annee:
+            inscription = (
+                Inscription.objects.filter(
+                    etudiant=self.instance,
+                    annee_academique=annee,
+                )
+                .select_related('classe__promotion__filiere')
+                .first()
+            )
+
+        if inscription and inscription.classe_id:
+            promo = inscription.classe.promotion
+            fil = promo.filiere
+            self.fields['filiere'].initial = fil
+            self.fields['promotion'].queryset = Promotion.objects.filter(
+                filiere=fil, active=True
+            ).order_by('ordre', 'code')
+            self.fields['promotion'].initial = promo
+            self.fields['classe'].queryset = Classe.objects.filter(
+                promotion=promo, active=True
+            ).order_by('code')
+            self.fields['classe'].initial = inscription.classe
+
+        data = self.data or None
+        if data:
+            filiere_id = data.get('filiere')
+            if filiere_id:
+                self.fields['promotion'].queryset = Promotion.objects.filter(
+                    filiere_id=filiere_id, active=True
+                ).order_by('ordre', 'code')
+            promotion_id = data.get('promotion')
+            if promotion_id:
+                self.fields['classe'].queryset = Classe.objects.filter(
+                    promotion_id=promotion_id, active=True
+                ).order_by('code')
+
+    def clean(self):
+        cleaned = super().clean()
+        filiere = cleaned.get('filiere')
+        promotion = cleaned.get('promotion')
+        classe = cleaned.get('classe')
+
+        if any([filiere, promotion, classe]) and not classe:
+            raise forms.ValidationError(
+                "Sélectionnez une filière, une promotion et une classe pour le parcours académique."
+            )
+        if classe:
+            if not promotion or not filiere:
+                raise forms.ValidationError(
+                    "Sélectionnez une filière, une promotion et une classe pour le parcours académique."
+                )
+            if classe.promotion_id != promotion.id or promotion.filiere_id != filiere.id:
+                raise forms.ValidationError("La classe ne correspond pas à la filière sélectionnée.")
+
+        if classe and not AnneeAcademique.get_active():
+            raise forms.ValidationError(NO_ACTIVE_ANNEE_ERROR)
+
+        return cleaned
+
+    @staticmethod
+    def _generate_numero_inscription(annee):
+        prefix = f"INS{annee.annee_debut}"
+        count = Inscription.objects.filter(
+            numero_inscription__startswith=prefix,
+        ).count()
+        return f"{prefix}{count + 1:04d}"
+
+    def save(self, commit=True):
+        student = super().save(commit=commit)
+        if not commit:
+            return student
+
+        classe = self.cleaned_data.get('classe')
+        annee = AnneeAcademique.get_active()
+        if not annee or not classe:
+            return student
+
+        inscription = Inscription.objects.filter(
+            etudiant=student,
+            annee_academique=annee,
+        ).first()
+        if inscription:
+            if inscription.classe_id != classe.id:
+                inscription.classe = classe
+                inscription.save(update_fields=['classe_id'])
+        else:
+            inscription = Inscription.objects.create(
+                etudiant=student,
+                classe=classe,
+                annee_academique=annee,
+                numero_inscription=self._generate_numero_inscription(annee),
+                statut='inscrit',
+            )
+        DossierEtudiant.objects.get_or_create(
+            inscription=inscription,
+            defaults={'statut': 'en_cours'},
+        )
+        return student
 
 
 class StudentImportForm(forms.Form):
@@ -64,7 +195,7 @@ class StudentListFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
     filiere = forms.ModelChoiceField(
-        queryset=Filiere.objects.filter(active=True).order_by('code'),
+        queryset=Filiere.objects.filter(active=True).order_by('nom'),
         required=False,
         label="Filière",
         empty_label="Toutes les filières",
@@ -74,6 +205,21 @@ class StudentListFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['statut'].choices = [('', 'Tous les statuts')] + list(Student._meta.get_field('statut').choices)
+        from academics.models import AnneeAcademique
+        annee = AnneeAcademique.get_active()
+        self.fields['filiere'].label_from_instance = lambda obj: self._filiere_label(obj, annee)
+
+    @staticmethod
+    def _filiere_label(filiere, annee):
+        from students.models import Student
+        label = f"{filiere.nom}"
+        if annee:
+            count = Student.objects.filter(
+                inscriptions__classe__promotion__filiere=filiere,
+                inscriptions__annee_academique=annee,
+            ).distinct().count()
+            label = f"{label} ({count})"
+        return label
 
 
 class InscriptionListFilterForm(forms.Form):

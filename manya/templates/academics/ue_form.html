@@ -20,9 +20,10 @@
 {% block form_main_col %}col-lg-12{% endblock %}
 
 {% block form_main %}
-{% include "components/ecore_form_section_open.html" with icon="fa-sitemap" title="Rattachement" subtitle="Semestre et ordre d'affichage" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-sitemap" title="Rattachement" subtitle="Semestre, filière et ordre d'affichage" %}
 <div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.semestre col="col-md-8" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.semestre col="col-md-4" icon="fa-calendar" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.filiere col="col-md-4" icon="fa-graduation-cap" %}
   {% include "components/ecore_form_field.html" with field=form.ordre col="col-md-4" icon="fa-sort-numeric-asc" %}
 </div>
 {% include "components/ecore_form_section_close.html" %}
@@ -34,9 +35,10 @@
 {% include "components/ecore_form_section_close.html" %}
 {% include "components/ecore_form_section_open.html" with icon="fa-calculator" title="Paramètres LMD" subtitle="Crédits, coefficient et seuil" %}
 <div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.credits_ects col="col-md-4" icon="fa-star" required=True %}
-  {% include "components/ecore_form_field.html" with field=form.coefficient col="col-md-4" icon="fa-percent" required=True %}
-  {% include "components/ecore_form_field.html" with field=form.seuil_validation col="col-md-4" icon="fa-check-circle" help="Seuil sur 20" %}
+  {% include "components/ecore_form_field.html" with field=form.credits_ects col="col-md-3" icon="fa-star" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.coefficient col="col-md-3" icon="fa-percent" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.seuil_validation col="col-md-3" icon="fa-check-circle" help="Seuil sur 20" %}
+  {% include "components/ecore_form_field.html" with field=form.categorie col="col-md-3" icon="fa-layer-group" %}
 </div>
 {% include "components/ecore_form_section_close.html" %}
 {% include "components/ecore_form_section_open.html" with icon="fa-align-left" title="Description" subtitle="Contenu et objectifs" %}

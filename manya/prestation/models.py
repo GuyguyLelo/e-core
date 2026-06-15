@@ -457,9 +457,13 @@ class HoraireLigne(models.Model):
     @property
     def titulaire_affichage(self):
         professeur = self.professeur_affichage
-        if not professeur:
-            return "-"
-        return f"{professeur.last_name} {professeur.first_name}".strip()
+        if professeur:
+            return f"{professeur.last_name} {professeur.first_name}".strip()
+        if self.notes:
+            prefix = "Enseignant:"
+            if self.notes.startswith(prefix):
+                return self.notes[len(prefix):].strip()
+        return "-"
 
     @property
     def local_affichage(self):

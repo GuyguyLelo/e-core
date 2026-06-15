@@ -36,7 +36,11 @@
             <tbody>
               {% for promotion in promotions %}
               <tr>
-                <td><span class="fw-semibold text-primary">{{ promotion.code }}</span></td>
+                <td>
+                  <a href="{% url 'academics:promotion_detail' promotion.pk %}" class="fw-semibold text-primary text-decoration-none">
+                    {{ promotion.code }}
+                  </a>
+                </td>
                 <td>{{ promotion.nom }}</td>
                 <td>{{ promotion.filiere.section.nom }}</td>
                 <td>{{ promotion.filiere.nom }}</td>
@@ -49,9 +53,10 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
+                  {% url 'academics:promotion_detail' promotion.pk as detail_link %}
                   {% url 'academics:promotion_update' promotion.pk as edit_link %}
                   {% url 'academics:promotion_delete' promotion.pk as del_link %}
-                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                  {% include "components/table_actions.html" with detail_url=detail_link update_url=edit_link delete_url=del_link %}
                 </td>
               </tr>
               {% empty %}

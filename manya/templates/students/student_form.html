@@ -1,308 +1,111 @@
-{% extends "layout/master.html" %}
+{% extends "components/ecore_form_base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - e-Core{% endblock %}
-
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumb %}
+{% block form_breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-  .student-form-page .student-section-card {
-    border: 1px solid var(--ecore-border, rgba(14, 165, 233, 0.12));
-    border-radius: var(--ecore-radius-lg, 14px);
-    box-shadow: 0 2px 12px rgba(14, 165, 233, 0.08);
-    margin-bottom: 1.25rem;
-    overflow: hidden;
-  }
-  .student-form-page .student-section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.85rem 1.25rem;
-    background: linear-gradient(90deg, rgba(14, 165, 233, 0.08) 0%, transparent 100%);
-    border-bottom: 1px solid var(--ecore-border, rgba(14, 165, 233, 0.12));
-  }
-  .student-form-page .student-section-icon {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--ecore-primary, #0ea5e9);
-    color: #fff;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-  }
-  .student-form-page .student-section-title {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--ecore-primary-dark, #0284c7);
-  }
-  .student-form-page .student-section-body {
-    padding: 1.25rem;
-  }
-  .student-photo-card {
-    position: sticky;
-    top: 1rem;
-  }
-  .student-photo-preview {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid #fff;
-    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
-  }
-  .student-photo-placeholder {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #e8ecf2 0%, #f0f2f6 100%);
-    border: 2px dashed rgba(14, 165, 233, 0.25);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--ecore-text-muted, #6b7280);
-  }
-  .student-photo-upload {
-    border: 2px dashed rgba(14, 165, 233, 0.22);
-    border-radius: var(--ecore-radius, 10px);
-    padding: 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .student-photo-upload:hover,
-  .student-photo-upload.is-dragover {
-    border-color: var(--ecore-primary, #0ea5e9);
-    background: rgba(14, 165, 233, 0.06);
-  }
-  .student-required-note {
-    font-size: 0.85rem;
-    color: var(--ecore-text-muted, #6b7280);
-  }
-  body.dark-only .student-form-page .student-section-header {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
-  }
-  body.dark-only .student-form-page .student-section-title {
-    color: rgba(255, 255, 255, 0.92);
-  }
-  body.dark-only .student-photo-placeholder {
-    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-</style>
+{% block form_id %}student-form{% endblock %}
+{% block form_enctype %} enctype="multipart/form-data"{% endblock %}
+{% block form_main_col %}col-lg-9{% endblock %}
+
+{% block form_extra_notices %}
+{% if subtitle %}
+<p class="text-muted small mb-3">{{ subtitle }}</p>
+{% endif %}
 {% endblock %}
 
-{% block content %}
-<div class="student-form-page">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
-        <div class="card-body">
-          {% include "components/messages.html" %}
-
-          {% if form.errors %}
-            <div class="alert alert-danger ecore-alert" role="alert">
-              Veuillez corriger les erreurs ci-dessous.
-              {{ form.non_field_errors }}
-            </div>
-          {% endif %}
-
-          <p class="student-required-note mb-4">
-            <span class="text-danger">*</span> Champs obligatoires
-          </p>
-
-          <form method="post" enctype="multipart/form-data" id="student-form">
-            {% csrf_token %}
-
-            <div class="row g-4">
-              <!-- Colonne formulaire -->
-              <div class="col-lg-8">
-                <!-- Section Identité -->
-                <div class="student-section-card">
-                  <div class="student-section-header">
-                    <span class="student-section-icon"><i class="fa fa-user"></i></span>
-                    <h6 class="student-section-title">Identité</h6>
-                  </div>
-                  <div class="student-section-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          <label for="{{ form.nom.id_for_label }}" class="form-label">
-                            Nom <span class="text-danger">*</span>
-                          </label>
-                          {{ form.nom }}
-                          {% if form.nom.errors %}<div class="text-danger small">{{ form.nom.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          <label for="{{ form.prenom.id_for_label }}" class="form-label">
-                            Prénom <span class="text-danger">*</span>
-                          </label>
-                          {{ form.prenom }}
-                          {% if form.prenom.errors %}<div class="text-danger small">{{ form.prenom.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <div class="col-md-4">
-                        <div class="mb-3">
-                          <label for="{{ form.date_naissance.id_for_label }}" class="form-label">
-                            Date de naissance <span class="text-danger">*</span>
-                          </label>
-                          {{ form.date_naissance }}
-                          {% if form.date_naissance.errors %}<div class="text-danger small">{{ form.date_naissance.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="mb-3">
-                          <label for="{{ form.lieu_naissance.id_for_label }}" class="form-label">
-                            Lieu de naissance <span class="text-danger">*</span>
-                          </label>
-                          {{ form.lieu_naissance }}
-                          {% if form.lieu_naissance.errors %}<div class="text-danger small">{{ form.lieu_naissance.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="mb-3">
-                          <label for="{{ form.sexe.id_for_label }}" class="form-label">
-                            Sexe <span class="text-danger">*</span>
-                          </label>
-                          {{ form.sexe }}
-                          {% if form.sexe.errors %}<div class="text-danger small">{{ form.sexe.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="mb-0">
-                      <label for="{{ form.nationalite.id_for_label }}" class="form-label">Nationalité</label>
-                      {{ form.nationalite }}
-                      {% if form.nationalite.errors %}<div class="text-danger small">{{ form.nationalite.errors }}</div>{% endif %}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section Coordonnées -->
-                <div class="student-section-card">
-                  <div class="student-section-header">
-                    <span class="student-section-icon"><i class="fa fa-envelope"></i></span>
-                    <h6 class="student-section-title">Coordonnées</h6>
-                  </div>
-                  <div class="student-section-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          <label for="{{ form.email.id_for_label }}" class="form-label">
-                            Email <span class="text-danger">*</span>
-                          </label>
-                          {{ form.email }}
-                          {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          <label for="{{ form.telephone.id_for_label }}" class="form-label">Téléphone</label>
-                          {{ form.telephone }}
-                          {% if form.telephone.errors %}<div class="text-danger small">{{ form.telephone.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="mb-0">
-                      <label for="{{ form.adresse.id_for_label }}" class="form-label">Adresse</label>
-                      {{ form.adresse }}
-                      {% if form.adresse.errors %}<div class="text-danger small">{{ form.adresse.errors }}</div>{% endif %}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section Dossier administratif -->
-                <div class="student-section-card">
-                  <div class="student-section-header">
-                    <span class="student-section-icon"><i class="fa fa-id-card"></i></span>
-                    <h6 class="student-section-title">Dossier administratif</h6>
-                  </div>
-                  <div class="student-section-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          <label for="{{ form.numero_etudiant.id_for_label }}" class="form-label">
-                            Numéro étudiant <span class="text-danger">*</span>
-                          </label>
-                          {{ form.numero_etudiant }}
-                          <div class="form-text">Lettres majuscules et chiffres uniquement (ex. ETU2024001)</div>
-                          {% if form.numero_etudiant.errors %}<div class="text-danger small">{{ form.numero_etudiant.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="mb-0">
-                          <label for="{{ form.statut.id_for_label }}" class="form-label">
-                            Statut <span class="text-danger">*</span>
-                          </label>
-                          {{ form.statut }}
-                          {% if form.statut.errors %}<div class="text-danger small">{{ form.statut.errors }}</div>{% endif %}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {% include "components/form_actions.html" with cancel_url=cancel_url %}
-              </div>
-
-              <!-- Colonne photo -->
-              <div class="col-lg-4">
-                <div class="card student-photo-card border-0 shadow-sm">
-                  <div class="card-body text-center">
-                    <div class="mb-3" id="photo-preview-wrap">
-                      {% if object and object.photo %}
-                        <img src="{{ object.photo.url }}" alt="Photo" class="student-photo-preview" id="photo-preview">
-                      {% else %}
-                        <div class="student-photo-placeholder mx-auto" id="photo-placeholder">
-                          <i class="fa fa-user fa-3x"></i>
-                        </div>
-                        <img src="" alt="Aperçu" class="student-photo-preview d-none" id="photo-preview">
-                      {% endif %}
-                    </div>
-
-                    <h6 class="mb-1" id="student-name-preview">
-                      {% if object %}{{ object.prenom }} {{ object.nom }}{% else %}Nouvel étudiant{% endif %}
-                    </h6>
-                    <p class="text-muted small mb-3" id="student-num-preview">
-                      {% if object %}{{ object.numero_etudiant }}{% else %}Photo de profil{% endif %}
-                    </p>
-
-                    <div class="student-photo-upload" id="photo-dropzone" role="button" tabindex="0">
-                      <i class="fa fa-cloud-upload fa-2x text-primary mb-2 d-block"></i>
-                      <span class="d-block fw-semibold small">Choisir une photo</span>
-                      <span class="d-block text-muted small mt-1">JPG, PNG — max. 5 Mo</span>
-                    </div>
-                    {{ form.photo }}
-                    {% if form.photo.errors %}
-                      <div class="text-danger small mt-2">{{ form.photo.errors }}</div>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+{% block form_main %}
+{% include "components/ecore_form_section_open.html" with icon="fa-user" title="Identité" subtitle="État civil et nationalité" section_class="ecore-form-section-compact" %}
+<div class="row g-2">
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-6 col-lg-4" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.prenom col="col-md-6 col-lg-4" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.nationalite col="col-md-6 col-lg-4" %}
 </div>
+<div class="row g-2 mt-1">
+  {% include "components/ecore_form_field.html" with field=form.date_naissance col="col-md-4 col-lg-3" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.lieu_naissance col="col-md-4 col-lg-5" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.sexe col="col-md-4 col-lg-4" required=True %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
 
+{% include "components/ecore_form_section_open.html" with icon="fa-sitemap" title="Parcours académique" subtitle="Filière, promotion et classe" section_class="ecore-form-section-compact" %}
+{% if annee_active %}
+<div class="alert alert-light border py-2 px-3 small mb-2">
+  <i class="fa fa-calendar text-primary me-1"></i>
+  Inscription sur l'année active <strong>{{ annee_active.code }}</strong>
+</div>
+{% else %}
+<div class="alert alert-warning py-2 px-3 small mb-2">
+  Aucune année académique active — le parcours ne pourra pas être enregistré.
+</div>
+{% endif %}
+<div class="row g-2">
+  {% include "components/ecore_form_field.html" with field=form.filiere col="col-md-4" icon="fa-bookmark" %}
+  {% include "components/ecore_form_field.html" with field=form.promotion col="col-md-4" icon="fa-graduation-cap" %}
+  {% include "components/ecore_form_field.html" with field=form.classe col="col-md-4" icon="fa-users" help="Définit la filière via la promotion" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+
+{% include "components/ecore_form_section_open.html" with icon="fa-id-card" title="Dossier" subtitle="Matricule et statut administratif" section_class="ecore-form-section-compact" %}
+<div class="row g-2">
+  {% include "components/ecore_form_field.html" with field=form.numero_etudiant col="col-md-7" icon="fa-hashtag" required=True help="Ex. 2026C001 (conception) ou 2026R001 (réseaux)" %}
+  {% include "components/ecore_form_field.html" with field=form.statut col="col-md-5" required=True %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+
+{% include "components/ecore_form_section_open.html" with icon="fa-envelope" title="Coordonnées" subtitle="Contact et adresse" section_class="mb-0 ecore-form-section-compact" %}
+<div class="row g-2">
+  {% include "components/ecore_form_field.html" with field=form.email col="col-md-6" icon="fa-envelope-o" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.telephone col="col-md-6" icon="fa-phone" %}
+</div>
+<div class="row g-2 mt-1">
+  {% include "components/ecore_form_field.html" with field=form.adresse col="col-12" %}
+</div>
+{% include "components/ecore_form_section_close.html" %}
+{% endblock %}
+
+{% block form_actions %}
+{% include "components/form_actions.html" with cancel_url=cancel_url %}
+{% endblock %}
+
+{% block form_aside %}
+<div class="ecore-form-aside-card ecore-student-photo-aside sticky-top" style="top: 1rem;">
+  <h6 class="mb-2"><i class="fa fa-camera me-1"></i> Photo</h6>
+  <div class="text-center mb-2" id="photo-preview-wrap">
+    {% if object and object.photo %}
+      <img src="{{ object.photo.url }}" alt="Photo" class="ecore-student-photo-preview" id="photo-preview">
+    {% else %}
+      <div class="ecore-student-photo-placeholder mx-auto" id="photo-placeholder">
+        <i class="fa fa-user"></i>
+      </div>
+      <img src="" alt="Aperçu" class="ecore-student-photo-preview d-none" id="photo-preview">
+    {% endif %}
+  </div>
+  <p class="text-center mb-1 fw-semibold small" id="student-name-preview">
+    {% if object %}{{ object.prenom }} {{ object.nom }}{% else %}Nouvel étudiant{% endif %}
+  </p>
+  <p class="text-center text-muted small mb-2" id="student-num-preview">
+    {% if object %}{{ object.numero_etudiant }}{% else %}—{% endif %}
+  </p>
+  <p class="text-center text-muted small mb-2" id="student-filiere-preview">
+    {% if object and object.filiere_courante %}{{ object.filiere_courante.code }}{% else %}—{% endif %}
+  </p>
+  <div class="ecore-student-photo-upload" id="photo-dropzone" role="button" tabindex="0">
+    <i class="fa fa-cloud-upload text-primary"></i>
+    <span>Choisir une photo</span>
+    <small class="text-muted">JPG, PNG — 5 Mo max.</small>
+  </div>
+  {{ form.photo }}
+  {% if form.photo.errors %}
+    <div class="text-danger small mt-2">{{ form.photo.errors }}</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block form_extra_js %}
 <script>
 (function () {
   const photoInput = document.getElementById("id_photo");
@@ -366,13 +169,72 @@
 
   function updateNumPreview() {
     if (!numPreview || !numInput) return;
-    const num = numInput.value.trim();
-    numPreview.textContent = num || "Photo de profil";
+    numPreview.textContent = numInput.value.trim() || "—";
   }
 
   if (nomInput) nomInput.addEventListener("input", updateNamePreview);
   if (prenomInput) prenomInput.addEventListener("input", updateNamePreview);
   if (numInput) numInput.addEventListener("input", updateNumPreview);
+
+  const filiereSel = document.getElementById("id_filiere");
+  const promotionSel = document.getElementById("id_promotion");
+  const classeSel = document.getElementById("id_classe");
+  const filierePreview = document.getElementById("student-filiere-preview");
+
+  function setOptions(select, items, placeholder) {
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = "";
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = placeholder || "Choisir…";
+    select.appendChild(empty);
+    items.forEach(function (item) {
+      const opt = document.createElement("option");
+      opt.value = String(item.id);
+      opt.textContent = item.text;
+      select.appendChild(opt);
+    });
+    if (current && Array.from(select.options).some(function (o) { return o.value === current; })) {
+      select.value = current;
+    }
+  }
+
+  async function fetchJson(url) {
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    return await res.json();
+  }
+
+  function updateFilierePreview() {
+    if (!filierePreview || !filiereSel) return;
+    const opt = filiereSel.options[filiereSel.selectedIndex];
+    if (!filiereSel.value || !opt) {
+      filierePreview.textContent = "—";
+      return;
+    }
+    const code = (opt.textContent || "").split(" - ")[0].trim();
+    filierePreview.textContent = code || opt.textContent;
+  }
+
+  async function onFiliereChange() {
+    setOptions(promotionSel, [], "Choisir…");
+    setOptions(classeSel, [], "Choisir…");
+    updateFilierePreview();
+    if (!filiereSel || !filiereSel.value) return;
+    const data = await fetchJson("{% url 'academics:api_promotions' %}?filiere_id=" + encodeURIComponent(filiereSel.value));
+    setOptions(promotionSel, data.results || [], "Choisir…");
+  }
+
+  async function onPromotionChange() {
+    setOptions(classeSel, [], "Choisir…");
+    if (!promotionSel || !promotionSel.value) return;
+    const data = await fetchJson("{% url 'academics:api_classes' %}?promotion_id=" + encodeURIComponent(promotionSel.value));
+    setOptions(classeSel, data.results || [], "Choisir…");
+  }
+
+  if (filiereSel) filiereSel.addEventListener("change", onFiliereChange);
+  if (promotionSel) promotionSel.addEventListener("change", onPromotionChange);
+  if (filiereSel) updateFilierePreview();
 })();
 </script>
 {% endblock %}

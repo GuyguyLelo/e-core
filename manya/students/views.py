@@ -251,6 +251,7 @@ def student_create(request):
         'title': 'Nouvel Étudiant',
         'subtitle': 'Renseignez les informations du nouvel étudiant',
         'cancel_url': reverse('students:student_list'),
+        'annee_active': AnneeAcademique.get_active(),
     })
 
 
@@ -271,6 +272,7 @@ def student_update(request, pk):
         'subtitle': f'Modifier le dossier de {student.prenom} {student.nom}',
         'object': student,
         'cancel_url': reverse('students:student_list'),
+        'annee_active': AnneeAcademique.get_active(),
     })
 
 
@@ -579,11 +581,11 @@ def type_document_create(request):
         form = TypeDocumentForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Type de document créé avec succès!')
+            messages.success(request, 'Élément du dossier créé avec succès!')
             return redirect('students:type_document_list')
     else:
         form = TypeDocumentForm()
-    return render(request, 'students/type_document_form.html', {'form': form, 'title': 'Nouveau Type de Document'})
+    return render(request, 'students/type_document_form.html', {'form': form, 'title': 'Nouvel élément du dossier'})
 
 
 @login_required
@@ -593,11 +595,11 @@ def type_document_update(request, pk):
         form = TypeDocumentForm(request.POST, instance=type_doc)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Type de document modifié avec succès!')
+            messages.success(request, 'Élément du dossier modifié avec succès!')
             return redirect('students:type_document_list')
     else:
         form = TypeDocumentForm(instance=type_doc)
-    return render(request, 'students/type_document_form.html', {'form': form, 'title': 'Modifier Type de Document', 'object': type_doc})
+    return render(request, 'students/type_document_form.html', {'form': form, 'title': 'Modifier un élément du dossier', 'object': type_doc})
 
 
 @login_required
@@ -605,7 +607,7 @@ def type_document_delete(request, pk):
     type_doc = get_object_or_404(TypeDocument, pk=pk)
     if request.method == 'POST':
         type_doc.delete()
-        messages.success(request, 'Type de document supprimé avec succès!')
+        messages.success(request, 'Élément du dossier supprimé avec succès!')
         return redirect('students:type_document_list')
     return render(request, 'students/type_document_confirm_delete.html', {'type_doc': type_doc})
 
