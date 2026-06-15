@@ -240,15 +240,117 @@ class TypeDocumentForm(forms.ModelForm):
         }
 
 
+class DocumentListFilterForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label="Rechercher",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'N° étudiant, nom, type…',
+        }),
+    )
+    filiere = forms.ModelChoiceField(
+        queryset=Filiere.objects.filter(active=True).order_by('code'),
+        required=False,
+        label="Filière",
+        empty_label="Toutes les filières",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    promotion = forms.ModelChoiceField(
+        queryset=Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere__code', 'ordre'),
+        required=False,
+        label="Promotion",
+        empty_label="Toutes les promotions",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    annee = forms.ModelChoiceField(
+        queryset=AnneeAcademique.objects.all().order_by('-annee_debut'),
+        required=False,
+        label="Année académique",
+        empty_label="Toutes les années",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        promotion_qs = Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere__code', 'ordre')
+        filiere_id = self.data.get('filiere') if self.is_bound else None
+        if not filiere_id and not self.is_bound:
+            filiere_id = self.initial.get('filiere')
+        if filiere_id:
+            promotion_qs = promotion_qs.filter(filiere_id=filiere_id)
+        self.fields['promotion'].queryset = promotion_qs
+
+
 class DocumentEtudiantForm(forms.ModelForm):
     class Meta:
         model = DocumentEtudiant
-        fields = ['etudiant', 'inscription', 'type_document', 'fichier', 'valide', 'notes']
+        fields = ['inscription', 'type_document', 'fichier', 'valide', 'notes']
         widgets = {
-            'etudiant': forms.Select(attrs={'class': 'form-control'}),
-            'inscription': forms.Select(attrs={'class': 'form-control'}),
-            'type_document': forms.Select(attrs={'class': 'form-control'}),
+            'inscription': forms.Select(attrs={'class': 'form-select'}),
+            'type_document': forms.Select(attrs={'class': 'form-select'}),
             'fichier': forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf,.jpg,.jpeg,.png'}),
             'valide': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def __init__(self, *args, promotion=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['inscription'].required = True
+        self.fields['inscription'].label = "Inscription (étudiant / promotion)"
+
+        qs = (
+            Inscription.objects.select_related(
+                'etudiant',
+                'classe',
+                'classe__promotion',
+                'classe__promotion__filiere',
+                'annee_academique',
+            )
+            .exclude(statut='desinscrit')
+            .order_by('etudiant__numero_etudiant')
+        )
+        annee = AnneeAcademique.get_active()
+        if annee:
+            qs = qs.filter(annee_academique=annee)
+        if promotion:
+            qs = qs.filter(classe__promotion=promotion)
+        self.fields['inscription'].queryset = qs
+        self.fields['inscription'].label_from_instance = self._inscription_label
+
+    @staticmethod
+    def _inscription_label(inscription):
+        promo = inscription.classe.promotion if inscription.classe_id else None
+        classe = inscription.classe.code if inscription.classe_id else "—"
+        promo_code = promo.code if promo else "—"
+        return (
+            f"{inscription.etudiant.numero_etudiant} — {inscription.etudiant.nom_complet} "
+            f"({promo_code} / {classe})"
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        inscription = cleaned.get('inscription')
+        type_document = cleaned.get('type_document')
+        if inscription:
+            cleaned['etudiant'] = inscription.etudiant
+        if inscription and type_document:
+            duplicates = DocumentEtudiant.objects.filter(
+                inscription=inscription,
+                type_document=type_document,
+            )
+            if self.instance.pk:
+                duplicates = duplicates.exclude(pk=self.instance.pk)
+            if duplicates.exists():
+                raise forms.ValidationError(
+                    "Ce type de document existe déjà pour cette inscription."
+                )
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if instance.inscription_id:
+            instance.etudiant_id = instance.inscription.etudiant_id
+        if commit:
+            instance.save()
+        return instance

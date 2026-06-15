@@ -20,8 +20,9 @@ from .models import Student, Inscription, TypeDocument, DocumentEtudiant, Dossie
 from .forms import (
     StudentForm, StudentImportForm, InscriptionForm, TypeDocumentForm,
     DocumentEtudiantForm, StudentListFilterForm, InscriptionListFilterForm,
+    DocumentListFilterForm,
 )
-from academics.models import AnneeAcademique
+from academics.models import AnneeAcademique, Promotion
 
 
 # ========== ETUDIANTS ==========
@@ -303,10 +304,24 @@ def student_detail(request, pk):
         sync_inscription_dossier(inscription_cible)
         dossier.refresh_from_db()
 
+    documents = (
+        DocumentEtudiant.objects.filter(etudiant=student, inscription__isnull=False)
+        .select_related(
+            'type_document',
+            'inscription',
+            'inscription__annee_academique',
+            'inscription__classe',
+            'inscription__classe__promotion',
+        )
+        .order_by('-date_depot')
+    )
+
     return render(request, 'students/student_detail.html', {
         'student': student,
         'inscriptions': inscriptions,
         'dossier': dossier,
+        'documents': documents,
+        'inscription_cible': inscription_cible,
     })
 
 
@@ -427,17 +442,75 @@ def inscription_delete(request, pk):
 # ========== DOCUMENTS ==========
 @login_required
 def document_list(request):
-    documents = DocumentEtudiant.objects.select_related('etudiant', 'type_document').all().order_by('-date_depot')
+    annee_active = AnneeAcademique.get_active()
+    has_filters = bool(request.GET)
+    if has_filters:
+        filter_form = DocumentListFilterForm(request.GET)
+        query_params = request.GET.copy()
+    else:
+        query_params = QueryDict(mutable=True)
+        if annee_active:
+            query_params['annee'] = str(annee_active.pk)
+        filter_form = DocumentListFilterForm(query_params)
+
+    documents = DocumentEtudiant.objects.select_related(
+        'etudiant',
+        'type_document',
+        'inscription',
+        'inscription__classe',
+        'inscription__classe__promotion',
+        'inscription__classe__promotion__filiere',
+        'inscription__annee_academique',
+    ).filter(inscription__isnull=False)
+
+    if filter_form.is_valid():
+        q = filter_form.cleaned_data.get('q')
+        if q:
+            documents = documents.filter(
+                Q(etudiant__numero_etudiant__icontains=q)
+                | Q(etudiant__nom__icontains=q)
+                | Q(etudiant__prenom__icontains=q)
+                | Q(type_document__nom__icontains=q)
+                | Q(inscription__numero_inscription__icontains=q)
+            )
+        filiere = filter_form.cleaned_data.get('filiere')
+        if filiere:
+            documents = documents.filter(inscription__classe__promotion__filiere=filiere)
+        promotion = filter_form.cleaned_data.get('promotion')
+        if promotion:
+            documents = documents.filter(inscription__classe__promotion=promotion)
+        annee = filter_form.cleaned_data.get('annee')
+        if annee:
+            documents = documents.filter(inscription__annee_academique=annee)
+
+    documents = documents.order_by('-date_depot')
     paginator = Paginator(documents, 15)
     page = request.GET.get('page')
     documents = paginator.get_page(page)
-    return render(request, 'students/document_list.html', {'documents': documents})
+
+    query_params.pop('page', None)
+    filter_query = query_params.urlencode()
+
+    return render(request, 'students/document_list.html', {
+        'documents': documents,
+        'filter_form': filter_form,
+        'filter_query': filter_query,
+        'has_filters': has_filters,
+    })
+
+
+def _document_form_promotion(request):
+    promotion_id = request.GET.get('promotion') or request.POST.get('promotion')
+    if promotion_id and str(promotion_id).isdigit():
+        return Promotion.objects.filter(pk=int(promotion_id)).first()
+    return None
 
 
 @login_required
 def document_create(request):
+    promotion = _document_form_promotion(request)
     if request.method == 'POST':
-        form = DocumentEtudiantForm(request.POST, request.FILES)
+        form = DocumentEtudiantForm(request.POST, request.FILES, promotion=promotion)
         if form.is_valid():
             document = form.save(commit=False)
             if document.valide:
@@ -447,19 +520,23 @@ def document_create(request):
             messages.success(request, 'Document ajouté avec succès!')
             return redirect('students:document_list')
     else:
-        form = DocumentEtudiantForm()
+        form = DocumentEtudiantForm(promotion=promotion)
     return render(request, 'students/document_form.html', {
         'form': form,
         'title': 'Nouveau Document',
-        'subtitle': 'Déposer une pièce justificative pour un étudiant',
+        'subtitle': 'Déposer une pièce pour une inscription (promotion)',
+        'filter_promotion': promotion,
     })
 
 
 @login_required
 def document_update(request, pk):
     document = get_object_or_404(DocumentEtudiant, pk=pk)
+    promotion = _document_form_promotion(request)
+    if not promotion and document.inscription_id:
+        promotion = document.inscription.classe.promotion if document.inscription.classe_id else None
     if request.method == 'POST':
-        form = DocumentEtudiantForm(request.POST, request.FILES, instance=document)
+        form = DocumentEtudiantForm(request.POST, request.FILES, instance=document, promotion=promotion)
         if form.is_valid():
             doc = form.save(commit=False)
             if doc.valide and not document.valide:
@@ -469,12 +546,13 @@ def document_update(request, pk):
             messages.success(request, 'Document modifié avec succès!')
             return redirect('students:document_list')
     else:
-        form = DocumentEtudiantForm(instance=document)
+        form = DocumentEtudiantForm(instance=document, promotion=promotion)
     return render(request, 'students/document_form.html', {
         'form': form,
         'title': 'Modifier Document',
-        'subtitle': f'Document de {document.etudiant.nom_complet}',
+        'subtitle': f'Document — {document.etudiant.nom_complet}',
         'object': document,
+        'filter_promotion': promotion,
     })
 
 

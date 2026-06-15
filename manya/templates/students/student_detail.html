@@ -126,6 +126,89 @@
         </div>
       </div>
     </div>
+
+    {% has_perm 'students.view_documentetudiant' as p_doc %}
+    {% if p_doc %}
+    <div class="card mt-4">
+      <div class="card-header ecore-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h5 class="mb-0"><i class="fa fa-file-text me-2 text-primary"></i>Documents</h5>
+        <a href="{% url 'students:document_list' %}?q={{ student.numero_etudiant|urlencode }}" class="btn btn-outline-primary btn-sm">
+          <i class="fa fa-external-link"></i> Tous les documents
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Promotion</th>
+                <th>Année</th>
+                <th>Dépôt</th>
+                <th>Statut</th>
+                <th class="text-end">Fichier</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for document in documents %}
+              <tr>
+                <td>
+                  <span class="fw-semibold">{{ document.type_document.nom }}</span>
+                  {% if document.type_document.obligatoire %}
+                    <span class="badge badge-light text-danger ms-1" title="Obligatoire">*</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if document.inscription.classe %}
+                    {{ document.inscription.classe.promotion.code }}
+                    <span class="text-muted small">/ {{ document.inscription.classe.code }}</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>{{ document.inscription.annee_academique.code }}</td>
+                <td>{{ document.date_depot|date:"d/m/Y" }}</td>
+                <td>
+                  {% if document.valide %}
+                    <span class="badge badge-success">Validé</span>
+                  {% else %}
+                    <span class="badge badge-warning">En attente</span>
+                  {% endif %}
+                  {% if not document.fichier %}
+                    <span class="badge badge-light text-muted">Sans fichier</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if document.fichier %}
+                    <a href="{{ document.fichier.url }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" title="Voir le fichier">
+                      <i class="fa fa-paperclip"></i>
+                    </a>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                  {% has_perm 'students.change_documentetudiant' as p_doc_edit %}
+                  {% if p_doc_edit %}
+                    <a href="{% url 'students:document_update' document.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                      <i class="fa fa-edit"></i>
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  Aucun document enregistré pour cet étudiant.
+                  {% has_perm 'students.add_documentetudiant' as p_doc_add %}
+                  {% if p_doc_add and dossier %}
+                    <a href="{% url 'students:dossier_detail' dossier.pk %}" class="d-block mt-1 small">Gérer via le dossier</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

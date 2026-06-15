@@ -176,6 +176,26 @@ def grille_notes(request):
 
 
 # ========== RELEVÉ DE NOTES ==========
+def _inscriptions_pour_releve(promotion_id, filiere_id=None):
+    """Inscriptions actives de la promotion pour l'année académique en cours."""
+    annee = AnneeAcademique.get_active()
+    if not annee or not promotion_id:
+        return Inscription.objects.none(), annee
+
+    qs = (
+        Inscription.objects.filter(
+            annee_academique=annee,
+            classe__promotion_id=promotion_id,
+        )
+        .exclude(statut='desinscrit')
+        .select_related('etudiant', 'classe', 'classe__promotion', 'classe__promotion__filiere')
+        .order_by('etudiant__numero_etudiant')
+    )
+    if filiere_id:
+        qs = qs.filter(classe__promotion__filiere_id=filiere_id)
+    return qs, annee
+
+
 @login_required
 def releve_notes_selection(request):
     """Page de sélection pour générer un relevé de notes PDF"""
@@ -204,11 +224,20 @@ def releve_notes_selection(request):
             )
             return response
 
+    selected = _document_selection_from_get(request, include_etudiant=True)
+    inscriptions_promotion = Inscription.objects.none()
+    if selected.get('promotion'):
+        filiere_pk = selected.get('option')
+        inscriptions_promotion, _ = _inscriptions_pour_releve(
+            selected['promotion'],
+            filiere_pk,
+        )
+
     context = {
         'semestres': Semestre.objects.filter(active=True).select_related('promotion').order_by('-promotion', 'numero'),
         'filieres': Filiere.objects.filter(active=True).order_by('code'),
         'promotions': Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere', 'ordre'),
-        'etudiants': Student.objects.filter(statut='actif').order_by('numero_etudiant'),
-        'selected': _document_selection_from_get(request, include_etudiant=True),
+        'inscriptions_promotion': inscriptions_promotion,
+        'selected': selected,
     }
     return render(request, 'documents/releve_notes.html', context)

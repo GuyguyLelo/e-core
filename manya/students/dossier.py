@@ -1,7 +1,5 @@
 """Synchronisation automatique de la complétude des dossiers."""
 
-from django.db.models import Q
-
 from .models import DossierEtudiant, DocumentEtudiant, Inscription, TypeDocument
 
 
@@ -13,8 +11,7 @@ def documents_obligatoires_deposes(inscription):
         return True, obligatoires_ids, set()
 
     deposes = DocumentEtudiant.objects.filter(
-        Q(inscription=inscription)
-        | Q(etudiant=inscription.etudiant, inscription__isnull=True),
+        inscription=inscription,
         type_document_id__in=obligatoires_ids,
     )
 
@@ -51,13 +48,6 @@ def sync_inscription_dossier(inscription):
 
 
 def sync_document_dossiers(document):
-    """Met à jour les dossiers liés à un document étudiant."""
-    inscription_ids = set()
+    """Met à jour le dossier lié à l'inscription du document."""
     if document.inscription_id:
-        inscription_ids.add(document.inscription_id)
-    elif document.etudiant_id:
-        inscription_ids.update(
-            Inscription.objects.filter(etudiant_id=document.etudiant_id).values_list('pk', flat=True)
-        )
-    for inscription_id in inscription_ids:
-        sync_inscription_dossier(inscription_id)
+        sync_inscription_dossier(document.inscription_id)

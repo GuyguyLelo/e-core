@@ -9,30 +9,32 @@
 
 {% block form_id %}document-form{% endblock %}
 {% block form_enctype %} enctype="multipart/form-data"{% endblock %}
-{% block form_extra_notices %}
 
+{% block form_extra_notices %}
+{% include "components/active_annee_notice.html" %}
 {% endblock %}
 
 {% block form_before_fields %}
-
+{% if filter_promotion %}
+<input type="hidden" name="promotion" value="{{ filter_promotion.pk }}">
+{% endif %}
 {% endblock %}
 
 {% block form_main_col %}col-lg-8{% endblock %}
 
 {% block form_main %}
-{% include "components/ecore_form_section_open.html" with icon="fa-user" title="Étudiant" subtitle="Document rattaché à un étudiant" %}
+{% include "components/ecore_form_section_open.html" with icon="fa-graduation-cap" title="Inscription" subtitle="Chaque document est rattaché à une inscription (promotion / classe)" %}
 <div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.etudiant col="col-md-6" icon="fa-user" required=True %}
+  {% include "components/ecore_form_field.html" with field=form.inscription col="col-12" icon="fa-user" required=True help="Étudiant, promotion et classe de l'année active" %}
   {% include "components/ecore_form_field.html" with field=form.type_document col="col-md-6" icon="fa-file-text" required=True %}
 </div>
 {% include "components/ecore_form_section_close.html" %}
-{% include "components/ecore_form_section_open.html" with icon="fa-link" title="Inscription" subtitle="Lien optionnel avec une inscription" %}
-{% include "components/ecore_form_field.html" with field=form.inscription col="col-md-6" icon="fa-graduation-cap" %}
-{% include "components/ecore_form_section_close.html" %}
+
 {% include "components/ecore_form_section_open.html" with icon="fa-paperclip" title="Fichier" subtitle="Pièce numérique jointe" %}
-{% include "components/ecore_form_field.html" with field=form.fichier col="col-md-8" icon="fa-upload" %}
+{% include "components/ecore_form_field.html" with field=form.fichier col="col-md-8" icon="fa-upload" help="Optionnel — peut être coché depuis le dossier sans fichier" %}
 {% if object and object.fichier %}<div class="mt-2"><a href="{{ object.fichier.url }}" target="_blank" rel="noopener">Voir le fichier actuel</a></div>{% endif %}
 {% include "components/ecore_form_section_close.html" %}
+
 {% include "components/ecore_form_section_open.html" with icon="fa-check" title="Validation" subtitle="Contrôle administratif" section_class="mb-0" %}
 <div class="row g-3 align-items-center">
   <div class="col-md-6"><div class="ecore-dossier-switch"><div><div class="fw-semibold small">Document validé</div></div><div class="form-check form-switch mb-0">{{ form.valide }}</div></div></div>
@@ -47,8 +49,14 @@
 {% endblock %}
 
 {% block form_aside %}
-{% include "components/ecore_form_aside_tips.html" with tip1="Le fichier peut être ajouté plus tard depuis le dossier" tip2="L'inscription précise l'année concernée" tip3="La validation confirme la conformité" %}
-{% endblock %}
-{% block form_extra_js %}
-
+{% if filter_promotion %}
+<div class="ecore-form-aside-card">
+  <h6><i class="fa fa-filter me-1"></i> Filtre promotion</h6>
+  <p class="small mb-0 text-muted">
+    Inscriptions limitées à la promotion <strong>{{ filter_promotion.code }}</strong>.
+    <a href="{% url 'students:document_create' %}">Voir toutes les promotions</a>
+  </p>
+</div>
+{% endif %}
+{% include "components/ecore_form_aside_tips.html" with tip1="Le document est lié à l'inscription, donc à la promotion" tip2="Un même type ne peut exister qu'une fois par inscription" tip3="La validation confirme la conformité de la pièce" %}
 {% endblock %}
