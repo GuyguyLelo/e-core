@@ -5,6 +5,10 @@
 
 {% block page_title %}Détail horaire{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/horaire-document.css' %}">
+{% endblock %}
+
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:horaire_list' %}">Horaires</a></li>
@@ -12,46 +16,6 @@
 {% endblock %}
 
 {% block content %}
-<style>
-    .horaire-paper {
-        background: #fff;
-        border: 1px solid #d1d5db;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-        padding: 24px;
-    }
-    .horaire-header {
-        text-align: center;
-        margin-bottom: 18px;
-    }
-    .horaire-header h4,
-    .horaire-header h5,
-    .horaire-header h6,
-    .horaire-header p {
-        margin: 0;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-    .horaire-title {
-        margin: 20px 0 18px;
-        text-decoration: underline;
-        font-weight: 700;
-        text-align: left;
-    }
-    .horaire-table th,
-    .horaire-table td {
-        border: 2px solid #1f2937 !important;
-        padding: 4px 6px !important;
-        font-size: 12px;
-        vertical-align: top;
-    }
-    .legend-table th,
-    .legend-table td {
-        border: 1.5px solid #1f2937 !important;
-        padding: 4px 6px !important;
-        font-size: 11px;
-    }
-</style>
-
 <div class="row mb-3">
     <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
@@ -73,75 +37,101 @@
 <div class="row">
     <div class="col-12">
         <div class="horaire-paper">
-            <div class="horaire-header">
+            <div class="horaire-doc-header">
                 <p>{{ horaire.direction|default:"DIRECTION DES SYSTEMES D'INFORMATION" }}</p>
                 <p>{{ horaire.ecole|default:"ECOLE INFORMATIQUE DES FINANCES" }}</p>
                 <p>{{ horaire.systeme_affichage|default:"SYSTEME LMD/RESEAU" }}</p>
-                <p>ANNEE ACADEMIQUE {{ horaire.annee_academique.code }}</p>
+                <p>Année académique {{ horaire.annee_academique.code }}</p>
             </div>
 
-            <h5 class="horaire-title">{{ horaire.titre_document }}</h5>
+            <div class="horaire-doc-body">
+                <h5 class="horaire-title">{{ horaire.titre_document }}</h5>
 
-            <div class="table-responsive mb-4">
-                <table class="table horaire-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 14%;">JOURS</th>
-                            <th style="width: 24%;">HEURES</th>
-                            <th style="width: 48%;">UE</th>
-                            <th style="width: 14%;">LOC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for day, day_lines in grouped_lines.items %}
-                            {% for line in day_lines %}
+                <div class="horaire-table-wrap mb-4">
+                    <table class="table horaire-table">
+                        <thead>
                             <tr>
-                                {% if forloop.first %}
-                                    <td rowspan="{{ day_lines|length }}"><strong>{{ line.get_jour_display|upper }}</strong></td>
-                                {% endif %}
-                                <td><strong>{{ line.heure_debut|time:"H" }}h{{ line.heure_debut|time:"i" }}-{{ line.heure_fin|time:"H" }}h{{ line.heure_fin|time:"i" }}</strong></td>
-                                <td><strong>{{ line.code_affichage }}</strong></td>
-                                <td><strong>{{ line.local_affichage }}</strong></td>
+                                <th style="width: 10%;">Jours</th>
+                                <th style="width: 13%;">Heures</th>
+                                <th style="width: 28%;">UE</th>
+                                <th style="width: 33%;">Enseignant</th>
+                                <th style="width: 10%;">Loc</th>
                             </tr>
-                            {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-8">
-                    <h6 class="mb-2"><u>INTITULES DES UE</u></h6>
-                    <div class="table-responsive">
-                        <table class="table legend-table">
-                            <thead>
+                        </thead>
+                        <tbody>
+                            {% for day, day_lines in grouped_lines.items %}
+                                {% for line in day_lines %}
                                 <tr>
-                                    <th>INTITULES DES UE</th>
-                                    <th>TITULAIRE</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for title, titulaire in legend_items %}
-                                <tr>
-                                    <td>{{ title }}</td>
-                                    <td>{{ titulaire }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted">Aucune ligne d'horaire disponible.</td>
+                                    {% if forloop.first %}
+                                    <td rowspan="{{ day_lines|length }}" class="horaire-cell-jour">{{ line.get_jour_display|upper }}</td>
+                                    {% endif %}
+                                    <td class="horaire-cell-heures">{{ line.heure_debut|time:"H" }}h{{ line.heure_debut|time:"i" }}–{{ line.heure_fin|time:"H" }}h{{ line.heure_fin|time:"i" }}</td>
+                                    <td>
+                                        <span class="ue-cell-code">{{ line.code_affichage }}</span>
+                                        {% if line.intitule_affichage %}
+                                        <span class="ue-cell-intitule">{{ line.intitule_affichage }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="horaire-cell-enseignant">{{ line.titulaire_affichage }}</td>
+                                    <td class="horaire-cell-loc">
+                                        <span class="horaire-loc-badge">{{ line.local_affichage }}</span>
+                                    </td>
                                 </tr>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="col-lg-4">
-                    <div class="border p-3">
-                        <div class="mb-2"><strong>Classe :</strong> {{ horaire.classe }}</div>
-                        <div class="mb-2"><strong>Filière :</strong> {{ horaire.filiere|default:"-" }}</div>
-                        <div class="mb-2"><strong>Promotion :</strong> {{ horaire.promotion }}</div>
-                        <div class="mb-2"><strong>Section :</strong> {{ horaire.section|default:"-" }}</div>
-                        <div class="mb-2"><strong>Semestre :</strong> {{ horaire.semestre|default:"-" }}</div>
+
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="horaire-legend-title">Intitulés des UE</div>
+                        <div class="horaire-legend-wrap">
+                            <table class="table horaire-legend-table">
+                                <thead>
+                                    <tr>
+                                        <th>Intitulé</th>
+                                        <th>Titulaire</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for title, titulaire in legend_items %}
+                                    <tr>
+                                        <td>{{ title }}</td>
+                                        <td class="horaire-cell-enseignant">{{ titulaire }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted py-3">Aucune ligne d'horaire disponible.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="horaire-meta-card h-100">
+                            <div>
+                                <span class="horaire-meta-label">Classe</span>
+                                <div class="horaire-meta-value">{{ horaire.classe }}</div>
+                            </div>
+                            <div>
+                                <span class="horaire-meta-label">Filière</span>
+                                <div class="horaire-meta-value">{{ horaire.filiere|default:"—" }}</div>
+                            </div>
+                            <div>
+                                <span class="horaire-meta-label">Promotion</span>
+                                <div class="horaire-meta-value">{{ horaire.promotion }}</div>
+                            </div>
+                            <div>
+                                <span class="horaire-meta-label">Section</span>
+                                <div class="horaire-meta-value">{{ horaire.section|default:"—" }}</div>
+                            </div>
+                            <div>
+                                <span class="horaire-meta-label">Semestre</span>
+                                <div class="horaire-meta-value">{{ horaire.semestre|default:"—" }}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

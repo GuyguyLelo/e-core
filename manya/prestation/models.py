@@ -448,6 +448,16 @@ class HoraireLigne(models.Model):
         return self.ue_code or "-"
 
     @property
+    def intitule_affichage(self):
+        if not self.element_constitutif_id:
+            return ""
+        ec = self.element_constitutif
+        ue = ec.ue if ec.ue_id else None
+        if ue and ec.nom and ue.nom and ec.nom.strip().lower() != ue.nom.strip().lower():
+            return f"{ue.nom} — {ec.nom}"
+        return ec.nom or (ue.nom if ue else "")
+
+    @property
     def professeur_affichage(self):
         professeur = self.professeur
         if not professeur and self.element_constitutif_id:

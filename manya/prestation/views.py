@@ -484,6 +484,14 @@ def _format_time_range(line):
     return f"{line.heure_debut.strftime('%Hh%M')}-{line.heure_fin.strftime('%Hh%M')}"
 
 
+def _format_ue_cell_html(line):
+    code = line.code_affichage
+    parts = [f'<b><font color="#0284c7">{code}</font></b>']
+    if line.intitule_affichage:
+        parts.append(f'<font color="#475569">{line.intitule_affichage}</font>')
+    return "<br/>".join(parts)
+
+
 def _unique_legend_items(lines):
     seen = set()
     items = []
@@ -493,7 +501,9 @@ def _unique_legend_items(lines):
         if key in seen:
             continue
         seen.add(key)
-        title = line.element_constitutif.nom if line.element_constitutif else code
+        title = line.intitule_affichage or code
+        if line.intitule_affichage and line.intitule_affichage != code:
+            title = f"{code} — {line.intitule_affichage}"
         items.append((title, line.titulaire_affichage))
     return items
 
@@ -2231,32 +2241,35 @@ def statistiques_prestations_enseignement_pdf(request):
 
 def _build_pdf(horaire):
     buffer = BytesIO()
+    page_size = landscape(A4)
     doc = SimpleDocTemplate(
         buffer,
-        pagesize=A4,
-        rightMargin=15 * mm,
-        leftMargin=15 * mm,
-        topMargin=14 * mm,
-        bottomMargin=16 * mm,
+        pagesize=page_size,
+        rightMargin=10 * mm,
+        leftMargin=10 * mm,
+        topMargin=5 * mm,
+        bottomMargin=6 * mm,
     )
+    content_width = page_size[0] - doc.leftMargin - doc.rightMargin
+    content_height = page_size[1] - doc.topMargin - doc.bottomMargin
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         "HoraireTitle",
         parent=styles["Title"],
         fontName="Helvetica-Bold",
-        fontSize=14,
-        leading=16,
+        fontSize=12,
+        leading=14,
         alignment=TA_LEFT,
         textColor=colors.HexColor("#475569"),
-        spaceAfter=4,
+        spaceAfter=3,
     )
     body_style = ParagraphStyle(
         "BodySmall",
         parent=styles["BodyText"],
         fontName="Helvetica",
-        fontSize=8.2,
-        leading=10,
+        fontSize=9,
+        leading=12.5,
         alignment=TA_LEFT,
         textColor=colors.HexColor("#111827"),
     )
@@ -2264,68 +2277,86 @@ def _build_pdf(horaire):
         "CenterSmall",
         parent=body_style,
         alignment=TA_CENTER,
+        leading=12.5,
     )
     right_footer_style = ParagraphStyle(
         "RightFooter",
         parent=body_style,
         alignment=TA_LEFT,
-        leading=9,
+        leading=11,
         spaceBefore=0,
         spaceAfter=0,
+        fontSize=8.5,
     )
-    chip_style = ParagraphStyle(
-        "Chip",
+    ue_cell_style = ParagraphStyle(
+        "UeCell",
+        parent=body_style,
+        fontSize=9,
+        leading=12.5,
+        alignment=TA_LEFT,
+    )
+    teacher_cell_style = ParagraphStyle(
+        "TeacherCell",
         parent=body_style,
         fontName="Helvetica-Bold",
-        fontSize=7.6,
-        leading=8.2,
-        alignment=TA_CENTER,
+        fontSize=9,
+        leading=12.5,
+        alignment=TA_LEFT,
         textColor=colors.HexColor("#0f172a"),
+    )
+    header_cell_style = ParagraphStyle(
+        "HeaderCell",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        fontSize=8.5,
+        leading=10,
+        alignment=TA_CENTER,
+        textColor=colors.white,
     )
 
     story = []
 
-    logo = _logo_flowable(_asset_path("static", "images", "logoeifi.png"), width_mm=20)
+    logo = _logo_flowable(_asset_path("static", "images", "logoeifi.png"), width_mm=16)
     header_table = Table([[
-        logo if logo else Paragraph("EIFI", ParagraphStyle("LogoFallback", parent=body_style, fontName="Helvetica-Bold", fontSize=16, textColor=colors.white)),
+        logo if logo else Paragraph("EIFI", ParagraphStyle("LogoFallback", parent=body_style, fontName="Helvetica-Bold", fontSize=12, textColor=colors.white)),
         Paragraph(f"<b>{horaire.direction}</b><br/>{horaire.ecole}<br/>{horaire.systeme_affichage}", ParagraphStyle(
             "HeaderTitle",
             parent=body_style,
             fontName="Helvetica-Bold",
-            fontSize=11.2,
-            leading=13,
+            fontSize=9.8,
+            leading=12,
             textColor=colors.white,
         )),
         Paragraph(f"<b>ANNEE ACADEMIQUE</b><br/>{horaire.annee_academique.code}", ParagraphStyle(
             "HeaderRight",
             parent=body_style,
             fontName="Helvetica-Bold",
-            fontSize=9.5,
+            fontSize=9,
             leading=11,
             alignment=TA_CENTER,
             textColor=colors.white,
         )),
-    ]], colWidths=[24 * mm, 112 * mm, 40 * mm])
+    ]], colWidths=[22 * mm, content_width - 58 * mm, 36 * mm])
     header_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0f172a")),
         ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#0f172a")),
         ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#334155")),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
     ]))
     story.append(header_table)
-    story.append(Spacer(1, 4 * mm))
+    story.append(Spacer(1, 3 * mm))
 
     story.append(Paragraph(f"<u><b>{horaire.titre_document}</b></u>", ParagraphStyle(
         "DocTitle",
         parent=title_style,
-        fontSize=14.2,
+        fontSize=12,
         alignment=TA_CENTER,
         textColor=colors.HexColor("#475569"),
-        spaceAfter=8,
+        spaceAfter=6,
     )))
     story.append(Spacer(1, 2 * mm))
 
@@ -2340,11 +2371,18 @@ def _build_pdf(horaire):
     )
     grouped = _group_lines_by_day(lines)
 
+    col_jour = content_width * 0.09
+    col_heures = content_width * 0.13
+    col_ue = content_width * 0.31
+    col_enseignant = content_width * 0.33
+    col_loc = content_width * 0.14
+
     table_data = [[
-        Paragraph("<b>JOURS</b>", center_style),
-        Paragraph("<b>HEURES</b>", center_style),
-        Paragraph("<b>UE</b>", center_style),
-        Paragraph("<b>LOC</b>", center_style),
+        Paragraph("<b>JOURS</b>", header_cell_style),
+        Paragraph("<b>HEURES</b>", header_cell_style),
+        Paragraph("<b>UE</b>", header_cell_style),
+        Paragraph("<b>ENSEIGNANT</b>", header_cell_style),
+        Paragraph("<b>LOC</b>", header_cell_style),
     ]]
 
     span_commands = []
@@ -2356,10 +2394,12 @@ def _build_pdf(horaire):
         start_row = row_index
         for idx, line in enumerate(day_lines):
             day_label = line.get_jour_display().upper() if idx == 0 else ""
+            titulaire = line.titulaire_affichage if line.titulaire_affichage != "-" else ""
             table_data.append([
                 Paragraph(f"<b>{day_label}</b>" if day_label else "", body_style),
                 Paragraph(f"<b>{_format_time_range(line)}</b>", center_style),
-                Paragraph(f"<b>{line.code_affichage}</b>", center_style),
+                Paragraph(_format_ue_cell_html(line), ue_cell_style),
+                Paragraph(f"<b>{titulaire}</b>" if titulaire else "", teacher_cell_style),
                 Paragraph(f"<b>{line.local_affichage}</b>", center_style),
             ])
             row_index += 1
@@ -2372,93 +2412,80 @@ def _build_pdf(horaire):
             Paragraph("-", center_style),
             Paragraph("-", center_style),
             Paragraph("-", center_style),
+            Paragraph("-", center_style),
         ])
 
-    schedule_table = Table(table_data, colWidths=[24 * mm, 42 * mm, 74 * mm, 22 * mm], repeatRows=1)
+    reserved_height = 18 * mm + 3 * mm + 12 * mm + 2 * mm + 26 * mm + 4 * mm
+    schedule_height = max(content_height - reserved_height, 90 * mm)
+    header_row_height = 10 * mm
+    body_row_count = max(len(table_data) - 1, 1)
+    body_row_height = max((schedule_height - header_row_height) / body_row_count, 9 * mm)
+    row_heights = [header_row_height] + [body_row_height] * (len(table_data) - 1)
+
+    schedule_table = Table(
+        table_data,
+        colWidths=[col_jour, col_heures, col_ue, col_enseignant, col_loc],
+        rowHeights=row_heights,
+        repeatRows=1,
+    )
     schedule_table.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.6, colors.HexColor("#64748b")),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dbeafe")),
+        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0c4a6e")),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cbd5e1")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0c4a6e")),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.5, colors.HexColor("#0284c7")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.4),
-        ("LEADING", (0, 0), (-1, -1), 9.2),
+        ("ALIGN", (0, 1), (0, -1), "CENTER"),
+        ("ALIGN", (1, 1), (1, -1), "CENTER"),
+        ("ALIGN", (2, 1), (2, -1), "LEFT"),
+        ("ALIGN", (3, 1), (3, -1), "LEFT"),
+        ("ALIGN", (4, 1), (4, -1), "CENTER"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+        ("LEADING", (0, 0), (-1, -1), 12.5),
         ("LEFTPADDING", (0, 0), (-1, -1), 5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
-        ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#eef2ff")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+        ("TOPPADDING", (0, 0), (-1, 0), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("TOPPADDING", (0, 1), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 5),
+        ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#e0f2fe")),
+        ("TEXTCOLOR", (0, 1), (0, -1), colors.HexColor("#0c4a6e")),
+        ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+        ("ROWBACKGROUNDS", (1, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
     ] + span_commands))
     story.append(schedule_table)
-
-    story.append(Spacer(1, 4 * mm))
-    story.append(Paragraph("<b>INTITULÉS DES UE</b>", ParagraphStyle(
-        "LegendTitle",
-        parent=body_style,
-        fontName="Helvetica-Bold",
-        fontSize=9.2,
-        textColor=colors.HexColor("#0f172a"),
-        spaceAfter=2,
-    )))
-    story.append(Spacer(1, 1 * mm))
-
-    legend = _unique_legend_items(lines)
-    if legend:
-        legend_data = [[
-            Paragraph("<b>INTITULES DES UE</b>", center_style),
-            Paragraph("<b>TITULAIRE</b>", center_style),
-        ]]
-        for title, titulaire in legend:
-            legend_data.append([
-                Paragraph(title, body_style),
-                Paragraph(titulaire, center_style),
-            ])
-        legend_table = Table(legend_data, colWidths=[110 * mm, 54 * mm], repeatRows=1)
-        legend_table.setStyle(TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#94a3b8")),
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e0f2fe")),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
-            ("FONTSIZE", (0, 0), (-1, -1), 7.6),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
-        ]))
-        story.append(legend_table)
-
-    story.append(Spacer(1, 4 * mm))
-    story.append(Paragraph(
-        f"Le présent horaire a été établi pour la classe <b>{horaire.classe}</b> "
-        f"de la filière <b>{horaire.filiere or '-'}</b>.",
-        ParagraphStyle(
-            "NoteStyle",
-            parent=body_style,
-            fontSize=8,
-            leading=10,
-            textColor=colors.HexColor("#334155"),
-        ),
-    ))
-
-    if horaire.observation:
-        story.append(Spacer(1, 3 * mm))
-        story.append(Paragraph(horaire.observation, body_style))
 
     settings_row = CardSettings.objects.first()
     chief_name = settings_row.training_division_chief_name if settings_row else ""
 
+    note_text = (
+        f"Le présent horaire a été établi pour la classe <b>{horaire.classe}</b> "
+        f"de la filière <b>{horaire.filiere or '-'}</b>."
+    )
+    if horaire.observation:
+        note_text += f"<br/>{horaire.observation}"
+
     footer_block = [
         Paragraph(f"Fait à Kinshasa le {date.today().strftime('%d/%m/%Y')}", right_footer_style),
-        Spacer(1, 0.8 * mm),
         Paragraph("<u><b>LE CHEF DE DIVISION FORMATION</b></u>", right_footer_style),
     ]
     if chief_name:
-        footer_block.append(Spacer(1, 0.8 * mm))
         footer_block.append(Paragraph(chief_name, right_footer_style))
 
-    footer_table = Table([["", footer_block]], colWidths=[108 * mm, 72 * mm])
+    footer_table = Table(
+        [[
+            Paragraph(note_text, ParagraphStyle(
+                "NoteStyle",
+                parent=body_style,
+                fontSize=8.5,
+                leading=11.5,
+                textColor=colors.HexColor("#334155"),
+            )),
+            footer_block,
+        ]],
+        colWidths=[content_width * 0.62, content_width * 0.38],
+    )
     footer_table.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -2499,6 +2526,7 @@ def horaire_detail(request, pk):
         ).prefetch_related(
             "lignes",
             "lignes__element_constitutif",
+            "lignes__element_constitutif__ue",
             "lignes__element_constitutif__professeur",
             "lignes__local",
             "lignes__professeur",
