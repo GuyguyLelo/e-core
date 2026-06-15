@@ -2,12 +2,11 @@
 {% load static %}
 
 {% block title %}Locaux - e-Core{% endblock %}
-
 {% block page_title %}Locaux{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Structure Académique</a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'academics:section_list' %}">Structure</a></li>
 <li class="breadcrumb-item f-w-400 active">Locaux</li>
 {% endblock %}
 
@@ -15,79 +14,49 @@
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5>Liste des Locaux</h5>
-        <a href="{% url 'academics:local_create' %}" class="btn btn-primary">
-          <i class="fa fa-plus"></i> Nouveau Local
-        </a>
-      </div>
+      {% url 'academics:local_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Locaux" toolbar_subtitle="Salles et espaces d'enseignement" create_url=create_url create_label="Nouveau local" %}
       <div class="card-body">
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-          {% endfor %}
-        {% endif %}
+        {% include "components/messages.html" %}
+        {% include "components/list_count_banner.html" with items=locaux count_label="local(aux)" banner_icon="fa-building" %}
 
         <div class="table-responsive">
-          <table class="table table-hover">
+          <table class="table table-hover align-middle mb-0">
             <thead>
               <tr>
                 <th>Code</th>
                 <th>Nom</th>
                 <th>Capacité</th>
                 <th>Statut</th>
-                <th>Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {% for local in locaux %}
               <tr>
-                <td><strong>{{ local.code }}</strong></td>
+                <td><span class="fw-semibold text-primary">{{ local.code }}</span></td>
                 <td>{{ local.nom }}</td>
                 <td>{{ local.capacite|default:"-" }}</td>
                 <td>
                   {% if local.active %}
-                    <span class="badge badge-light-success">Actif</span>
+                    <span class="badge badge-success">Actif</span>
                   {% else %}
-                    <span class="badge badge-light-danger">Inactif</span>
+                    <span class="badge badge-danger">Inactif</span>
                   {% endif %}
                 </td>
-                <td>
-                  <div class="btn-group" role="group">
-                    <a href="{% url 'academics:local_update' local.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                      <i class="fa fa-edit"></i>
-                    </a>
-                    <a href="{% url 'academics:local_delete' local.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                      <i class="fa fa-trash"></i>
-                    </a>
-                  </div>
+                <td class="text-end">
+                  {% url 'academics:local_update' local.pk as edit_link %}
+                  {% url 'academics:local_delete' local.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
                 </td>
               </tr>
               {% empty %}
-              <tr>
-                <td colspan="5" class="text-center text-muted">Aucun local enregistré</td>
-              </tr>
+              <tr><td colspan="5" class="text-center text-muted py-5">Aucun local enregistré</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
-        {% if locaux.has_other_pages %}
-        <nav aria-label="Page navigation">
-          <ul class="pagination justify-content-center">
-            {% if locaux.has_previous %}
-              <li class="page-item"><a class="page-link" href="?page={{ locaux.previous_page_number }}">Précédent</a></li>
-            {% endif %}
-            <li class="page-item active"><span class="page-link">Page {{ locaux.number }} sur {{ locaux.paginator.num_pages }}</span></li>
-            {% if locaux.has_next %}
-              <li class="page-item"><a class="page-link" href="?page={{ locaux.next_page_number }}">Suivant</a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        {% endif %}
+        {% include "components/pagination.html" with items=locaux %}
       </div>
     </div>
   </div>

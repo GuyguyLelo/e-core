@@ -2,106 +2,78 @@
 {% load static %}
 
 {% block title %}Notes - e-Core{% endblock %}
-
 {% block page_title %}Notes{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Évaluations</a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'evaluations:evaluation_list' %}">Évaluations</a></li>
 <li class="breadcrumb-item f-w-400 active">Notes</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Liste des Notes</h5>
-                <a href="{% url 'evaluations:note_create' %}" class="btn btn-primary">
-                    <i class="fa fa-plus"></i> Nouvelle Note
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Étudiant</th>
-                                <th>Évaluation</th>
-                                <th>Note</th>
-                                <th>Note sur</th>
-                                <th>Absent</th>
-                                <th>Date saisie</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for note in notes %}
-                            <tr>
-                                <td><strong>{{ note.etudiant.numero_etudiant }}</strong><br>{{ note.etudiant.nom_complet }}</td>
-                                <td>{{ note.evaluation.code }}</td>
-                                <td>
-                                    {% if note.absent %}
-                                        <span class="badge badge-light-danger">Absent</span>
-                                    {% else %}
-                                        <strong>{{ note.note|default:"-" }}/20</strong>
-                                    {% endif %}
-                                </td>
-                                <td>{{ note.note_sur|default:"20" }}</td>
-                                <td>
-                                    {% if note.absent %}
-                                        <span class="badge badge-{% if note.justifie %}warning{% else %}danger{% endif %}">
-                                            {% if note.justifie %}Justifié{% else %}Non justifié{% endif %}
-                                        </span>
-                                    {% else %}
-                                        <span class="badge badge-light-success">Présent</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ note.date_saisie|date:"d/m/Y H:i" }}</td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'evaluations:note_update' note.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'evaluations:note_delete' note.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">Aucune note enregistrée</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if notes.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if notes.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ notes.previous_page_number }}">Précédent</a></li>
-                        {% endif %}
-                        <li class="page-item active"><span class="page-link">Page {{ notes.number }} sur {{ notes.paginator.num_pages }}</span></li>
-                        {% if notes.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ notes.next_page_number }}">Suivant</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'evaluations:note_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Notes" toolbar_subtitle="Résultats saisis par évaluation" create_url=create_url create_label="Nouvelle note" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+        {% include "components/list_count_banner.html" with items=notes count_label="note(s)" banner_icon="fa-pencil-square-o" %}
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Étudiant</th>
+                <th>Évaluation</th>
+                <th>Note</th>
+                <th>Note sur</th>
+                <th>Présence</th>
+                <th>Date saisie</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for note in notes %}
+              <tr>
+                <td>
+                  <span class="fw-semibold text-primary d-block">{{ note.etudiant.numero_etudiant }}</span>
+                  <span class="text-muted small">{{ note.etudiant.nom_complet }}</span>
+                </td>
+                <td>{{ note.evaluation.code }}</td>
+                <td>
+                  {% if note.absent %}
+                    <span class="badge badge-danger">Absent</span>
+                  {% else %}
+                    <strong>{{ note.note|default:"—" }}/20</strong>
+                  {% endif %}
+                </td>
+                <td>{{ note.note_sur|default:"20" }}</td>
+                <td>
+                  {% if note.absent %}
+                    <span class="badge badge-{% if note.justifie %}warning{% else %}danger{% endif %}">
+                      {% if note.justifie %}Justifié{% else %}Non justifié{% endif %}
+                    </span>
+                  {% else %}
+                    <span class="badge badge-success">Présent</span>
+                  {% endif %}
+                </td>
+                <td>{{ note.date_saisie|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                  {% url 'evaluations:note_update' note.pk as edit_link %}
+                  {% url 'evaluations:note_delete' note.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-5">Aucune note enregistrée</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+        {% include "components/pagination.html" with items=notes %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

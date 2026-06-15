@@ -16,12 +16,13 @@
     <div class="col-12">
         <div class="card">
             {% url 'evaluations:evaluation_create' as new_eval_url %}
-            {% include "components/page_toolbar.html" with toolbar_title="Liste des évaluations" create_url=new_eval_url create_label="Nouvelle évaluation" %}
+            {% include "components/page_toolbar.html" with toolbar_title="Évaluations" toolbar_subtitle="Planification des épreuves et saisie des notes" create_url=new_eval_url create_label="Nouvelle évaluation" %}
             <div class="card-body">
                 {% include "components/messages.html" %}
+                {% include "components/list_count_banner.html" with items=evaluations count_label="évaluation(s)" banner_icon="fa-file-text" %}
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th>Code</th>
@@ -30,30 +31,23 @@
                                 <th>Session</th>
                                 <th>Type</th>
                                 <th>Date</th>
-                                <th>Actions</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for evaluation in evaluations %}
                             <tr>
-                                <td><strong>{{ evaluation.code }}</strong></td>
+                                <td><span class="fw-semibold text-primary">{{ evaluation.code }}</span></td>
                                 <td>{{ evaluation.nom }}</td>
                                 <td>{{ evaluation.ec.code }}</td>
                                 <td>{{ evaluation.session.code }}</td>
                                 <td><span class="badge badge-ecore">{{ evaluation.type_evaluation.nom }}</span></td>
                                 <td>{{ evaluation.date_evaluation|date:"d/m/Y" }}</td>
-                                <td>
-                                    <div class="ecore-table-actions btn-group" role="group">
-                                        <a href="{% url 'evaluations:saisie_masse_notes' evaluation.pk %}" class="btn btn-sm btn-ecore-notes" title="Saisir notes">
-                                            <i class="fa fa-pencil"></i>
-                                        </a>
-                                        <a href="{% url 'evaluations:evaluation_update' evaluation.pk %}" class="btn btn-sm btn-ecore-edit" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'evaluations:evaluation_delete' evaluation.pk %}" class="btn btn-sm btn-ecore-delete" title="Supprimer">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    </div>
+                                <td class="text-end">
+                                    {% url 'evaluations:saisie_masse_notes' evaluation.pk as notes_link %}
+                                    {% url 'evaluations:evaluation_update' evaluation.pk as edit_link %}
+                                    {% url 'evaluations:evaluation_delete' evaluation.pk as del_link %}
+                                    {% include "components/table_actions.html" with notes_url=notes_link update_url=edit_link delete_url=del_link %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -65,9 +59,7 @@
                     </table>
                 </div>
 
-                {% with items=evaluations %}
-                {% include "components/pagination.html" %}
-                {% endwith %}
+                {% include "components/pagination.html" with items=evaluations %}
             </div>
         </div>
     </div>

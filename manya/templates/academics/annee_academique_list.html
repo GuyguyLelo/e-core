@@ -2,96 +2,65 @@
 {% load static %}
 
 {% block title %}Années Académiques - e-Core{% endblock %}
-
 {% block page_title %}Années Académiques{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Structure Académique</a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'academics:section_list' %}">Structure</a></li>
 <li class="breadcrumb-item f-w-400 active">Années Académiques</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Liste des Années Académiques</h5>
-                <a href="{% url 'academics:annee_academique_create' %}" class="btn btn-primary">
-                    <i class="fa fa-plus"></i> Nouvelle Année
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Code</th>
-                                <th>Période</th>
-                                <th>Date début</th>
-                                <th>Date fin</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for annee in annees %}
-                            <tr>
-                                <td><strong>{{ annee.code }}</strong></td>
-                                <td>{{ annee.annee_debut }} - {{ annee.annee_fin }}</td>
-                                <td>{{ annee.date_debut|date:"d/m/Y" }}</td>
-                                <td>{{ annee.date_fin|date:"d/m/Y" }}</td>
-                                <td>
-                                    {% if annee.active %}
-                                        <span class="badge badge-light-success">Active</span>
-                                    {% else %}
-                                        <span class="badge badge-light-secondary">Inactive</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'academics:annee_academique_update' annee.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'academics:annee_academique_delete' annee.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted">Aucune année académique enregistrée</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if annees.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if annees.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ annees.previous_page_number }}">Précédent</a></li>
-                        {% endif %}
-                        <li class="page-item active"><span class="page-link">Page {{ annees.number }} sur {{ annees.paginator.num_pages }}</span></li>
-                        {% if annees.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ annees.next_page_number }}">Suivant</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'academics:annee_academique_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Années Académiques" toolbar_subtitle="Périodes scolaires et calendrier" create_url=create_url create_label="Nouvelle année" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+        {% include "components/list_count_banner.html" with items=annees count_label="année(s)" banner_icon="fa-calendar-check-o" %}
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Période</th>
+                <th>Date début</th>
+                <th>Date fin</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for annee in annees %}
+              <tr>
+                <td><span class="fw-semibold text-primary">{{ annee.code }}</span></td>
+                <td>{{ annee.annee_debut }} - {{ annee.annee_fin }}</td>
+                <td>{{ annee.date_debut|date:"d/m/Y" }}</td>
+                <td>{{ annee.date_fin|date:"d/m/Y" }}</td>
+                <td>
+                  {% if annee.active %}
+                    <span class="badge badge-success">Active</span>
+                  {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% url 'academics:annee_academique_update' annee.pk as edit_link %}
+                  {% url 'academics:annee_academique_delete' annee.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-5">Aucune année académique enregistrée</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+        {% include "components/pagination.html" with items=annees %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

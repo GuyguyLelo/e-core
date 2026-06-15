@@ -7,7 +7,7 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
-<li class="breadcrumb-item active">Statistiques des prestations d'enseignement</li>
+<li class="breadcrumb-item f-w-400 active">Statistiques des prestations d'enseignement</li>
 {% endblock %}
 
 {% block content %}
@@ -18,10 +18,11 @@
 <div class="row">
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header ecore-card-header">
                 <h5 class="mb-0">Paramètres des statistiques</h5>
             </div>
             <div class="card-body">
+                {% include "components/active_annee_notice.html" %}
                 <form method="get">
                     <div class="mb-3">
                         <label class="form-label">Du</label>
@@ -32,11 +33,6 @@
                         <label class="form-label">Au</label>
                         {{ form.date_fin }}
                         {{ form.date_fin.errors }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Année académique</label>
-                        {{ form.annee_academique }}
-                        {{ form.annee_academique.errors }}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Semestre</label>
@@ -91,7 +87,7 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header ecore-card-header">
                 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
                     <h6 class="mb-0">Tableau statistique</h6>
                     <div class="d-flex align-items-center gap-2">
@@ -137,8 +133,8 @@
         {% else %}
         <div class="card">
             <div class="card-body">
-                <div class="alert alert-info mb-0">
-                    Sélectionnez une année académique, un semestre et une section pour générer les statistiques.
+                <div class="alert alert-info ecore-alert mb-0" role="alert">
+                    Sélectionnez une période, un semestre et une section pour générer les statistiques.
                 </div>
             </div>
         </div>

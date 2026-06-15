@@ -6,23 +6,75 @@ import unicodedata
 from datetime import date, datetime
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q
+from django.http import QueryDict, JsonResponse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from .dossier import sync_inscription_dossier, build_dossier_checklist
 from .models import Student, Inscription, TypeDocument, DocumentEtudiant, DossierEtudiant
-from .forms import StudentForm, StudentImportForm, InscriptionForm, TypeDocumentForm, DocumentEtudiantForm
+from .forms import (
+    StudentForm, StudentImportForm, InscriptionForm, TypeDocumentForm,
+    DocumentEtudiantForm, StudentListFilterForm, InscriptionListFilterForm,
+)
+from academics.models import AnneeAcademique
 
 
 # ========== ETUDIANTS ==========
 @login_required
 def student_list(request):
-    students = Student.objects.all().order_by('numero_etudiant')
+    filter_form = StudentListFilterForm(request.GET or None)
+    annee_active = AnneeAcademique.get_active()
+
+    students = (
+        Student.objects.all()
+        .prefetch_related(
+            'inscriptions__annee_academique',
+            'inscriptions__classe__promotion__filiere',
+        )
+    )
+
+    if filter_form.is_valid():
+        q = filter_form.cleaned_data.get('q')
+        if q:
+            students = students.filter(
+                Q(numero_etudiant__icontains=q)
+                | Q(nom__icontains=q)
+                | Q(prenom__icontains=q)
+            )
+        statut = filter_form.cleaned_data.get('statut')
+        if statut:
+            students = students.filter(statut=statut)
+        filiere = filter_form.cleaned_data.get('filiere')
+        if filiere:
+            filiere_filter = {
+                'inscriptions__classe__promotion__filiere': filiere,
+            }
+            if annee_active:
+                filiere_filter['inscriptions__annee_academique'] = annee_active
+            students = students.filter(**filiere_filter).distinct()
+
+    students = students.order_by('numero_etudiant')
+
     paginator = Paginator(students, 15)
     page = request.GET.get('page')
     students = paginator.get_page(page)
-    return render(request, 'students/student_list.html', {'students': students})
+    Student.set_annee_active_context(getattr(annee_active, 'pk', None))
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    filter_query = query_params.urlencode()
+
+    return render(request, 'students/student_list.html', {
+        'students': students,
+        'filter_form': filter_form,
+        'filter_query': filter_query,
+        'has_filters': any(query_params.values()),
+    })
 
 
 def _normalize_header(value):
@@ -193,7 +245,12 @@ def student_create(request):
             return redirect('students:student_list')
     else:
         form = StudentForm()
-    return render(request, 'students/student_form.html', {'form': form, 'title': 'Nouvel Étudiant'})
+    return render(request, 'students/student_form.html', {
+        'form': form,
+        'title': 'Nouvel Étudiant',
+        'subtitle': 'Renseignez les informations du nouvel étudiant',
+        'cancel_url': reverse('students:student_list'),
+    })
 
 
 @login_required
@@ -207,7 +264,13 @@ def student_update(request, pk):
             return redirect('students:student_list')
     else:
         form = StudentForm(instance=student)
-    return render(request, 'students/student_form.html', {'form': form, 'title': 'Modifier Étudiant', 'object': student})
+    return render(request, 'students/student_form.html', {
+        'form': form,
+        'title': 'Modifier Étudiant',
+        'subtitle': f'Modifier le dossier de {student.prenom} {student.nom}',
+        'object': student,
+        'cancel_url': reverse('students:student_list'),
+    })
 
 
 @login_required
@@ -223,18 +286,97 @@ def student_delete(request, pk):
 @login_required
 def student_detail(request, pk):
     student = get_object_or_404(Student, pk=pk)
-    inscriptions = student.inscriptions.all().order_by('-annee_academique')
-    return render(request, 'students/student_detail.html', {'student': student, 'inscriptions': inscriptions})
+    inscriptions = student.inscriptions.select_related(
+        'annee_academique', 'classe', 'classe__promotion'
+    ).order_by('-annee_academique')
+
+    dossier = None
+    annee_active = AnneeAcademique.get_active()
+    inscription_cible = None
+    if annee_active:
+        inscription_cible = inscriptions.filter(annee_academique=annee_active).first()
+    if not inscription_cible:
+        inscription_cible = inscriptions.first()
+
+    if inscription_cible:
+        dossier, _ = DossierEtudiant.objects.get_or_create(inscription=inscription_cible)
+        sync_inscription_dossier(inscription_cible)
+        dossier.refresh_from_db()
+
+    return render(request, 'students/student_detail.html', {
+        'student': student,
+        'inscriptions': inscriptions,
+        'dossier': dossier,
+    })
 
 
 # ========== INSCRIPTIONS ==========
 @login_required
 def inscription_list(request):
-    inscriptions = Inscription.objects.select_related('etudiant', 'classe', 'classe__promotion', 'classe__promotion__filiere', 'classe__promotion__filiere__section', 'classe__local', 'annee_academique').all().order_by('-annee_academique', 'etudiant')
+    annee_active = AnneeAcademique.get_active()
+    has_filters = bool(request.GET)
+
+    if request.GET:
+        filter_form = InscriptionListFilterForm(request.GET)
+        query_params = request.GET.copy()
+    else:
+        query_params = QueryDict(mutable=True)
+        if annee_active:
+            query_params['annee'] = str(annee_active.pk)
+        filter_form = InscriptionListFilterForm(query_params)
+
+    inscriptions = Inscription.objects.select_related(
+        'etudiant',
+        'classe',
+        'classe__promotion',
+        'classe__promotion__filiere',
+        'classe__promotion__filiere__section',
+        'classe__local',
+        'annee_academique',
+    )
+
+    if filter_form.is_valid():
+        q = filter_form.cleaned_data.get('q')
+        if q:
+            inscriptions = inscriptions.filter(
+                Q(numero_inscription__icontains=q)
+                | Q(etudiant__numero_etudiant__icontains=q)
+                | Q(etudiant__nom__icontains=q)
+                | Q(etudiant__prenom__icontains=q)
+            )
+        filiere = filter_form.cleaned_data.get('filiere')
+        if filiere:
+            inscriptions = inscriptions.filter(classe__promotion__filiere=filiere)
+        classe = filter_form.cleaned_data.get('classe')
+        if classe:
+            inscriptions = inscriptions.filter(classe=classe)
+        statut = filter_form.cleaned_data.get('statut')
+        if statut:
+            inscriptions = inscriptions.filter(statut=statut)
+        annee = filter_form.cleaned_data.get('annee')
+        if annee:
+            inscriptions = inscriptions.filter(annee_academique=annee)
+        dossier = filter_form.cleaned_data.get('dossier')
+        if dossier == '1':
+            inscriptions = inscriptions.filter(dossier_complet=True)
+        elif dossier == '0':
+            inscriptions = inscriptions.filter(dossier_complet=False)
+
+    inscriptions = inscriptions.order_by('-annee_academique', 'etudiant')
+
     paginator = Paginator(inscriptions, 15)
     page = request.GET.get('page')
     inscriptions = paginator.get_page(page)
-    return render(request, 'students/inscription_list.html', {'inscriptions': inscriptions})
+
+    query_params.pop('page', None)
+    filter_query = query_params.urlencode()
+
+    return render(request, 'students/inscription_list.html', {
+        'inscriptions': inscriptions,
+        'filter_form': filter_form,
+        'filter_query': filter_query,
+        'has_filters': has_filters,
+    })
 
 
 @login_required
@@ -243,13 +385,16 @@ def inscription_create(request):
         form = InscriptionForm(request.POST)
         if form.is_valid():
             inscription = form.save()
-            # Créer automatiquement le dossier étudiant
             DossierEtudiant.objects.get_or_create(inscription=inscription)
+            sync_inscription_dossier(inscription)
             messages.success(request, 'Inscription créée avec succès!')
             return redirect('students:inscription_list')
     else:
         form = InscriptionForm()
-    return render(request, 'students/inscription_form.html', {'form': form, 'title': 'Nouvelle Inscription'})
+    return render(request, 'students/inscription_form.html', {
+        'form': form,
+        'title': 'Nouvelle Inscription',
+    })
 
 
 @login_required
@@ -263,7 +408,10 @@ def inscription_update(request, pk):
             return redirect('students:inscription_list')
     else:
         form = InscriptionForm(instance=inscription)
-    return render(request, 'students/inscription_form.html', {'form': form, 'title': 'Modifier Inscription', 'object': inscription})
+    return render(request, 'students/inscription_form.html', {
+        'form': form,
+        'title': 'Modifier Inscription',
+    })
 
 
 @login_required
@@ -300,7 +448,11 @@ def document_create(request):
             return redirect('students:document_list')
     else:
         form = DocumentEtudiantForm()
-    return render(request, 'students/document_form.html', {'form': form, 'title': 'Nouveau Document'})
+    return render(request, 'students/document_form.html', {
+        'form': form,
+        'title': 'Nouveau Document',
+        'subtitle': 'Déposer une pièce justificative pour un étudiant',
+    })
 
 
 @login_required
@@ -318,7 +470,12 @@ def document_update(request, pk):
             return redirect('students:document_list')
     else:
         form = DocumentEtudiantForm(instance=document)
-    return render(request, 'students/document_form.html', {'form': form, 'title': 'Modifier Document', 'object': document})
+    return render(request, 'students/document_form.html', {
+        'form': form,
+        'title': 'Modifier Document',
+        'subtitle': f'Document de {document.etudiant.nom_complet}',
+        'object': document,
+    })
 
 
 @login_required
@@ -387,6 +544,68 @@ def dossier_list(request):
 
 @login_required
 def dossier_detail(request, pk):
-    dossier = get_object_or_404(DossierEtudiant, pk=pk)
-    documents = dossier.inscription.documents.all()
-    return render(request, 'students/dossier_detail.html', {'dossier': dossier, 'documents': documents})
+    dossier = get_object_or_404(
+        DossierEtudiant.objects.select_related(
+            'inscription__etudiant',
+            'inscription__annee_academique',
+            'inscription__classe__promotion',
+        ),
+        pk=pk,
+    )
+    sync_inscription_dossier(dossier.inscription)
+    dossier.refresh_from_db()
+    dossier.inscription.refresh_from_db()
+
+    checklist = build_dossier_checklist(dossier.inscription)
+    total_obligatoires = sum(1 for item in checklist if item['type'].obligatoire)
+    deposes_obligatoires = sum(1 for item in checklist if item['type'].obligatoire and item['depose'])
+    total_deposes = sum(1 for item in checklist if item['depose'])
+
+    return render(request, 'students/dossier_detail.html', {
+        'dossier': dossier,
+        'checklist': checklist,
+        'total_obligatoires': total_obligatoires,
+        'deposes_obligatoires': deposes_obligatoires,
+        'total_deposes': total_deposes,
+        'total_pieces': len(checklist),
+    })
+
+
+@login_required
+@require_POST
+def dossier_toggle_document(request, pk):
+    dossier = get_object_or_404(DossierEtudiant.objects.select_related('inscription__etudiant'), pk=pk)
+    type_document = get_object_or_404(TypeDocument, pk=request.POST.get('type_document_id'), active=True)
+    depose = request.POST.get('depose') == '1'
+    inscription = dossier.inscription
+
+    if depose:
+        DocumentEtudiant.objects.get_or_create(
+            inscription=inscription,
+            type_document=type_document,
+            defaults={'etudiant': inscription.etudiant},
+        )
+    else:
+        DocumentEtudiant.objects.filter(
+            inscription=inscription,
+            type_document=type_document,
+        ).delete()
+
+    sync_inscription_dossier(inscription)
+    inscription.refresh_from_db()
+    dossier.refresh_from_db()
+
+    checklist = build_dossier_checklist(inscription)
+    total_obligatoires = sum(1 for item in checklist if item['type'].obligatoire)
+    deposes_obligatoires = sum(1 for item in checklist if item['type'].obligatoire and item['depose'])
+
+    return JsonResponse({
+        'depose': depose,
+        'dossier_complet': inscription.dossier_complet,
+        'dossier_statut': dossier.statut,
+        'dossier_statut_label': dossier.get_statut_display(),
+        'deposes_obligatoires': deposes_obligatoires,
+        'total_obligatoires': total_obligatoires,
+        'total_deposes': sum(1 for item in checklist if item['depose']),
+        'total_pieces': len(checklist),
+    })

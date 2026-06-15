@@ -8,32 +8,18 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:prestation_mensuelle_list' %}">Saisie prestation mensuelle</a></li>
-<li class="breadcrumb-item active">Nouvelle saisie</li>
+<li class="breadcrumb-item f-w-400 active">Nouvelle saisie</li>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0">Nouvelle saisie mensuelle</h5>
-                <a href="{% url 'prestation:prestation_mensuelle_list' %}" class="btn btn-secondary btn-sm">
-                    <i class="fa fa-arrow-left"></i> Retour à la liste
-                </a>
-            </div>
+            {% url 'prestation:prestation_mensuelle_list' as back_link %}
+            {% include "components/page_toolbar.html" with toolbar_title="Nouvelle saisie mensuelle" toolbar_subtitle="Prestations hors enseignement" back_url=back_link back_label="Retour à la liste" %}
             <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                {% if form.non_field_errors %}
-                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-                {% endif %}
+                {% include "components/messages.html" %}
+                {% include "components/form_errors.html" %}
 
                 <p class="text-muted small mb-4">
                     Indiquez le nombre de prestations effectuées pendant le mois (ex. quantité <strong>3</strong>
@@ -75,12 +61,8 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                        <a href="{% url 'prestation:prestation_mensuelle_list' %}" class="btn btn-secondary">Retour à la liste</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-save"></i> Enregistrer
-                        </button>
-                    </div>
+                    {% url 'prestation:prestation_mensuelle_list' as cancel_url %}
+                    {% include "components/form_actions.html" with cancel_url=cancel_url cancel_label="Retour à la liste" %}
                 </form>
             </div>
         </div>

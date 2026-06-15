@@ -19,6 +19,13 @@
             <div class="card-body">
                 {% include "components/messages.html" %}
 
+                {% if form.errors %}
+                <div class="alert alert-danger ecore-alert" role="alert">
+                    Veuillez corriger les erreurs ci-dessous.
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% block form_fields %}{% endblock %}

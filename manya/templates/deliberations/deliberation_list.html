@@ -1,96 +1,63 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Délibérations - Gestion Académique LMD{% endblock %}
-
+{% block title %}Délibérations - e-Core{% endblock %}
 {% block page_title %}Délibérations{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Délibérations</a></li>
-<li class="breadcrumb-item f-w-400 active">Liste des délibérations</li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>
+<li class="breadcrumb-item f-w-400 active">Liste</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Liste des Délibérations</h5>
-                <a href="{% url 'deliberations:deliberation_create' %}" class="btn btn-primary">
-                    <i class="fa fa-plus"></i> Nouvelle Délibération
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Session</th>
-                                <th>Date délibération</th>
-                                <th>Président</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for deliberation in deliberations %}
-                            <tr>
-                                <td><strong>{{ deliberation.session.code }}</strong></td>
-                                <td>{{ deliberation.date_deliberation|date:"d/m/Y" }}</td>
-                                <td>{{ deliberation.president_jury.get_full_name|default:deliberation.president_jury.username }}</td>
-                                <td>
-                                    <span class="badge badge-{% if deliberation.statut == 'terminee' %}success{% elif deliberation.statut == 'verrouillee' %}danger{% else %}warning{% endif %}">
-                                        {{ deliberation.get_statut_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'deliberations:deliberation_detail' deliberation.pk %}" class="btn btn-sm btn-info" title="Voir">
-                                            <i class="fa fa-eye"></i>
-                                        </a>
-                                        <a href="{% url 'deliberations:deliberation_calculer' deliberation.pk %}" class="btn btn-sm btn-success" title="Calculer">
-                                            <i class="fa fa-calculator"></i>
-                                        </a>
-                                        <a href="{% url 'deliberations:deliberation_update' deliberation.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">Aucune délibération enregistrée</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if deliberations.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if deliberations.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ deliberations.previous_page_number }}">Précédent</a></li>
-                        {% endif %}
-                        <li class="page-item active"><span class="page-link">Page {{ deliberations.number }} sur {{ deliberations.paginator.num_pages }}</span></li>
-                        {% if deliberations.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ deliberations.next_page_number }}">Suivant</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'deliberations:deliberation_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Délibérations" toolbar_subtitle="Jurys, calculs LMD et décisions" create_url=create_url create_label="Nouvelle délibération" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+        {% include "components/list_count_banner.html" with items=deliberations count_label="délibération(s)" banner_icon="fa-gavel" %}
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>Date</th>
+                <th>Président du jury</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for deliberation in deliberations %}
+              <tr>
+                <td><span class="fw-semibold text-primary">{{ deliberation.session.code }}</span></td>
+                <td>{{ deliberation.date_deliberation|date:"d/m/Y" }}</td>
+                <td>{{ deliberation.president_jury.get_full_name|default:deliberation.president_jury.username }}</td>
+                <td>
+                  <span class="badge badge-{% if deliberation.statut == 'terminee' %}success{% elif deliberation.statut == 'verrouillee' %}danger{% else %}warning{% endif %}">
+                    {{ deliberation.get_statut_display }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% url 'deliberations:deliberation_detail' deliberation.pk as detail_link %}
+                  {% url 'deliberations:deliberation_calculer' deliberation.pk as calc_link %}
+                  {% url 'deliberations:deliberation_update' deliberation.pk as edit_link %}
+                  {% include "components/table_actions.html" with detail_url=detail_link calc_url=calc_link calc_title="Calculer LMD" update_url=edit_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-5">Aucune délibération enregistrée</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+        {% include "components/pagination.html" with items=deliberations %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

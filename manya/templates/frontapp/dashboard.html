@@ -1,403 +1,94 @@
-{% load static %}
-{% load perm_tags %}
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e-Core - Tableau de bord</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/vendors/bootstrap.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/color-1.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/responsive.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/font-awesome.css' %}">
-    <style>
-      body {
-        font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: #f3f4f8;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-      .ecore-hero {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        color: #f8fafc;
-        padding: 36px 0 32px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        border-bottom: 1px solid rgba(248, 250, 252, 0.06);
-      }
-      .ecore-logo {
-        font-size: 1.85rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        color: #ffffff;
-        text-transform: uppercase;
-      }
-      .ecore-subtitle {
-        font-size: 0.9rem;
-        color: #94a3b8;
-        font-weight: 400;
-        letter-spacing: 0.02em;
-      }
-      .ecore-greeting {
-        font-size: 0.875rem;
-        color: #cbd5e1;
-        font-weight: 400;
-      }
-      .ecore-greeting strong {
-        color: #f1f5f9;
-        font-weight: 600;
-      }
-      .ecore-badge {
-        display: inline-block;
-        padding: 6px 14px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: #1e293b;
-        background: #f1f5f9;
-        border-radius: 6px;
-      }
-      .ecore-section-title {
-        font-weight: 700;
-        margin: 30px 0 20px;
-        text-align: center;
-        color: #111827;
-      }
-      .module-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 20px;
-      }
-      .module-card {
-        background: #ffffff;
-        border-radius: 14px;
-        padding: 22px 20px;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        display: flex;
-        align-items: flex-start;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-        cursor: pointer;
-      }
-      .module-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-      }
-      .module-dropdown {
-        background: #ffffff;
-        border-radius: 14px;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        overflow: hidden;
-      }
-      .module-dropdown > summary {
-        list-style: none;
-        cursor: pointer;
-      }
-      .module-dropdown > summary::-webkit-details-marker {
-        display: none;
-      }
-      .module-dropdown .module-card {
-        box-shadow: none;
-        border-radius: 0;
-        margin: 0;
-      }
-      .module-dropdown .module-card:hover {
-        transform: none;
-        box-shadow: none;
-      }
-      .module-dropdown-content {
-        padding: 0 20px 18px;
-      }
-      .module-submenu {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        border-top: 1px solid #e5e7eb;
-      }
-      .module-submenu li a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 0;
-        color: #374151;
-        text-decoration: none;
-        border-bottom: 1px solid #f3f4f6;
-        font-size: 0.95rem;
-      }
-      .module-submenu li:last-child a {
-        border-bottom: none;
-      }
-      .module-submenu li a:hover {
-        color: #1d4ed8;
-      }
-      .module-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 999px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 14px;
-        font-size: 1.3rem;
-      }
-      .module-title {
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: #111827;
-      }
-      .module-desc {
-        font-size: 0.86rem;
-        color: #6b7280;
-        margin-bottom: 0;
-      }
-      .metrics-row {
-        margin-top: 26px;
-      }
-      .metric-card {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 18px 18px;
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .metric-label {
-        font-size: 0.9rem;
-        color: #6b7280;
-        margin-bottom: 4px;
-      }
-      .metric-value {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #111827;
-      }
-      footer {
-        margin-top: auto;
-        padding: 14px 0;
-        font-size: 0.8rem;
-        color: #6b7280;
-        border-top: 1px solid #e5e7eb;
-      }
-      @media (max-width: 576px) {
-        .ecore-hero {
-          padding: 28px 0 24px;
-        }
-        .ecore-logo {
-          font-size: 1.5rem;
-          letter-spacing: 0.06em;
-        }
-        .ecore-subtitle {
-          font-size: 0.85rem;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header class="ecore-hero">
-      <div class="container">
-        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between">
-          <div>
-            <div class="ecore-logo">e-Core</div>
-            <p class="ecore-subtitle mb-2 mt-1">Système intégré de gestion académique</p>
-            <p class="mb-0 ecore-greeting">
-              Bonjour, <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-            </p>
-          </div>
-          <div class="text-md-end mt-3 mt-md-0">
-            <span class="ecore-badge">Tableau de bord</span>
-          </div>
-        </div>
+{% extends "frontapp/portal_base.html" %}
+
+{% block portal_title %}Tableau de bord - e-Core{% endblock %}
+{% block portal_badge %}Tableau de bord{% endblock %}
+{% block nav_dashboard_class %}btn-light text-primary{% endblock %}
+
+{% block portal_content %}
+<h5 class="ecore-section-title">Statistiques</h5>
+
+<div class="row metrics-row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Étudiants</div>
+        <div class="metric-value">{{ total_etudiants }}</div>
       </div>
-    </header>
-
-    <main class="py-4">
-      <div class="container">
-        <h5 class="ecore-section-title">Fonctionnalités disponibles</h5>
-
-        <div class="module-grid mb-4">
-          {% has_any_perm 'students.view_student' 'students.view_inscription' 'students.view_dossieretudiant' 'students.view_documentetudiant' as can_students %}
-          {% if can_students %}
-          <a href="{% url 'students:student_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#e0edff;color:#2952cc;">
-                <i class="fa fa-users"></i>
-              </div>
-              <div>
-                <div class="module-title">Gestion des Étudiants</div>
-                <p class="module-desc">Suivi complet des étudiants, inscriptions, dossiers et documents.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          {% has_any_perm 'academics.view_section' 'academics.view_filiere' 'academics.view_promotion' 'academics.view_classe' 'academics.view_local' 'academics.view_anneeacademique' as can_structure %}
-          {% if can_structure %}
-          <a href="{% url 'academics:section_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#e5fff3;color:#047857;">
-                <i class="fa fa-sitemap"></i>
-              </div>
-              <div>
-                <div class="module-title">Structure Académique</div>
-                <p class="module-desc">Sections, filières, promotions, classes et locaux.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          {% has_any_perm 'academics.view_semestre' 'academics.view_uniteenseignement' 'academics.view_elementconstitutif' as can_maquette %}
-          {% if can_maquette %}
-          <a href="{% url 'academics:semestre_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#fff7e6;color:#b45309;">
-                <i class="fa fa-book"></i>
-              </div>
-              <div>
-                <div class="module-title">Maquette LMD</div>
-                <p class="module-desc">Semestres, UE et éléments constitutifs.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          {% has_any_perm 'evaluations.view_session' 'evaluations.view_evaluation' 'evaluations.view_note' 'evaluations.view_typeevaluation' as can_eval %}
-          {% if can_eval %}
-          <a href="{% url 'evaluations:evaluation_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#eef2ff;color:#4f46e5;">
-                <i class="fa fa-file-text"></i>
-              </div>
-              <div>
-                <div class="module-title">Évaluations & Notes</div>
-                <p class="module-desc">Gestion des sessions, évaluations, notes et types d’évaluation.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          {% has_any_perm 'deliberations.view_deliberation' 'deliberations.view_parametreslmd' as can_delib %}
-          {% if can_delib %}
-          <a href="{% url 'deliberations:deliberation_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#ffe4f0;color:#be185d;">
-                <i class="fa fa-gavel"></i>
-              </div>
-              <div>
-                <div class="module-title">Délibérations</div>
-                <p class="module-desc">Calculs LMD, décisions de jury et paramètres.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          {% has_any_perm 'prestation.view_horaire' 'prestation.view_horaireligne' 'prestation.view_prestation' 'prestation.add_prestation' as can_prestation %}
-          {% if can_prestation %}
-          <a href="{% url 'prestation:prestation_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#fef3c7;color:#b45309;">
-                <i class="fa fa-money"></i>
-              </div>
-              <div>
-                <div class="module-title">Gestion de la prestation</div>
-                <p class="module-desc">Horaires, prestations journalières et calculs mensuels.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          {% has_any_perm 'cards.view_card' 'cards.view_personnel' as can_cards %}
-          {% if can_cards %}
-          <a href="{% url 'cards:card_list' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#e6f7ff;color:#0369a1;">
-                <i class="fa fa-id-card"></i>
-              </div>
-              <div>
-                <div class="module-title">Cartes PVC</div>
-                <p class="module-desc">Conception et suivi des cartes PVC du personnel.</p>
-              </div>
-            </div>
-          </a>
-          {% endif %}
-
-          <a href="{% url 'projets_tutores_realises' %}" class="text-decoration-none text-reset">
-            <div class="module-card">
-              <div class="module-icon" style="background:#ecfeff;color:#0e7490;">
-                <i class="fa fa-folder-open-o"></i>
-              </div>
-              <div>
-                <div class="module-title">Projets tutorés réalisés</div>
-                <p class="module-desc">Consultation des projets académiques finalisés.</p>
-              </div>
-            </div>
-          </a>
-
-          <div class="module-card" style="cursor: default;">
-            <div class="module-icon" style="background:#f3f4f6;color:#4b5563;">
-              <i class="fa fa-file-pdf-o"></i>
-            </div>
-            <div>
-              <div class="module-title">Documents</div>
-              <p class="module-desc">Relevés, attestations, procès-verbaux et diplômes (à venir).</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="row metrics-row g-3">
-          <div class="col-md-3 col-6">
-            <div class="metric-card">
-              <div>
-                <div class="metric-label">Étudiants</div>
-                <div class="metric-value">{{ total_etudiants }}</div>
-              </div>
-              <i class="fa fa-users text-primary"></i>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="metric-card">
-              <div>
-                <div class="metric-label">Inscriptions actives</div>
-                <div class="metric-value">{{ total_inscriptions }}</div>
-              </div>
-              <i class="fa fa-graduation-cap text-success"></i>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="metric-card">
-              <div>
-                <div class="metric-label">Promotions actives</div>
-                <div class="metric-value">{{ total_promotions }}</div>
-              </div>
-              <i class="fa fa-book text-warning"></i>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="metric-card">
-              <div>
-                <div class="metric-label">Sections actives</div>
-                <div class="metric-value">{{ total_sections }}</div>
-              </div>
-              <i class="fa fa-university text-info"></i>
-            </div>
-          </div>
-        </div>
+      <i class="fa fa-users" style="color: #0ea5e9;"></i>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Inscriptions actives</div>
+        <div class="metric-value">{{ total_inscriptions }}</div>
       </div>
-    </main>
-
-    <footer>
-      <div class="container d-flex flex-wrap justify-content-between align-items-center">
-        <span>© {% now "Y" %} e-Core. Tous droits réservés.</span>
-        <span style="font-size:0.75rem;">Système intégré de gestion académique</span>
+      <i class="fa fa-graduation-cap" style="color: #38bdf8;"></i>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Promotions actives</div>
+        <div class="metric-value">{{ total_promotions }}</div>
       </div>
-    </footer>
+      <i class="fa fa-book" style="color: #0284c7;"></i>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Sections actives</div>
+        <div class="metric-value">{{ total_sections }}</div>
+      </div>
+      <i class="fa fa-university" style="color: #7dd3fc;"></i>
+    </div>
+  </div>
+</div>
 
-    <script src="{% static 'js/jquery.min.js' %}"></script>
-    <script src="{% static 'js/bootstrap/bootstrap.bundle.min.js' %}"></script>
-  </body>
-</html>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="metric-card h-100">
+      <div>
+        <div class="metric-label">Sessions actives</div>
+        <div class="metric-value">{{ sessions_actives }}</div>
+        <p class="text-muted small mb-0 mt-1">En cours, délibération non effectuée</p>
+      </div>
+      <i class="fa fa-calendar-check-o" style="color: #0ea5e9;"></i>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold text-primary mb-3">
+          {% if annee_active %}Année académique {{ annee_active.code }}{% else %}Année académique{% endif %}
+        </h6>
+        {% if annee_active %}
+        <p class="mb-2 small">
+          <strong>Période :</strong> {{ annee_active.annee_debut }} – {{ annee_active.annee_fin }}
+        </p>
+        <p class="mb-0 small text-muted">
+          Du {{ annee_active.date_debut|date:"d/m/Y" }} au {{ annee_active.date_fin|date:"d/m/Y" }}
+        </p>
+        {% else %}
+        <p class="mb-0 text-muted small">Aucune année académique active configurée.</p>
+        {% endif %}
+
+        {% if deliberations_recentes %}
+        <hr>
+        <h6 class="fw-semibold mb-2">Dernières délibérations terminées</h6>
+        <ul class="list-unstyled mb-0 small">
+          {% for deliberation in deliberations_recentes %}
+          <li class="mb-1">
+            <a href="{% url 'deliberations:deliberation_detail' deliberation.pk %}">
+              {{ deliberation.session.code }} — {{ deliberation.date_deliberation|date:"d/m/Y" }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ from io import BytesIO
 
 from students.models import Student, Inscription
 from academics.models import Semestre, Filiere, Promotion, AnneeAcademique
+from academics.utils import NO_ACTIVE_ANNEE_ERROR
 from evaluations.models import Session
 from deliberations.models import Deliberation
 from documents.models import DocumentGenere, TypeDocumentGenere
@@ -19,6 +20,22 @@ from documents.services import (
     AttestationGenerator,
     GrilleNotesGenerator,
 )
+
+
+def _document_selection_from_get(request, include_etudiant=False):
+    """Extrait les sélections du formulaire GET pour pré-remplir les listes."""
+    selected = {}
+    mapping = {
+        'semestre': request.GET.get('semestre'),
+        'option': request.GET.get('option'),
+        'promotion': request.GET.get('promotion'),
+    }
+    if include_etudiant:
+        mapping['etudiant'] = request.GET.get('etudiant')
+    for key, value in mapping.items():
+        if value and value.isdigit():
+            selected[key] = int(value)
+    return selected
 
 
 @login_required
@@ -129,39 +146,32 @@ def grille_notes(request):
     semestre_id = request.GET.get('semestre')
     filiere_id = request.GET.get('option')
     promotion_id = request.GET.get('promotion')
-    annee_id = request.GET.get('annee')
 
-    # Si tous les paramètres sont présents dans la query string → générer le PDF
-    if all([semestre_id, filiere_id, promotion_id, annee_id]):
-        semestre = get_object_or_404(Semestre, pk=semestre_id)
-        filiere = get_object_or_404(Filiere, pk=filiere_id)
-        promotion = get_object_or_404(Promotion, pk=promotion_id)
-        annee = get_object_or_404(AnneeAcademique, pk=annee_id)
+    if all([semestre_id, filiere_id, promotion_id]):
+        annee = AnneeAcademique.get_active()
+        if not annee:
+            messages.error(request, NO_ACTIVE_ANNEE_ERROR)
+        else:
+            semestre = get_object_or_404(Semestre, pk=semestre_id)
+            filiere = get_object_or_404(Filiere, pk=filiere_id)
+            promotion = get_object_or_404(Promotion, pk=promotion_id)
 
-        buffer = BytesIO()
-        generator = GrilleNotesGenerator(semestre, filiere, promotion, annee, buffer)
-        generator.generate()
-        buffer.seek(0)
-        response = HttpResponse(buffer.read(), content_type='application/pdf')
-        response['Content-Disposition'] = (
-            f'inline; filename="grille_notes_{semestre.code}_{promotion.code}_{annee.code}.pdf"'
-        )
-        return response
+            buffer = BytesIO()
+            generator = GrilleNotesGenerator(semestre, filiere, promotion, annee, buffer)
+            generator.generate()
+            buffer.seek(0)
+            response = HttpResponse(buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = (
+                f'inline; filename="grille_notes_{semestre.code}_{promotion.code}_{annee.code}.pdf"'
+            )
+            return response
 
-    # Sinon → afficher le formulaire
     context = {
         'semestres': Semestre.objects.filter(active=True).select_related('promotion').order_by('-promotion', 'numero'),
         'filieres': Filiere.objects.filter(active=True).order_by('code'),
         'promotions': Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere', 'ordre'),
-        'annees': AnneeAcademique.objects.all().order_by('-annee_debut'),
+        'selected': _document_selection_from_get(request),
     }
-    if all([semestre_id, filiere_id, promotion_id, annee_id]):
-        context['selected'] = {
-            'semestre': int(semestre_id),
-            'option': int(filiere_id),
-            'promotion': int(promotion_id),
-            'annee': int(annee_id),
-        }
     return render(request, 'documents/grille_notes.html', context)
 
 
@@ -172,40 +182,33 @@ def releve_notes_selection(request):
     semestre_id = request.GET.get('semestre')
     filiere_id = request.GET.get('option')
     promotion_id = request.GET.get('promotion')
-    annee_id = request.GET.get('annee')
     etudiant_id = request.GET.get('etudiant')
 
-    if all([semestre_id, filiere_id, promotion_id, annee_id, etudiant_id]):
-        semestre = get_object_or_404(Semestre, pk=semestre_id)
-        filiere = get_object_or_404(Filiere, pk=filiere_id)
-        promotion = get_object_or_404(Promotion, pk=promotion_id)
-        annee = get_object_or_404(AnneeAcademique, pk=annee_id)
-        etudiant = get_object_or_404(Student, pk=etudiant_id)
+    if all([semestre_id, filiere_id, promotion_id, etudiant_id]):
+        annee = AnneeAcademique.get_active()
+        if not annee:
+            messages.error(request, NO_ACTIVE_ANNEE_ERROR)
+        else:
+            semestre = get_object_or_404(Semestre, pk=semestre_id)
+            filiere = get_object_or_404(Filiere, pk=filiere_id)
+            promotion = get_object_or_404(Promotion, pk=promotion_id)
+            etudiant = get_object_or_404(Student, pk=etudiant_id)
 
-        buffer = BytesIO()
-        generator = ReleveNotesGenerator(etudiant, semestre, filiere, promotion, annee, buffer)
-        generator.generate()
-        buffer.seek(0)
-        response = HttpResponse(buffer.read(), content_type='application/pdf')
-        response['Content-Disposition'] = (
-            f'inline; filename="releve_notes_{etudiant.numero_etudiant}_{semestre.code}.pdf"'
-        )
-        return response
-
-    inscriptions = Inscription.objects.filter(statut='inscrit').select_related(
-        'etudiant', 'classe__promotion', 'annee_academique'
-    ).order_by('etudiant__numero_etudiant')
+            buffer = BytesIO()
+            generator = ReleveNotesGenerator(etudiant, semestre, filiere, promotion, annee, buffer)
+            generator.generate()
+            buffer.seek(0)
+            response = HttpResponse(buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = (
+                f'inline; filename="releve_notes_{etudiant.numero_etudiant}_{semestre.code}.pdf"'
+            )
+            return response
 
     context = {
         'semestres': Semestre.objects.filter(active=True).select_related('promotion').order_by('-promotion', 'numero'),
         'filieres': Filiere.objects.filter(active=True).order_by('code'),
         'promotions': Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere', 'ordre'),
-        'annees': AnneeAcademique.objects.all().order_by('-annee_debut'),
         'etudiants': Student.objects.filter(statut='actif').order_by('numero_etudiant'),
+        'selected': _document_selection_from_get(request, include_etudiant=True),
     }
-    if all([semestre_id, filiere_id, promotion_id, annee_id, etudiant_id]):
-        context['selected'] = {
-            'semestre': int(semestre_id), 'option': int(filiere_id),
-            'promotion': int(promotion_id), 'annee': int(annee_id), 'etudiant': int(etudiant_id),
-        }
     return render(request, 'documents/releve_notes.html', context)

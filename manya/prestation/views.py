@@ -33,6 +33,7 @@ from reportlab.platypus import (
 )
 
 from academics.models import AnneeAcademique, ElementConstitutif
+from academics.utils import NO_ACTIVE_ANNEE_ERROR
 from cards.models import CardSettings, Personnel
 from .forms import (
     BaremePrestationForm,
@@ -212,10 +213,7 @@ MONTH_LABELS = {
 
 
 def _get_calcul_annee():
-    annee = AnneeAcademique.objects.filter(active=True).order_by("-annee_debut").first()
-    if annee:
-        return annee
-    return AnneeAcademique.objects.order_by("-annee_debut").first()
+    return AnneeAcademique.get_active()
 
 
 def _get_prestation_section(prestation):
@@ -1785,24 +1783,27 @@ def fiche_prestations_journaliere(request):
         jour = form.cleaned_data["jour"]
         section = form.cleaned_data["section"]
         semestre = form.cleaned_data["semestre"]
-        annee_academique = form.cleaned_data["annee_academique"]
-        fiche_data = _collect_fiche_prestations(section, jour, semestre, annee_academique)
-        if not fiche_data["lines"]:
-            messages.info(request, "Aucune prestation n'a été trouvée pour ce jour, ce semestre, cette année académique et cette section.")
+        annee_academique = _get_calcul_annee()
+        if not annee_academique:
+            messages.error(request, NO_ACTIVE_ANNEE_ERROR)
+        else:
+            fiche_data = _collect_fiche_prestations(section, jour, semestre, annee_academique)
+            if not fiche_data["lines"]:
+                messages.info(request, "Aucune prestation n'a été trouvée pour ce jour, ce semestre et cette section.")
 
-        fiche = {
-            "jour": jour,
-            "jour_label": fiche_data["day_label"],
-            "generated_label": date.today().strftime("%d/%m/%Y"),
-            "day_label": fiche_data["day_label"],
-            "section": section,
-            "section_label": section.nom or section.code or "SECTION",
-            "semestre": semestre,
-            "annee_academique": annee_academique,
-            "rows": fiche_data["lines"],
-            "total_lignes": len(fiche_data["lines"]),
-        }
-        download_query = f"jour={jour}&section={section.pk}&semestre={semestre.pk}&annee_academique={annee_academique.pk}"
+            fiche = {
+                "jour": jour,
+                "jour_label": fiche_data["day_label"],
+                "generated_label": date.today().strftime("%d/%m/%Y"),
+                "day_label": fiche_data["day_label"],
+                "section": section,
+                "section_label": section.nom or section.code or "SECTION",
+                "semestre": semestre,
+                "annee_academique": annee_academique,
+                "rows": fiche_data["lines"],
+                "total_lignes": len(fiche_data["lines"]),
+            }
+            download_query = f"jour={jour}&section={section.pk}&semestre={semestre.pk}"
 
     return render(request, "prestation/fiche_prestations_journaliere.html", {
         "form": form,
@@ -1815,13 +1816,17 @@ def fiche_prestations_journaliere(request):
 def fiche_prestations_journaliere_pdf(request):
     form = FichePrestationJournaliereForm(request.GET or None)
     if not form.is_valid():
-        messages.info(request, "Sélectionnez d'abord un jour, un semestre, une année académique et une section pour générer la fiche journalière.")
+        messages.info(request, "Sélectionnez d'abord un jour, un semestre et une section pour générer la fiche journalière.")
+        return redirect("prestation:fiche_prestations_journaliere")
+
+    annee_academique = _get_calcul_annee()
+    if not annee_academique:
+        messages.error(request, NO_ACTIVE_ANNEE_ERROR)
         return redirect("prestation:fiche_prestations_journaliere")
 
     jour = form.cleaned_data["jour"]
     section = form.cleaned_data["section"]
     semestre = form.cleaned_data["semestre"]
-    annee_academique = form.cleaned_data["annee_academique"]
     fiche_data = _collect_fiche_prestations(section, jour, semestre, annee_academique)
     fiche = {
         "jour": jour,
@@ -2160,25 +2165,28 @@ def statistiques_prestations_enseignement(request):
         date_debut = form.cleaned_data["date_debut"]
         date_fin = form.cleaned_data["date_fin"]
         section = form.cleaned_data["section"]
-        annee_academique = form.cleaned_data["annee_academique"]
         semestre = form.cleaned_data["semestre"]
-        stats_data = _collect_statistiques_prestations_enseignement(section, annee_academique, semestre, date_debut, date_fin)
+        annee_academique = _get_calcul_annee()
+        if not annee_academique:
+            messages.error(request, NO_ACTIVE_ANNEE_ERROR)
+        else:
+            stats_data = _collect_statistiques_prestations_enseignement(section, annee_academique, semestre, date_debut, date_fin)
 
-        if not stats_data["rows"]:
-            messages.info(request, "Aucune prestation d'enseignement n'a été trouvée pour les critères sélectionnés.")
+            if not stats_data["rows"]:
+                messages.info(request, "Aucune prestation d'enseignement n'a été trouvée pour les critères sélectionnés.")
 
-        statistiques = {
-            "section": section,
-            "annee_academique": annee_academique,
-            "semestre": semestre,
-            "date_debut": date_debut,
-            "date_fin": date_fin,
-            "date_range_label": _format_statistiques_enseignement_range(date_debut, date_fin),
-            "rows": stats_data["rows"],
-            "total_lignes": stats_data["total_lignes"],
-            "total_lignes_stats": stats_data["total_lignes_stats"],
-        }
-        download_query = f"date_debut={date_debut.isoformat()}&date_fin={date_fin.isoformat()}&section={section.pk}&annee_academique={annee_academique.pk}&semestre={semestre.pk}"
+            statistiques = {
+                "section": section,
+                "annee_academique": annee_academique,
+                "semestre": semestre,
+                "date_debut": date_debut,
+                "date_fin": date_fin,
+                "date_range_label": _format_statistiques_enseignement_range(date_debut, date_fin),
+                "rows": stats_data["rows"],
+                "total_lignes": stats_data["total_lignes"],
+                "total_lignes_stats": stats_data["total_lignes_stats"],
+            }
+            download_query = f"date_debut={date_debut.isoformat()}&date_fin={date_fin.isoformat()}&section={section.pk}&semestre={semestre.pk}"
 
     return render(request, "prestation/statistiques_prestations_enseignement.html", {
         "form": form,
@@ -2191,13 +2199,17 @@ def statistiques_prestations_enseignement(request):
 def statistiques_prestations_enseignement_pdf(request):
     form = StatistiquesPrestationEnseignementForm(request.GET or None)
     if not form.is_valid():
-        messages.info(request, "Sélectionnez d'abord une section, une année académique et un semestre pour générer les statistiques.")
+        messages.info(request, "Sélectionnez d'abord une section et un semestre pour générer les statistiques.")
+        return redirect("prestation:statistiques_prestations_enseignement")
+
+    annee_academique = _get_calcul_annee()
+    if not annee_academique:
+        messages.error(request, NO_ACTIVE_ANNEE_ERROR)
         return redirect("prestation:statistiques_prestations_enseignement")
 
     date_debut = form.cleaned_data["date_debut"]
     date_fin = form.cleaned_data["date_fin"]
     section = form.cleaned_data["section"]
-    annee_academique = form.cleaned_data["annee_academique"]
     semestre = form.cleaned_data["semestre"]
     stats_data = _collect_statistiques_prestations_enseignement(section, annee_academique, semestre, date_debut, date_fin)
     statistiques = {

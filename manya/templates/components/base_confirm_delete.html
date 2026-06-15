@@ -4,8 +4,9 @@
 <div class="row">
     <div class="col-12 col-lg-8">
         <div class="card">
-            {% include "components/page_toolbar.html" with toolbar_title="Confirmer la suppression" %}
+            {% include "components/page_toolbar.html" with toolbar_title="Confirmer la suppression" toolbar_subtitle="Cette action est irréversible" %}
             <div class="card-body">
+                {% include "components/messages.html" %}
                 <div class="alert alert-warning ecore-alert" role="alert">
                     <i class="fa fa-exclamation-triangle"></i>
                     <strong>Attention !</strong>
@@ -18,7 +19,9 @@
 
                 <form method="post">
                     {% csrf_token %}
+                    {% block delete_cancel_url %}
                     {% include "components/form_actions.html" with cancel_url=cancel_url submit_label="Confirmer la suppression" submit_class="btn-danger" submit_icon="fa-trash" %}
+                    {% endblock %}
                 </form>
             </div>
         </div>

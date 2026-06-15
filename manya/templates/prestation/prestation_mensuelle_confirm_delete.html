@@ -7,18 +7,20 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:prestation_mensuelle_list' %}">Saisie prestation mensuelle</a></li>
-<li class="breadcrumb-item active">Supprimer</li>
+<li class="breadcrumb-item f-w-400 active">Supprimer</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-6 offset-lg-3">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Confirmation de suppression</h5>
-            </div>
+            {% include "components/page_toolbar.html" with toolbar_title="Confirmer la suppression" toolbar_subtitle="Cette action est irréversible" %}
             <div class="card-body">
-                <p>Voulez-vous vraiment supprimer cette saisie mensuelle ?</p>
+                {% include "components/messages.html" %}
+
+                <div class="alert alert-warning ecore-alert" role="alert">
+                    <p class="mb-2">Voulez-vous vraiment supprimer cette saisie mensuelle ?</p>
+                </div>
                 <ul class="mb-3">
                     <li><strong>Période :</strong> {{ saisie_resume.periode }}</li>
                     <li><strong>N° fiche :</strong> {{ saisie_resume.numero_fiche }}</li>

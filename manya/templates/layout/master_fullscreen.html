@@ -41,6 +41,12 @@
     <header class="fullscreen-header">
         <a href="{% url 'home' %}"><i class="fa fa-arrow-left"></i> Retour</a>
         <span style="font-weight: 600;">{% block page_title %}{% endblock %}</span>
+        {% if annee_academique_active %}
+        <span class="ecore-header-annee ecore-header-annee--nav" style="color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3);">
+            <i class="fa fa-calendar"></i>
+            {{ annee_academique_active.code }}
+        </span>
+        {% endif %}
         <span class="ms-auto">{% include "components/ecore_brand.html" with light=True %}</span>
     </header>
     <main class="fullscreen-content">

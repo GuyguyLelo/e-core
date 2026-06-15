@@ -2,73 +2,58 @@
 {% load static %}
 
 {% block title %}Prestations - e-Core{% endblock %}
-
 {% block page_title %}Prestations{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
-<li class="breadcrumb-item active">Prestations</li>
+<li class="breadcrumb-item f-w-400 active">Prestations</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Prestations enregistrées</h5>
-                <a href="{% url 'prestation:prestation_create' %}" class="btn btn-primary">
-                    <i class="fa fa-plus"></i> Nouvelle prestation
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+  <div class="col-12">
+    <div class="card">
+      {% url 'prestation:prestation_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Prestations" toolbar_subtitle="Enregistrements des prestations du personnel" create_url=create_url create_label="Nouvelle prestation" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Personnel</th>
-                                <th>Type prestation</th>
-                                <th>Barème</th>
-                                <th class="text-end">Montant</th>
-                                <th>Horaire</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for prestation in prestations %}
-                            <tr>
-                                <td>{{ prestation.date_prestation|date:"d/m/Y" }}</td>
-                                <td>{{ prestation.personnel }}</td>
-                                <td>{{ prestation.get_categorie_display }}</td>
-                                <td>{{ prestation.bareme }}</td>
-                                <td class="text-end">{{ prestation.montant|floatformat:0 }}</td>
-                                <td>{{ prestation.horaire|default:"-" }}</td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'prestation:prestation_update' prestation.pk %}" class="btn btn-sm btn-warning"><i class="fa fa-edit"></i></a>
-                                        <a href="{% url 'prestation:prestation_delete' prestation.pk %}" class="btn btn-sm btn-danger"><i class="fa fa-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">Aucune prestation enregistrée.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Personnel</th>
+                <th>Type prestation</th>
+                <th>Barème</th>
+                <th class="text-end">Montant</th>
+                <th>Horaire</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for prestation in prestations %}
+              <tr>
+                <td>{{ prestation.date_prestation|date:"d/m/Y" }}</td>
+                <td>{{ prestation.personnel }}</td>
+                <td>{{ prestation.get_categorie_display }}</td>
+                <td>{{ prestation.bareme }}</td>
+                <td class="text-end">{{ prestation.montant|floatformat:0 }}</td>
+                <td>{{ prestation.horaire|default:"-" }}</td>
+                <td class="text-end">
+                  {% url 'prestation:prestation_update' prestation.pk as edit_link %}
+                  {% url 'prestation:prestation_delete' prestation.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-5">Aucune prestation enregistrée</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

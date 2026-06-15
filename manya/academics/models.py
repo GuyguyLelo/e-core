@@ -4,7 +4,7 @@ Section → Filière → Promotion → Classe → Local
 
 + Modèles LMD : Semestre, UE, EC
 """
-from django.db import models
+from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 
@@ -70,6 +70,17 @@ class AnneeAcademique(models.Model):
         from django.core.exceptions import ValidationError
         if self.annee_fin != self.annee_debut + 1:
             raise ValidationError("L'année de fin doit être l'année de début + 1")
+
+    @classmethod
+    def get_active(cls):
+        """Retourne l'année académique active (une seule à la fois)."""
+        return cls.objects.filter(active=True).order_by('-annee_debut').first()
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if self.active:
+                type(self).objects.filter(active=True).exclude(pk=self.pk).update(active=False)
 
 
 class Promotion(models.Model):

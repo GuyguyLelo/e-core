@@ -1,0 +1,16 @@
+{% load perm_tags %}
+{% has_any_perm 'academics.view_semestre' 'academics.view_uniteenseignement' 'academics.view_elementconstitutif' as can_maquette %}
+{% if can_maquette %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-book"></i>
+        <span>Maquette LMD</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'academics.view_semestre' as p_semestre %}{% if p_semestre %}<li><a href="{% url 'academics:semestre_list' %}">Semestres</a></li>{% endif %}
+        {% has_perm 'academics.view_uniteenseignement' as p_ue %}{% if p_ue %}<li><a href="{% url 'academics:ue_list' %}">Unités d'Enseignement (UE)</a></li>{% endif %}
+        {% has_perm 'academics.view_elementconstitutif' as p_ec %}{% if p_ec %}<li><a href="{% url 'academics:ec_list' %}">Éléments Constitutifs (EC)</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}

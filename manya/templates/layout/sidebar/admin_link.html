@@ -1,0 +1,9 @@
+{% if request.user.is_staff %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title link-nav" href="{% url 'admin:index' %}">
+        <i class="fa fa-cog"></i>
+        <span>Administration</span>
+    </a>
+</li>
+{% endif %}

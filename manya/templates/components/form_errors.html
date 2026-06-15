@@ -1,0 +1,6 @@
+{% if form.errors %}
+<div class="alert alert-danger ecore-alert" role="alert">
+  Veuillez corriger les erreurs ci-dessous.
+  {{ form.non_field_errors }}
+</div>
+{% endif %}

@@ -2,7 +2,6 @@
 {% load static %}
 
 {% block title %}{{ title }} - e-Core{% endblock %}
-
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block breadcrumb %}
@@ -13,46 +12,47 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            {% with list_label="Liste des "|add:title %}
-            {% include "components/page_toolbar.html" with toolbar_title=list_label create_url=create_url %}
-            {% endwith %}
-            <div class="card-body">
-                {% include "components/messages.html" %}
+  <div class="col-12">
+    <div class="card">
+      {% with list_label="Liste des "|add:title %}
+      {% include "components/page_toolbar.html" with toolbar_title=list_label toolbar_subtitle=toolbar_subtitle create_url=create_url create_label=create_label|default:"Nouveau" %}
+      {% endwith %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+        {% if items %}{% include "components/list_count_banner.html" with items=items count_label=count_label banner_icon=banner_icon %}{% endif %}
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                {% for header in table_headers %}
-                                <th>{{ header }}</th>
-                                {% endfor %}
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in items %}
-                            <tr>
-                                {% block table_row %}{% endblock %}
-                                <td>
-                                    {% url update_url item.pk as edit_link %}
-                                    {% url delete_url item.pk as del_link %}
-                                    {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="{{ table_headers|length|add:1 }}" class="text-center text-muted py-4">Aucun élément enregistré</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                {% include "components/pagination.html" %}
-            </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                {% for header in table_headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+              <tr>
+                {% block table_row %}{% endblock %}
+                <td class="text-end">
+                  {% url update_url item.pk as edit_link %}
+                  {% url delete_url item.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="{{ table_headers|length|add:1 }}" class="text-center text-muted py-5">Aucun élément enregistré</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+
+        {% include "components/pagination.html" with items=items %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

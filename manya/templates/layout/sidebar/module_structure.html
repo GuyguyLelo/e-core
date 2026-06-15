@@ -1,0 +1,19 @@
+{% load perm_tags %}
+{% has_any_perm 'academics.view_section' 'academics.view_filiere' 'academics.view_promotion' 'academics.view_classe' 'academics.view_local' 'academics.view_anneeacademique' as can_structure %}
+{% if can_structure %}
+<li class="sidebar-list">
+    <i class="fa fa-thumb-tack"></i>
+    <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+        <i class="fa fa-sitemap"></i>
+        <span>Structure Académique</span>
+    </a>
+    <ul class="sidebar-submenu">
+        {% has_perm 'academics.view_section' as p_section %}{% if p_section %}<li><a href="{% url 'academics:section_list' %}">Sections</a></li>{% endif %}
+        {% has_perm 'academics.view_filiere' as p_filiere %}{% if p_filiere %}<li><a href="{% url 'academics:filiere_list' %}">Filières</a></li>{% endif %}
+        {% has_perm 'academics.view_promotion' as p_promo %}{% if p_promo %}<li><a href="{% url 'academics:promotion_list' %}">Promotions</a></li>{% endif %}
+        {% has_perm 'academics.view_classe' as p_classe %}{% if p_classe %}<li><a href="{% url 'academics:classe_list' %}">Classes</a></li>{% endif %}
+        {% has_perm 'academics.view_local' as p_local %}{% if p_local %}<li><a href="{% url 'academics:local_list' %}">Locaux</a></li>{% endif %}
+        {% has_perm 'academics.view_anneeacademique' as p_annee %}{% if p_annee %}<li><a href="{% url 'academics:annee_academique_list' %}">Années académiques</a></li>{% endif %}
+    </ul>
+</li>
+{% endif %}

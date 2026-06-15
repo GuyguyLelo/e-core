@@ -7,25 +7,18 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
-<li class="breadcrumb-item active">Clôture de la paie mensuelle</li>
+<li class="breadcrumb-item f-w-400 active">Clôture de la paie mensuelle</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header ecore-card-header">
                 <h5 class="mb-0">Période à clôturer</h5>
             </div>
             <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+                {% include "components/messages.html" %}
 
                 <form method="get">
                     <div class="mb-3">
@@ -52,7 +45,7 @@
         {% if resume %}
         {% with budget=resume.budget %}
         <div class="card mb-3 border-{% if budget.deja_cloturee %}success{% elif budget.depasse %}danger{% else %}primary{% endif %}">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header ecore-card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Récapitulatif — {{ resume.mois_label }} {{ resume.annee }}</h6>
                 {% if budget.deja_cloturee %}
                     <span class="badge badge-success">Clôturé</span>
@@ -125,7 +118,7 @@
         {% else %}
         <div class="card">
             <div class="card-body">
-                <div class="alert alert-info mb-0">
+                <div class="alert alert-info ecore-alert mb-0" role="alert">
                     Sélectionnez une année et un mois, puis cliquez sur <strong>Afficher le récapitulatif</strong> pour consulter les montants et clôturer la paie.
                 </div>
             </div>

@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from academics.models import Classe, AnneeAcademique
+from .constants import NATIONALITE_CHOICES, NATIONALITE_DEFAULT
 import os
 
 
@@ -31,7 +32,12 @@ class Student(models.Model):
     prenom = models.CharField(max_length=100, verbose_name="Prénom")
     date_naissance = models.DateField(verbose_name="Date de naissance")
     lieu_naissance = models.CharField(max_length=200, verbose_name="Lieu de naissance")
-    nationalite = models.CharField(max_length=100, default="Algérienne", verbose_name="Nationalité")
+    nationalite = models.CharField(
+        max_length=100,
+        choices=NATIONALITE_CHOICES,
+        default=NATIONALITE_DEFAULT,
+        verbose_name="Nationalité",
+    )
     sexe = models.CharField(
         max_length=1,
         choices=[('M', 'Masculin'), ('F', 'Féminin')],
@@ -68,6 +74,40 @@ class Student(models.Model):
     @property
     def nom_complet(self):
         return f"{self.prenom} {self.nom}"
+
+    @classmethod
+    def set_annee_active_context(cls, annee_pk):
+        cls._annee_active_context = annee_pk
+
+    @property
+    def filiere_courante(self):
+        """Filière de l'inscription de l'année active, ou la plus récente."""
+        annee_active_pk = getattr(self.__class__, '_annee_active_context', None)
+        if annee_active_pk is None:
+            from academics.models import AnneeAcademique
+            annee_active_pk = getattr(AnneeAcademique.get_active(), 'pk', None)
+
+        inscriptions = list(self.inscriptions.all())
+
+        if annee_active_pk:
+            for ins in inscriptions:
+                if ins.annee_academique_id == annee_active_pk and ins.classe_id:
+                    promotion = getattr(ins.classe, 'promotion', None)
+                    filiere = getattr(promotion, 'filiere', None) if promotion else None
+                    if filiere:
+                        return filiere
+
+        inscriptions.sort(
+            key=lambda i: getattr(getattr(i, 'annee_academique', None), 'annee_debut', 0),
+            reverse=True,
+        )
+        for ins in inscriptions:
+            if ins.classe_id:
+                promotion = getattr(ins.classe, 'promotion', None)
+                filiere = getattr(promotion, 'filiere', None) if promotion else None
+                if filiere:
+                    return filiere
+        return None
 
 
 class Inscription(models.Model):
@@ -150,7 +190,7 @@ class DocumentEtudiant(models.Model):
     etudiant = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='documents', verbose_name="Étudiant")
     inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name='documents', null=True, blank=True, verbose_name="Inscription")
     type_document = models.ForeignKey(TypeDocument, on_delete=models.CASCADE, related_name='documents', verbose_name="Type de document")
-    fichier = models.FileField(upload_to=document_path, verbose_name="Fichier")
+    fichier = models.FileField(upload_to=document_path, blank=True, null=True, verbose_name="Fichier")
     date_depot = models.DateField(auto_now_add=True, verbose_name="Date de dépôt")
     valide = models.BooleanField(default=False, verbose_name="Validé")
     date_validation = models.DateField(null=True, blank=True, verbose_name="Date de validation")
@@ -198,19 +238,18 @@ class DossierEtudiant(models.Model):
         return f"Dossier - {self.inscription.etudiant.numero_etudiant} ({self.inscription.annee_academique.code})"
 
     def verifier_completude(self):
-        """Vérifie si tous les documents obligatoires sont présents"""
-        documents_obligatoires = TypeDocument.objects.filter(obligatoire=True, active=True)
-        documents_presents = self.inscription.documents.filter(valide=True, type_document__obligatoire=True)
-        documents_presents_types = set(documents_presents.values_list('type_document_id', flat=True))
-        documents_obligatoires_ids = set(documents_obligatoires.values_list('id', flat=True))
-        
-        if documents_obligatoires_ids.issubset(documents_presents_types):
+        """Vérifie si tous les documents obligatoires ont été déposés."""
+        from .dossier import documents_obligatoires_deposes
+
+        complet, _, _ = documents_obligatoires_deposes(self.inscription)
+
+        if complet:
             self.statut = 'complet'
             self.inscription.dossier_complet = True
         else:
             self.statut = 'incomplet'
             self.inscription.dossier_complet = False
-        
-        self.save()
-        self.inscription.save()
-        return self.statut == 'complet'
+
+        self.save(update_fields=['statut', 'updated_at'])
+        self.inscription.save(update_fields=['dossier_complet', 'updated_at'])
+        return complet

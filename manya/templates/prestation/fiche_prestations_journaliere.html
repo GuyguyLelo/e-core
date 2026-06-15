@@ -7,27 +7,23 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
-<li class="breadcrumb-item active">Fiche des prestations journalières</li>
+<li class="breadcrumb-item f-w-400 active">Fiche des prestations journalières</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header ecore-card-header">
                 <h5 class="mb-0">Paramètres de la fiche</h5>
             </div>
             <div class="card-body">
+                {% include "components/active_annee_notice.html" %}
                 <form method="get">
                     <div class="mb-3">
                         <label class="form-label">Jour</label>
                         {{ form.jour }}
                         {{ form.jour.errors }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Année académique</label>
-                        {{ form.annee_academique }}
-                        {{ form.annee_academique.errors }}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Semestre</label>
@@ -88,7 +84,7 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header ecore-card-header">
                 <h6 class="mb-0">Détail des prestations</h6>
             </div>
             <div class="card-body">
@@ -135,8 +131,8 @@
         {% else %}
         <div class="card">
             <div class="card-body">
-                <div class="alert alert-info mb-0">
-                    Sélectionnez un jour, une année académique, un semestre et une section pour générer la fiche des prestations journalières.
+                <div class="alert alert-info ecore-alert mb-0" role="alert">
+                    Sélectionnez un jour, un semestre et une section pour générer la fiche des prestations journalières.
                 </div>
             </div>
         </div>

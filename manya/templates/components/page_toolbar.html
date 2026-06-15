@@ -3,8 +3,18 @@
     <h5 class="mb-0">{{ toolbar_title }}</h5>
     {% if toolbar_subtitle %}<div class="ecore-card-subtitle">{{ toolbar_subtitle }}</div>{% endif %}
   </div>
-  <div class="d-flex align-items-center gap-2">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
     {% if toolbar_slot %}{{ toolbar_slot }}{% endif %}
+    {% if back_url %}
+      <a href="{{ back_url }}" class="btn btn-secondary btn-sm">
+        <i class="fa {{ back_icon|default:'fa-arrow-left' }}"></i> {{ back_label|default:"Retour" }}
+      </a>
+    {% endif %}
+    {% if secondary_url %}
+      <a href="{{ secondary_url }}" class="btn {{ secondary_class|default:'btn-success' }} btn-sm">
+        <i class="fa {{ secondary_icon|default:'fa-plus' }}"></i> {{ secondary_label|default:"Action" }}
+      </a>
+    {% endif %}
     {% if create_url %}
       <a href="{{ create_url }}" class="btn btn-primary btn-sm">
         <i class="fa fa-plus"></i> {{ create_label|default:"Nouveau" }}

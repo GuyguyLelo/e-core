@@ -1,198 +1,378 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - Gestion Académique LMD{% endblock %}
+{% block title %}{{ title }} - e-Core{% endblock %}
 
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
 <li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .student-form-page .student-section-card {
+    border: 1px solid var(--ecore-border, rgba(14, 165, 233, 0.12));
+    border-radius: var(--ecore-radius-lg, 14px);
+    box-shadow: 0 2px 12px rgba(14, 165, 233, 0.08);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+  .student-form-page .student-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.85rem 1.25rem;
+    background: linear-gradient(90deg, rgba(14, 165, 233, 0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--ecore-border, rgba(14, 165, 233, 0.12));
+  }
+  .student-form-page .student-section-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ecore-primary, #0ea5e9);
+    color: #fff;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .student-form-page .student-section-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ecore-primary-dark, #0284c7);
+  }
+  .student-form-page .student-section-body {
+    padding: 1.25rem;
+  }
+  .student-photo-card {
+    position: sticky;
+    top: 1rem;
+  }
+  .student-photo-preview {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
+  }
+  .student-photo-placeholder {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8ecf2 0%, #f0f2f6 100%);
+    border: 2px dashed rgba(14, 165, 233, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ecore-text-muted, #6b7280);
+  }
+  .student-photo-upload {
+    border: 2px dashed rgba(14, 165, 233, 0.22);
+    border-radius: var(--ecore-radius, 10px);
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .student-photo-upload:hover,
+  .student-photo-upload.is-dragover {
+    border-color: var(--ecore-primary, #0ea5e9);
+    background: rgba(14, 165, 233, 0.06);
+  }
+  .student-required-note {
+    font-size: 0.85rem;
+    color: var(--ecore-text-muted, #6b7280);
+  }
+  body.dark-only .student-form-page .student-section-header {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+  }
+  body.dark-only .student-form-page .student-section-title {
+    color: rgba(255, 255, 255, 0.92);
+  }
+  body.dark-only .student-photo-placeholder {
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
+<div class="student-form-page">
+  <div class="row">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>{{ title }}</h5>
+      <div class="card">
+        {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
+        <div class="card-body">
+          {% include "components/messages.html" %}
+
+          {% if form.errors %}
+            <div class="alert alert-danger ecore-alert" role="alert">
+              Veuillez corriger les erreurs ci-dessous.
+              {{ form.non_field_errors }}
             </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <h6 class="mb-3">Informations personnelles</h6>
+          {% endif %}
+
+          <p class="student-required-note mb-4">
+            <span class="text-danger">*</span> Champs obligatoires
+          </p>
+
+          <form method="post" enctype="multipart/form-data" id="student-form">
+            {% csrf_token %}
+
+            <div class="row g-4">
+              <!-- Colonne formulaire -->
+              <div class="col-lg-8">
+                <!-- Section Identité -->
+                <div class="student-section-card">
+                  <div class="student-section-header">
+                    <span class="student-section-icon"><i class="fa fa-user"></i></span>
+                    <h6 class="student-section-title">Identité</h6>
+                  </div>
+                  <div class="student-section-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.numero_etudiant.id_for_label }}" class="form-label">
-                                    Numéro étudiant <span class="text-danger">*</span>
-                                </label>
-                                {{ form.numero_etudiant }}
-                                {% if form.numero_etudiant.errors %}
-                                    <div class="text-danger small">{{ form.numero_etudiant.errors }}</div>
-                                {% endif %}
-                            </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label for="{{ form.nom.id_for_label }}" class="form-label">
+                            Nom <span class="text-danger">*</span>
+                          </label>
+                          {{ form.nom }}
+                          {% if form.nom.errors %}<div class="text-danger small">{{ form.nom.errors }}</div>{% endif %}
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.statut.id_for_label }}" class="form-label">
-                                    Statut <span class="text-danger">*</span>
-                                </label>
-                                {{ form.statut }}
-                                {% if form.statut.errors %}
-                                    <div class="text-danger small">{{ form.statut.errors }}</div>
-                                {% endif %}
-                            </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label for="{{ form.prenom.id_for_label }}" class="form-label">
+                            Prénom <span class="text-danger">*</span>
+                          </label>
+                          {{ form.prenom }}
+                          {% if form.prenom.errors %}<div class="text-danger small">{{ form.prenom.errors }}</div>{% endif %}
                         </div>
+                      </div>
                     </div>
-                    
+
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.nom.id_for_label }}" class="form-label">
-                                    Nom <span class="text-danger">*</span>
-                                </label>
-                                {{ form.nom }}
-                                {% if form.nom.errors %}
-                                    <div class="text-danger small">{{ form.nom.errors }}</div>
-                                {% endif %}
-                            </div>
+                      <div class="col-md-4">
+                        <div class="mb-3">
+                          <label for="{{ form.date_naissance.id_for_label }}" class="form-label">
+                            Date de naissance <span class="text-danger">*</span>
+                          </label>
+                          {{ form.date_naissance }}
+                          {% if form.date_naissance.errors %}<div class="text-danger small">{{ form.date_naissance.errors }}</div>{% endif %}
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.prenom.id_for_label }}" class="form-label">
-                                    Prénom <span class="text-danger">*</span>
-                                </label>
-                                {{ form.prenom }}
-                                {% if form.prenom.errors %}
-                                    <div class="text-danger small">{{ form.prenom.errors }}</div>
-                                {% endif %}
-                            </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="mb-3">
+                          <label for="{{ form.lieu_naissance.id_for_label }}" class="form-label">
+                            Lieu de naissance <span class="text-danger">*</span>
+                          </label>
+                          {{ form.lieu_naissance }}
+                          {% if form.lieu_naissance.errors %}<div class="text-danger small">{{ form.lieu_naissance.errors }}</div>{% endif %}
                         </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="mb-3">
+                          <label for="{{ form.sexe.id_for_label }}" class="form-label">
+                            Sexe <span class="text-danger">*</span>
+                          </label>
+                          {{ form.sexe }}
+                          {% if form.sexe.errors %}<div class="text-danger small">{{ form.sexe.errors }}</div>{% endif %}
+                        </div>
+                      </div>
                     </div>
-                    
+
+                    <div class="mb-0">
+                      <label for="{{ form.nationalite.id_for_label }}" class="form-label">Nationalité</label>
+                      {{ form.nationalite }}
+                      {% if form.nationalite.errors %}<div class="text-danger small">{{ form.nationalite.errors }}</div>{% endif %}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section Coordonnées -->
+                <div class="student-section-card">
+                  <div class="student-section-header">
+                    <span class="student-section-icon"><i class="fa fa-envelope"></i></span>
+                    <h6 class="student-section-title">Coordonnées</h6>
+                  </div>
+                  <div class="student-section-body">
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.date_naissance.id_for_label }}" class="form-label">
-                                    Date de naissance <span class="text-danger">*</span>
-                                </label>
-                                {{ form.date_naissance }}
-                                {% if form.date_naissance.errors %}
-                                    <div class="text-danger small">{{ form.date_naissance.errors }}</div>
-                                {% endif %}
-                            </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label for="{{ form.email.id_for_label }}" class="form-label">
+                            Email <span class="text-danger">*</span>
+                          </label>
+                          {{ form.email }}
+                          {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
                         </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.lieu_naissance.id_for_label }}" class="form-label">
-                                    Lieu de naissance <span class="text-danger">*</span>
-                                </label>
-                                {{ form.lieu_naissance }}
-                                {% if form.lieu_naissance.errors %}
-                                    <div class="text-danger small">{{ form.lieu_naissance.errors }}</div>
-                                {% endif %}
-                            </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label for="{{ form.telephone.id_for_label }}" class="form-label">Téléphone</label>
+                          {{ form.telephone }}
+                          {% if form.telephone.errors %}<div class="text-danger small">{{ form.telephone.errors }}</div>{% endif %}
                         </div>
-                        
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.sexe.id_for_label }}" class="form-label">
-                                    Sexe <span class="text-danger">*</span>
-                                </label>
-                                {{ form.sexe }}
-                                {% if form.sexe.errors %}
-                                    <div class="text-danger small">{{ form.sexe.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
+                      </div>
                     </div>
-                    
+                    <div class="mb-0">
+                      <label for="{{ form.adresse.id_for_label }}" class="form-label">Adresse</label>
+                      {{ form.adresse }}
+                      {% if form.adresse.errors %}<div class="text-danger small">{{ form.adresse.errors }}</div>{% endif %}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section Dossier administratif -->
+                <div class="student-section-card">
+                  <div class="student-section-header">
+                    <span class="student-section-icon"><i class="fa fa-id-card"></i></span>
+                    <h6 class="student-section-title">Dossier administratif</h6>
+                  </div>
+                  <div class="student-section-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.nationalite.id_for_label }}" class="form-label">Nationalité</label>
-                                {{ form.nationalite }}
-                                {% if form.nationalite.errors %}
-                                    <div class="text-danger small">{{ form.nationalite.errors }}</div>
-                                {% endif %}
-                            </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label for="{{ form.numero_etudiant.id_for_label }}" class="form-label">
+                            Numéro étudiant <span class="text-danger">*</span>
+                          </label>
+                          {{ form.numero_etudiant }}
+                          <div class="form-text">Lettres majuscules et chiffres uniquement (ex. ETU2024001)</div>
+                          {% if form.numero_etudiant.errors %}<div class="text-danger small">{{ form.numero_etudiant.errors }}</div>{% endif %}
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.telephone.id_for_label }}" class="form-label">Téléphone</label>
-                                {{ form.telephone }}
-                                {% if form.telephone.errors %}
-                                    <div class="text-danger small">{{ form.telephone.errors }}</div>
-                                {% endif %}
-                            </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-0">
+                          <label for="{{ form.statut.id_for_label }}" class="form-label">
+                            Statut <span class="text-danger">*</span>
+                          </label>
+                          {{ form.statut }}
+                          {% if form.statut.errors %}<div class="text-danger small">{{ form.statut.errors }}</div>{% endif %}
                         </div>
+                      </div>
                     </div>
-                    
-                    <h6 class="mb-3 mt-4">Coordonnées</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.email.id_for_label }}" class="form-label">
-                                    Email <span class="text-danger">*</span>
-                                </label>
-                                {{ form.email }}
-                                {% if form.email.errors %}
-                                    <div class="text-danger small">{{ form.email.errors }}</div>
-                                {% endif %}
-                            </div>
+                  </div>
+                </div>
+
+                {% include "components/form_actions.html" with cancel_url=cancel_url %}
+              </div>
+
+              <!-- Colonne photo -->
+              <div class="col-lg-4">
+                <div class="card student-photo-card border-0 shadow-sm">
+                  <div class="card-body text-center">
+                    <div class="mb-3" id="photo-preview-wrap">
+                      {% if object and object.photo %}
+                        <img src="{{ object.photo.url }}" alt="Photo" class="student-photo-preview" id="photo-preview">
+                      {% else %}
+                        <div class="student-photo-placeholder mx-auto" id="photo-placeholder">
+                          <i class="fa fa-user fa-3x"></i>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.photo.id_for_label }}" class="form-label">Photo</label>
-                                {{ form.photo }}
-                                {% if object and object.photo %}
-                                    <div class="mt-2">
-                                        <img src="{{ object.photo.url }}" alt="Photo" style="max-height: 100px;">
-                                    </div>
-                                {% endif %}
-                                {% if form.photo.errors %}
-                                    <div class="text-danger small">{{ form.photo.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
+                        <img src="" alt="Aperçu" class="student-photo-preview d-none" id="photo-preview">
+                      {% endif %}
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.adresse.id_for_label }}" class="form-label">Adresse</label>
-                        {{ form.adresse }}
-                        {% if form.adresse.errors %}
-                            <div class="text-danger small">{{ form.adresse.errors }}</div>
-                        {% endif %}
+
+                    <h6 class="mb-1" id="student-name-preview">
+                      {% if object %}{{ object.prenom }} {{ object.nom }}{% else %}Nouvel étudiant{% endif %}
+                    </h6>
+                    <p class="text-muted small mb-3" id="student-num-preview">
+                      {% if object %}{{ object.numero_etudiant }}{% else %}Photo de profil{% endif %}
+                    </p>
+
+                    <div class="student-photo-upload" id="photo-dropzone" role="button" tabindex="0">
+                      <i class="fa fa-cloud-upload fa-2x text-primary mb-2 d-block"></i>
+                      <span class="d-block fw-semibold small">Choisir une photo</span>
+                      <span class="d-block text-muted small mt-1">JPG, PNG — max. 5 Mo</span>
                     </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'students:student_list' %}" class="btn btn-secondary">
-                            <i class="fa fa-arrow-left"></i> Annuler
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-save"></i> Enregistrer
-                        </button>
-                    </div>
-                </form>
+                    {{ form.photo }}
+                    {% if form.photo.errors %}
+                      <div class="text-danger small mt-2">{{ form.photo.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
             </div>
+          </form>
         </div>
+      </div>
     </div>
+  </div>
 </div>
+
+<script>
+(function () {
+  const photoInput = document.getElementById("id_photo");
+  const dropzone = document.getElementById("photo-dropzone");
+  const preview = document.getElementById("photo-preview");
+  const placeholder = document.getElementById("photo-placeholder");
+  const nomInput = document.getElementById("id_nom");
+  const prenomInput = document.getElementById("id_prenom");
+  const numInput = document.getElementById("id_numero_etudiant");
+  const namePreview = document.getElementById("student-name-preview");
+  const numPreview = document.getElementById("student-num-preview");
+
+  function showPhotoPreview(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      preview.src = e.target.result;
+      preview.classList.remove("d-none");
+      if (placeholder) placeholder.classList.add("d-none");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (photoInput && dropzone) {
+    dropzone.addEventListener("click", function () { photoInput.click(); });
+    dropzone.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); photoInput.click(); }
+    });
+    photoInput.addEventListener("change", function () {
+      if (photoInput.files && photoInput.files[0]) showPhotoPreview(photoInput.files[0]);
+    });
+    ["dragenter", "dragover"].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropzone.classList.add("is-dragover");
+      });
+    });
+    ["dragleave", "drop"].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropzone.classList.remove("is-dragover");
+      });
+    });
+    dropzone.addEventListener("drop", function (e) {
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        photoInput.files = dt.files;
+        showPhotoPreview(file);
+      }
+    });
+  }
+
+  function updateNamePreview() {
+    if (!namePreview || !nomInput || !prenomInput) return;
+    const nom = nomInput.value.trim();
+    const prenom = prenomInput.value.trim();
+    namePreview.textContent = (prenom || nom) ? (prenom + " " + nom).trim() : "Nouvel étudiant";
+  }
+
+  function updateNumPreview() {
+    if (!numPreview || !numInput) return;
+    const num = numInput.value.trim();
+    numPreview.textContent = num || "Photo de profil";
+  }
+
+  if (nomInput) nomInput.addEventListener("input", updateNamePreview);
+  if (prenomInput) prenomInput.addEventListener("input", updateNamePreview);
+  if (numInput) numInput.addEventListener("input", updateNumPreview);
+})();
+</script>
 {% endblock %}

@@ -1,52 +1,46 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Calculer Délibération - {{ deliberation.session.code }}{% endblock %}
-
+{% block title %}Calculer Délibération - {{ deliberation.session.code }} - e-Core{% endblock %}
 {% block page_title %}Calculer Délibération{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>
 <li class="breadcrumb-item f-w-400 active">Calculer</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Calculer les Décisions - {{ deliberation.session.code }}</h5>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i>
-                    <strong>Information :</strong> Cette opération va calculer les notes finales, les crédits obtenus et produire les décisions automatiques pour tous les étudiants de la promotion.
-                </div>
-                
-                <div class="mb-4">
-                    <h6>Détails de la délibération :</h6>
-                    <ul class="list-unstyled">
-                        <li><strong>Session :</strong> {{ deliberation.session.code }}</li>
-                        <li><strong>Semestre :</strong> {{ deliberation.session.semestre.code }}</li>
-                        <li><strong>Promotion :</strong> {{ deliberation.session.semestre.promotion.code }}</li>
-                        <li><strong>Date :</strong> {{ deliberation.date_deliberation|date:"d/m/Y" }}</li>
-                    </ul>
-                </div>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'deliberations:deliberation_detail' deliberation.pk %}" class="btn btn-secondary">
-                            <i class="fa fa-arrow-left"></i> Annuler
-                        </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fa fa-calculator"></i> Lancer le calcul
-                        </button>
-                    </div>
-                </form>
-            </div>
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      {% url 'deliberations:deliberation_detail' deliberation.pk as back_link %}
+      {% include "components/page_toolbar.html" with toolbar_title="Calculer les décisions" toolbar_subtitle=deliberation.session.code back_url=back_link %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+
+        <div class="alert alert-info ecore-alert" role="alert">
+          <i class="fa fa-info-circle"></i>
+          <strong>Information :</strong> Cette opération va calculer les notes finales, les crédits obtenus et produire les décisions automatiques pour tous les étudiants de la promotion.
         </div>
+
+        <div class="ecore-delete-details mb-4">
+          <h6 class="fw-semibold text-primary mb-2">Détails de la délibération</h6>
+          <ul class="list-unstyled mb-0">
+            <li><strong>Session :</strong> {{ deliberation.session.code }}</li>
+            <li><strong>Semestre :</strong> {{ deliberation.session.semestre.code }}</li>
+            <li><strong>Promotion :</strong> {{ deliberation.session.semestre.promotion.code }}</li>
+            <li><strong>Date :</strong> {{ deliberation.date_deliberation|date:"d/m/Y" }}</li>
+          </ul>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          {% url 'deliberations:deliberation_detail' deliberation.pk as cancel_url %}
+          {% include "components/form_actions.html" with cancel_url=cancel_url submit_label="Lancer le calcul" submit_class="btn-success" submit_icon="fa-calculator" %}
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

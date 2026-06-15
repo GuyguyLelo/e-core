@@ -1,98 +1,84 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Documents Étudiants - e-Core{% endblock %}
+{% block title %}Documents étudiants - e-Core{% endblock %}
 
-{% block page_title %}Documents Étudiants{% endblock %}
+{% block page_title %}Documents étudiants{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Étudiants</a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
 <li class="breadcrumb-item f-w-400 active">Documents</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Liste des Documents</h5>
-                <a href="{% url 'students:document_create' %}" class="btn btn-primary">
-                    <i class="fa fa-plus"></i> Nouveau Document
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Étudiant</th>
-                                <th>Type de document</th>
-                                <th>Date dépôt</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for document in documents %}
-                            <tr>
-                                <td><strong>{{ document.etudiant.numero_etudiant }}</strong><br>{{ document.etudiant.nom_complet }}</td>
-                                <td>{{ document.type_document.nom }}</td>
-                                <td>{{ document.date_depot|date:"d/m/Y" }}</td>
-                                <td>
-                                    {% if document.valide %}
-                                        <span class="badge badge-light-success">Validé</span>
-                                    {% else %}
-                                        <span class="badge badge-light-warning">En attente</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{{ document.fichier.url }}" class="btn btn-sm btn-info" target="_blank" title="Voir">
-                                            <i class="fa fa-eye"></i>
-                                        </a>
-                                        <a href="{% url 'students:document_update' document.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'students:document_delete' document.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">Aucun document enregistré</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if documents.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if documents.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ documents.previous_page_number }}">Précédent</a></li>
-                        {% endif %}
-                        <li class="page-item active"><span class="page-link">Page {{ documents.number }} sur {{ documents.paginator.num_pages }}</span></li>
-                        {% if documents.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ documents.next_page_number }}">Suivant</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'students:document_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Documents étudiants" toolbar_subtitle="Pièces justificatives et fichiers déposés" create_url=create_url create_label="Nouveau document" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+
+        <div class="ecore-info-banner mb-4">
+          <i class="fa fa-file-text me-2"></i>{{ documents.paginator.count }} document{{ documents.paginator.count|pluralize }} enregistré{{ documents.paginator.count|pluralize }}
         </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Étudiant</th>
+                <th>Type de document</th>
+                <th>Date dépôt</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for document in documents %}
+              <tr>
+                <td>
+                  <span class="fw-semibold text-primary d-block">{{ document.etudiant.numero_etudiant }}</span>
+                  <span class="text-muted small">{{ document.etudiant.nom_complet }}</span>
+                </td>
+                <td>{{ document.type_document.nom }}</td>
+                <td>{{ document.date_depot|date:"d/m/Y" }}</td>
+                <td>
+                  {% if document.valide %}
+                    <span class="badge badge-success">Validé</span>
+                  {% else %}
+                    <span class="badge badge-warning">En attente</span>
+                  {% endif %}
+                  {% if not document.fichier %}
+                    <span class="badge badge-light text-muted">Sans fichier</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% url 'students:document_update' document.pk as edit_link %}
+                  {% url 'students:document_delete' document.pk as del_link %}
+                  {% if document.fichier %}
+                    {% include "components/table_actions.html" with detail_url=document.fichier.url detail_external=True update_url=edit_link delete_url=del_link %}
+                  {% else %}
+                    {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-5">
+                  <i class="fa fa-file-text fa-2x mb-2 d-block opacity-50"></i>
+                  Aucun document enregistré
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% include "components/pagination.html" with items=documents %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

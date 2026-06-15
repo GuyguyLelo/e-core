@@ -7,17 +7,15 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:enveloppe_list' %}">Enveloppes budgétaires</a></li>
-<li class="breadcrumb-item active">{{ title }}</li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">{{ title }}</h5>
-            </div>
-            <div class="card-body">
+            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
+      <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
@@ -35,10 +33,8 @@
                         {{ form.montant }}
                         {{ form.montant.errors }}
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'prestation:enveloppe_list' %}" class="btn btn-secondary">Annuler</a>
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
-                    </div>
+                    {% url 'prestation:enveloppe_list' as cancel_url %}
+                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
                 </form>
             </div>
         </div>

@@ -2,7 +2,8 @@ from datetime import date
 
 from django import forms
 
-from academics.models import AnneeAcademique, Classe, ElementConstitutif, Local, Section, Semestre
+from academics.models import Classe, ElementConstitutif, Local, Section, Semestre
+from academics.utils import ActiveAnneeModelFormMixin
 from cards.models import Personnel
 
 from .models import BaremePrestation, EnveloppeBudgetaire, Horaire, HoraireLigne, Prestation
@@ -364,11 +365,6 @@ class FichePrestationJournaliereForm(forms.Form):
         label="Jour",
         widget=forms.Select(attrs={"class": "form-control"}),
     )
-    annee_academique = forms.ModelChoiceField(
-        queryset=AnneeAcademique.objects.all().order_by("-annee_debut"),
-        label="Année académique",
-        widget=forms.Select(attrs={"class": "form-control"}),
-    )
     semestre = forms.ModelChoiceField(
         queryset=Semestre.objects.select_related("promotion").order_by("promotion__code", "numero"),
         label="Semestre",
@@ -382,7 +378,6 @@ class FichePrestationJournaliereForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["annee_academique"].queryset = AnneeAcademique.objects.all().order_by("-annee_debut")
         self.fields["semestre"].queryset = Semestre.objects.select_related("promotion").order_by("promotion__code", "numero")
 
 
@@ -395,11 +390,6 @@ class StatistiquesPrestationEnseignementForm(forms.Form):
         label="Au",
         widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
     )
-    annee_academique = forms.ModelChoiceField(
-        queryset=AnneeAcademique.objects.all().order_by("-annee_debut"),
-        label="Année académique",
-        widget=forms.Select(attrs={"class": "form-control"}),
-    )
     semestre = forms.ModelChoiceField(
         queryset=Semestre.objects.select_related("promotion").order_by("promotion__code", "numero"),
         label="Semestre",
@@ -413,7 +403,6 @@ class StatistiquesPrestationEnseignementForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["annee_academique"].queryset = AnneeAcademique.objects.all().order_by("-annee_debut")
         self.fields["semestre"].queryset = Semestre.objects.select_related("promotion").order_by("promotion__code", "numero")
 
     def clean(self):
@@ -425,13 +414,12 @@ class StatistiquesPrestationEnseignementForm(forms.Form):
         return cleaned
 
 
-class HoraireForm(forms.ModelForm):
+class HoraireForm(ActiveAnneeModelFormMixin, forms.ModelForm):
     class Meta:
         model = Horaire
-        fields = ["titre", "annee_academique", "semestre", "classe", "observation", "active"]
+        fields = ["titre", "semestre", "classe", "observation", "active"]
         widgets = {
             "titre": forms.TextInput(attrs={"class": "form-control"}),
-            "annee_academique": forms.Select(attrs={"class": "form-control"}),
             "semestre": forms.Select(attrs={"class": "form-control"}),
             "classe": forms.Select(attrs={"class": "form-control"}),
             "observation": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
@@ -440,7 +428,6 @@ class HoraireForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["annee_academique"].queryset = AnneeAcademique.objects.all().order_by("-annee_debut")
         self.fields["semestre"].queryset = Semestre.objects.select_related("promotion").order_by("promotion__code", "numero")
         self.fields["classe"].queryset = Classe.objects.select_related("promotion", "promotion__filiere", "promotion__filiere__section", "local").filter(active=True).order_by("promotion__code", "code")
 

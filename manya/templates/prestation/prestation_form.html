@@ -8,17 +8,18 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:prestation_list' %}">Prestations</a></li>
-<li class="breadcrumb-item active">{{ title }}</li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-9">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">{{ title }}</h5>
-            </div>
-            <div class="card-body">
+            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
+      <div class="card-body">
+                {% include "components/messages.html" %}
+                {% include "components/form_errors.html" %}
+
                 <form method="post" id="prestation-form">
                     {% csrf_token %}
                     <div class="row">
@@ -58,18 +59,16 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'prestation:prestation_list' %}" class="btn btn-secondary">Annuler</a>
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
-                    </div>
+                    {% url 'prestation:prestation_list' as cancel_url %}
+                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
                 </form>
             </div>
         </div>
     </div>
     <div class="col-lg-3">
         <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Aide</h6>
+            <div class="card-header ecore-card-header">
+                <h6 class="mb-0"><i class="fa fa-info-circle me-2"></i>Aide</h6>
             </div>
             <div class="card-body">
                 <p class="mb-2">1. Choisissez un type de prestation.</p>

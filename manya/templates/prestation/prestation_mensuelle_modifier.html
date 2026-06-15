@@ -7,28 +7,21 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:prestation_mensuelle_list' %}">Saisie prestation mensuelle</a></li>
-<li class="breadcrumb-item active">Modifier</li>
+<li class="breadcrumb-item f-w-400 active">Modifier</li>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="card-header ecore-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0">Modifier la saisie mensuelle</h5>
                 <a href="{% url 'prestation:prestation_mensuelle_list' %}?mois={{ keys.mois }}&annee={{ keys.annee }}&numero_fiche={{ keys.numero_fiche|urlencode }}" class="btn btn-secondary btn-sm">
                     <i class="fa fa-arrow-left"></i> Retour à la liste
                 </a>
             </div>
             <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+                {% include "components/messages.html" %}
 
                 <div class="alert alert-light border mb-4 small">
                     <strong>Saisie actuelle :</strong> {{ saisie_resume.periode }} —
@@ -39,7 +32,7 @@
                 </div>
 
                 {% if form.non_field_errors %}
-                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                <div class="alert alert-danger ecore-alert">{{ form.non_field_errors }}</div>
                 {% endif %}
 
                 <p class="text-muted small mb-4">

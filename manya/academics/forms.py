@@ -89,6 +89,12 @@ class AnneeAcademiqueForm(forms.ModelForm):
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['active'].help_text = (
+            "Une seule année peut être active. L'activation désactive automatiquement les autres."
+        )
+
 
 class SemestreForm(forms.ModelForm):
     class Meta:

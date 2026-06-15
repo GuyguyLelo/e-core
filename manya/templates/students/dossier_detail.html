@@ -1,85 +1,220 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Détail Dossier - {{ dossier.inscription.etudiant.numero_etudiant }}{% endblock %}
+{% block title %}Dossier {{ dossier.inscription.etudiant.numero_etudiant }} - e-Core{% endblock %}
 
-{% block page_title %}Détail Dossier{% endblock %}
+{% block page_title %}Dossier étudiant{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="{% url 'students:dossier_list' %}">Dossiers</a></li>
-<li class="breadcrumb-item f-w-400 active">Détail</li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_detail' dossier.inscription.etudiant.pk %}">{{ dossier.inscription.etudiant.numero_etudiant }}</a></li>
+<li class="breadcrumb-item f-w-400 active">Dossier</li>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>Informations du Dossier</h5>
-            </div>
-            <div class="card-body">
-                <p><strong>Étudiant :</strong> {{ dossier.inscription.etudiant.nom_complet }}</p>
-                <p><strong>N° Étudiant :</strong> {{ dossier.inscription.etudiant.numero_etudiant }}</p>
-                <p><strong>Promotion :</strong> {{ dossier.inscription.promotion.code }}</p>
-                <p><strong>Année académique :</strong> {{ dossier.inscription.annee_academique.code }}</p>
-                <p><strong>Date ouverture :</strong> {{ dossier.date_ouverture|date:"d/m/Y" }}</p>
-                <p><strong>Statut :</strong> 
-                    <span class="badge badge-{% if dossier.statut == 'complet' %}success{% elif dossier.statut == 'valide' %}info{% else %}warning{% endif %}">
-                        {{ dossier.get_statut_display }}
-                    </span>
-                </p>
-            </div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card ecore-dossier-summary sticky-top">
+      <div class="ecore-dossier-summary-hero">
+        {% with etudiant=dossier.inscription.etudiant %}
+        {% if etudiant.photo %}
+          <img src="{{ etudiant.photo.url }}" alt="" class="ecore-dossier-summary-photo">
+        {% else %}
+          <div class="ecore-dossier-summary-photo ecore-dossier-summary-photo--placeholder">
+            <i class="fa fa-user"></i>
+          </div>
+        {% endif %}
+        <div class="ecore-dossier-summary-identity">
+          <h5 class="ecore-dossier-summary-name mb-0">{{ etudiant.nom_complet }}</h5>
+          <p class="ecore-dossier-summary-id mb-0">{{ etudiant.numero_etudiant }}</p>
         </div>
+        {% endwith %}
+        <span id="dossier-statut-badge" class="badge badge-{% if dossier.statut == 'complet' %}success{% elif dossier.statut == 'valide' %}info{% else %}warning{% endif %}">
+          {{ dossier.get_statut_display }}
+        </span>
+      </div>
+
+      <div class="card-body pt-0">
+        <div class="ecore-dossier-summary-grid">
+          <div class="ecore-dossier-summary-cell">
+            <span class="ecore-dossier-summary-label"><i class="fa fa-graduation-cap"></i> Classe</span>
+            <span class="ecore-dossier-summary-value">{{ dossier.inscription.classe|default:"—" }}</span>
+          </div>
+          <div class="ecore-dossier-summary-cell">
+            <span class="ecore-dossier-summary-label"><i class="fa fa-calendar"></i> Année</span>
+            <span class="ecore-dossier-summary-value">{{ dossier.inscription.annee_academique.code }}</span>
+          </div>
+          <div class="ecore-dossier-summary-cell ecore-dossier-summary-cell--full">
+            <span class="ecore-dossier-summary-label"><i class="fa fa-clock-o"></i> Ouverture</span>
+            <span class="ecore-dossier-summary-value">{{ dossier.date_ouverture|date:"d/m/Y" }}</span>
+          </div>
+        </div>
+
+        <div class="ecore-dossier-progress mb-3">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">Progression</span>
+            <span id="dossier-progress-label" class="fw-semibold">{{ total_deposes }}/{{ total_pieces }} pièce(s)</span>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div id="dossier-progress-bar" class="progress-bar bg-primary" role="progressbar"
+                 style="width: {% if total_pieces %}{% widthratio total_deposes total_pieces 100 %}{% else %}100{% endif %}%;"></div>
+          </div>
+        </div>
+
+        <a href="{% url 'students:student_detail' dossier.inscription.etudiant.pk %}" class="btn btn-secondary btn-sm w-100">
+          <i class="fa fa-arrow-left"></i> Retour à la fiche
+        </a>
+      </div>
     </div>
-    
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Documents du Dossier</h5>
-                <a href="{% url 'students:document_create' %}" class="btn btn-sm btn-primary">
-                    <i class="fa fa-plus"></i> Ajouter Document
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card ecore-dossier-pieces-card">
+      <div class="card-header ecore-card-header ecore-card-header--compact py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100">
+          <h6 class="mb-0 fw-semibold">Pièces à déposer</h6>
+          <span class="text-muted small d-inline-flex align-items-center gap-2">
+            <span class="ecore-dossier-piece-badge ecore-dossier-piece-badge--req">Obligatoire</span>
+            <span class="ecore-dossier-piece-badge ecore-dossier-piece-badge--opt">Facultatif</span>
+          </span>
+        </div>
+      </div>
+      <div class="card-body p-2">
+        {% if checklist %}
+        <ul class="ecore-dossier-checklist ecore-dossier-checklist--compact list-unstyled mb-0" id="dossier-checklist"
+            data-toggle-url="{% url 'students:dossier_toggle_document' dossier.pk %}">
+          {% for item in checklist %}
+          <li class="ecore-dossier-checklist-item{% if item.depose %} is-deposed{% endif %}{% if item.type.obligatoire %} is-required{% endif %}"
+              data-type-id="{{ item.type.pk }}"
+              {% if item.type.description %}title="{{ item.type.description }}"{% endif %}>
+            <input class="form-check-input js-dossier-doc-check" type="checkbox"
+                   id="doc-type-{{ item.type.pk }}"
+                   data-type-id="{{ item.type.pk }}"
+                   {% if item.depose %}checked{% endif %}>
+            <label class="ecore-dossier-check-label" for="doc-type-{{ item.type.pk }}">
+              <span class="ecore-dossier-check-title">{{ item.type.nom }}</span>
+              {% if item.type.obligatoire %}
+                <span class="ecore-dossier-piece-badge ecore-dossier-piece-badge--req">Obligatoire</span>
+              {% else %}
+                <span class="ecore-dossier-piece-badge ecore-dossier-piece-badge--opt">Facultatif</span>
+              {% endif %}
+            </label>
+            <div class="ecore-dossier-check-meta">
+              {% if item.document and item.document.fichier %}
+                <a href="{{ item.document.fichier.url }}" class="ecore-dossier-file-link" target="_blank" rel="noopener" title="Voir le fichier">
+                  <i class="fa fa-paperclip"></i>
                 </a>
+              {% endif %}
+              <span class="text-muted js-doc-date">{% if item.depose and item.document.date_depot %}{{ item.document.date_depot|date:"d/m/y" }}{% endif %}</span>
+              <span class="badge js-doc-status {% if item.depose %}badge-success{% else %}badge-light text-muted{% endif %}">
+                {% if item.depose %}OK{% else %}—{% endif %}
+              </span>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Type de document</th>
-                                <th>Date dépôt</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for document in documents %}
-                            <tr>
-                                <td>{{ document.type_document.nom }}</td>
-                                <td>{{ document.date_depot|date:"d/m/Y" }}</td>
-                                <td>
-                                    {% if document.valide %}
-                                        <span class="badge badge-light-success">Validé</span>
-                                    {% else %}
-                                        <span class="badge badge-light-warning">En attente</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ document.fichier.url }}" class="btn btn-sm btn-info" target="_blank" title="Voir">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">Aucun document</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="alert alert-info ecore-alert mb-0" role="alert">
+          Aucun type de document actif n'est configuré. Ajoutez des types dans
+          <a href="{% url 'students:type_document_list' %}">Types de documents</a>.
         </div>
+        {% endif %}
+      </div>
     </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const checklist = document.getElementById("dossier-checklist");
+  if (!checklist) return;
+
+  const toggleUrl = checklist.dataset.toggleUrl;
+  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]")?.value
+    || document.cookie.match(/csrftoken=([^;]+)/)?.[1];
+
+  function badgeClass(statut) {
+    if (statut === "complet" || statut === "valide") return "badge-success";
+    if (statut === "rejete") return "badge-danger";
+    return "badge-warning";
+  }
+
+  function updateSummary(data) {
+    const bar = document.getElementById("dossier-progress-bar");
+    const progressLabel = document.getElementById("dossier-progress-label");
+    const statutBadge = document.getElementById("dossier-statut-badge");
+
+    if (progressLabel) {
+      progressLabel.textContent = `${data.total_deposes}/${data.total_pieces} pièce(s)`;
+    }
+    if (bar) {
+      const pct = data.total_pieces
+        ? Math.round((data.total_deposes / data.total_pieces) * 100)
+        : 100;
+      bar.style.width = `${pct}%`;
+    }
+    if (statutBadge) {
+      statutBadge.textContent = data.dossier_statut_label;
+      statutBadge.className = `badge ${badgeClass(data.dossier_statut)}`;
+    }
+  }
+
+  checklist.addEventListener("change", async function (event) {
+    const input = event.target.closest(".js-dossier-doc-check");
+    if (!input || input.disabled) return;
+
+    const row = input.closest(".ecore-dossier-checklist-item");
+    const typeId = input.dataset.typeId;
+    const depose = input.checked;
+    input.disabled = true;
+
+    try {
+      const body = new URLSearchParams({
+        type_document_id: typeId,
+        depose: depose ? "1" : "0",
+      });
+      const response = await fetch(toggleUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": csrfToken,
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: body.toString(),
+      });
+      if (!response.ok) throw new Error("Erreur serveur");
+      const data = await response.json();
+
+      row.classList.toggle("is-deposed", data.depose);
+      const statusBadge = row.querySelector(".js-doc-status");
+      const dateLabel = row.querySelector(".js-doc-date");
+      if (statusBadge) {
+        statusBadge.textContent = data.depose ? "OK" : "—";
+        statusBadge.className = `badge js-doc-status ${data.depose ? "badge-success" : "badge-light text-muted"}`;
+      }
+      if (dateLabel) {
+        if (data.depose) {
+          const today = new Date();
+          dateLabel.textContent = today.toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
+          });
+        } else {
+          dateLabel.textContent = "";
+        }
+      }
+      updateSummary(data);
+    } catch (err) {
+      input.checked = !depose;
+      alert("Impossible de mettre à jour le dossier. Réessayez.");
+    } finally {
+      input.disabled = false;
+    }
+  });
+})();
+</script>
 {% endblock %}

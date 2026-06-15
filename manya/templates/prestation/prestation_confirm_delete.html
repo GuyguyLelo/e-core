@@ -8,17 +8,15 @@
 <div class="row">
     <div class="col-lg-6 offset-lg-3">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Confirmation de suppression</h5>
-            </div>
+            {% include "components/page_toolbar.html" with toolbar_title="Confirmer la suppression" toolbar_subtitle="Cette action est irréversible" %}
             <div class="card-body">
+                {% include "components/messages.html" %}
+
                 <p>Voulez-vous vraiment supprimer la prestation du <strong>{{ prestation.date_prestation|date:"d/m/Y" }}</strong> pour <strong>{{ prestation.personnel }}</strong> ?</p>
                 <form method="post">
                     {% csrf_token %}
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'prestation:prestation_list' %}" class="btn btn-secondary">Annuler</a>
-                        <button type="submit" class="btn btn-danger">Supprimer</button>
-                    </div>
+                    {% url 'prestation:prestation_list' as cancel_url %}
+                    {% include "components/form_actions.html" with cancel_url=cancel_url submit_label="Supprimer" submit_class="btn-danger" submit_icon="fa-trash" %}
                 </form>
             </div>
         </div>

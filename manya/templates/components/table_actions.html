@@ -1,7 +1,22 @@
 <div class="ecore-table-actions btn-group" role="group">
   {% if detail_url %}
-    <a href="{{ detail_url }}" class="btn btn-sm btn-ecore-info" title="Voir">
+    <a href="{{ detail_url }}" class="btn btn-sm btn-ecore-info" title="Voir"{% if detail_external %} target="_blank" rel="noopener noreferrer"{% endif %}>
       <i class="fa fa-eye"></i>
+    </a>
+  {% endif %}
+  {% if notes_url %}
+    <a href="{{ notes_url }}" class="btn btn-sm btn-ecore-notes" title="{{ notes_title|default:'Saisir notes' }}">
+      <i class="fa fa-pencil"></i>
+    </a>
+  {% endif %}
+  {% if calc_url %}
+    <a href="{{ calc_url }}" class="btn btn-sm btn-ecore-success" title="{{ calc_title|default:'Calculer' }}">
+      <i class="fa fa-calculator"></i>
+    </a>
+  {% endif %}
+  {% if pdf_url %}
+    <a href="{{ pdf_url }}" class="btn btn-sm btn-ecore-success" title="{{ pdf_title|default:'PDF' }}"{% if pdf_external %} target="_blank" rel="noopener noreferrer"{% endif %}>
+      <i class="fa fa-file-pdf-o"></i>
     </a>
   {% endif %}
   {% if update_url %}

@@ -1,97 +1,97 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Détail Délibération - {{ deliberation.session.code }}{% endblock %}
-
+{% block title %}Détail Délibération - {{ deliberation.session.code }} - e-Core{% endblock %}
 {% block page_title %}Détail Délibération{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'deliberations:deliberation_list' %}">Délibérations</a></li>
-<li class="breadcrumb-item f-w-400 active">Détail</li>
+<li class="breadcrumb-item f-w-400 active">{{ deliberation.session.code }}</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Délibération - {{ deliberation.session.code }}</h5>
-                <div>
-                    <a href="{% url 'deliberations:deliberation_calculer' deliberation.pk %}" class="btn btn-success">
-                        <i class="fa fa-calculator"></i> Calculer les décisions
-                    </a>
-                    <a href="{% url 'documents:generate_proces_verbal' deliberation.pk %}" class="btn btn-primary" target="_blank">
-                        <i class="fa fa-file-pdf-o"></i> Générer PV
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h6>Informations de la délibération</h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Session :</strong> {{ deliberation.session.code }}</li>
-                            <li><strong>Date :</strong> {{ deliberation.date_deliberation|date:"d/m/Y" }}</li>
-                            <li><strong>Président :</strong> {{ deliberation.president_jury.get_full_name|default:deliberation.president_jury.username }}</li>
-                            <li><strong>Statut :</strong> 
-                                <span class="badge badge-{% if deliberation.statut == 'terminee' %}success{% elif deliberation.statut == 'verrouillee' %}danger{% else %}warning{% endif %}">
-                                    {{ deliberation.get_statut_display }}
-                                </span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Rang</th>
-                                <th>N° Étudiant</th>
-                                <th>Nom</th>
-                                <th>Prénom</th>
-                                <th>Moyenne</th>
-                                <th>Crédits</th>
-                                <th>Décision</th>
-                                <th>Mention</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for decision in decisions %}
-                            <tr>
-                                <td>{{ decision.rang|default:"-" }}</td>
-                                <td><strong>{{ decision.etudiant.numero_etudiant }}</strong></td>
-                                <td>{{ decision.etudiant.nom }}</td>
-                                <td>{{ decision.etudiant.prenom }}</td>
-                                <td>{{ decision.moyenne_semestre|default:"-" }}</td>
-                                <td>{{ decision.credits_obtenus }}/{{ decision.credits_totaux }}</td>
-                                <td>
-                                    <span class="badge badge-{% if decision.decision == 'admis' %}success{% elif decision.decision == 'redouble' %}danger{% else %}warning{% endif %}">
-                                        {{ decision.get_decision_display }}
-                                    </span>
-                                </td>
-                                <td>{{ decision.get_mention_display|default:"-" }}</td>
-                                <td>
-                                    <a href="{% url 'deliberations:decision_jury_update' decision.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                        <i class="fa fa-edit"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="9" class="text-center text-muted">
-                                    Aucune décision enregistrée. 
-                                    <a href="{% url 'deliberations:deliberation_calculer' deliberation.pk %}">Calculer les décisions</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'deliberations:deliberation_list' as back_link %}
+      {% include "components/page_toolbar.html" with toolbar_title="Délibération" toolbar_subtitle=deliberation.session.code back_url=back_link back_label="Liste" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <a href="{% url 'deliberations:deliberation_calculer' deliberation.pk %}" class="btn btn-success btn-sm">
+            <i class="fa fa-calculator"></i> Calculer les décisions
+          </a>
+          <a href="{% url 'documents:generate_proces_verbal' deliberation.pk %}" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer">
+            <i class="fa fa-file-pdf-o"></i> Générer PV
+          </a>
         </div>
+
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h6 class="fw-semibold text-primary mb-3">Informations de la délibération</h6>
+            <ul class="list-unstyled ecore-detail-grid mb-0">
+              <li><strong>Session :</strong> {{ deliberation.session.code }}</li>
+              <li><strong>Date :</strong> {{ deliberation.date_deliberation|date:"d/m/Y" }}</li>
+              <li><strong>Président :</strong> {{ deliberation.president_jury.get_full_name|default:deliberation.president_jury.username }}</li>
+              <li><strong>Statut :</strong>
+                <span class="badge badge-{% if deliberation.statut == 'terminee' %}success{% elif deliberation.statut == 'verrouillee' %}danger{% else %}warning{% endif %}">
+                  {{ deliberation.get_statut_display }}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>N° Étudiant</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Moyenne</th>
+                <th>Crédits</th>
+                <th>Décision</th>
+                <th>Mention</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for decision in decisions %}
+              <tr>
+                <td>{{ decision.rang|default:"-" }}</td>
+                <td><span class="fw-semibold text-primary">{{ decision.etudiant.numero_etudiant }}</span></td>
+                <td>{{ decision.etudiant.nom }}</td>
+                <td>{{ decision.etudiant.prenom }}</td>
+                <td>{{ decision.moyenne_semestre|default:"-" }}</td>
+                <td>{{ decision.credits_obtenus }}/{{ decision.credits_totaux }}</td>
+                <td>
+                  <span class="badge badge-{% if decision.decision == 'admis' %}success{% elif decision.decision == 'redouble' %}danger{% else %}warning{% endif %}">
+                    {{ decision.get_decision_display }}
+                  </span>
+                </td>
+                <td>{{ decision.get_mention_display|default:"-" }}</td>
+                <td class="text-end">
+                  {% url 'deliberations:decision_jury_update' decision.pk as edit_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" class="text-center text-muted py-5">
+                  Aucune décision enregistrée.
+                  <a href="{% url 'deliberations:deliberation_calculer' deliberation.pk %}">Calculer les décisions</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

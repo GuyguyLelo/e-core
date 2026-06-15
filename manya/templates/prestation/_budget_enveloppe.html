@@ -1,6 +1,6 @@
 {% if budget %}
 <div class="card mb-3 border-{% if budget.depasse %}danger{% elif budget.deja_validee %}success{% else %}primary{% endif %}">
-    <div class="card-header py-2">
+    <div class="card-header ecore-card-header py-2">
         <h6 class="mb-0">Enveloppe budgétaire — {{ budget.mois_label }} {{ budget.annee }}</h6>
     </div>
     <div class="card-body py-3">

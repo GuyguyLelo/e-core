@@ -1,0 +1,13 @@
+{% if annee_academique_active %}
+<div class="ecore-active-annee-notice mb-3">
+  <i class="fa fa-calendar"></i>
+  Année académique en cours : <strong>{{ annee_academique_active.code }}</strong>
+  <span class="text-muted">(définie dans l'en-tête)</span>
+</div>
+{% else %}
+<div class="alert alert-warning ecore-alert py-2 mb-3" role="alert">
+  <i class="fa fa-exclamation-triangle"></i>
+  Aucune année académique active. Définissez-en une dans
+  <a href="{% url 'academics:annee_academique_list' %}">Structure → Années académiques</a>.
+</div>
+{% endif %}

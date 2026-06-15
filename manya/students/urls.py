@@ -33,4 +33,5 @@ urlpatterns = [
     # Dossiers
     path('dossiers/', dossier_list, name='dossier_list'),
     path('dossiers/<int:pk>/', dossier_detail, name='dossier_detail'),
+    path('dossiers/<int:pk>/toggle-document/', dossier_toggle_document, name='dossier_toggle_document'),
 ]

@@ -3,7 +3,7 @@
   <ul class="pagination justify-content-center mb-0">
     {% if items.has_previous %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ items.previous_page_number }}">Précédent</a>
+        <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ items.previous_page_number }}">Précédent</a>
       </li>
     {% endif %}
     <li class="page-item active">
@@ -11,7 +11,7 @@
     </li>
     {% if items.has_next %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ items.next_page_number }}">Suivant</a>
+        <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ items.next_page_number }}">Suivant</a>
       </li>
     {% endif %}
   </ul>

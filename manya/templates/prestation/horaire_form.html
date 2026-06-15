@@ -8,48 +8,33 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:horaire_list' %}">Horaires</a></li>
-<li class="breadcrumb-item active">{{ title }}</li>
+<li class="breadcrumb-item f-w-400 active">{{ title }}</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">{{ title }}</h5>
-            </div>
+            {% include "components/page_toolbar.html" with toolbar_title=title toolbar_subtitle=subtitle %}
             <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+                {% include "components/messages.html" %}
+                {% include "components/form_errors.html" %}
+                {% include "components/active_annee_notice.html" %}
 
                 <form method="post" id="horaire-form">
                     {% csrf_token %}
 
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-                    {% endif %}
                     {% if formset.non_form_errors %}
-                    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                    <div class="alert alert-danger ecore-alert">{{ formset.non_form_errors }}</div>
                     {% endif %}
 
                     <div class="row">
-                        <div class="col-lg-6 mb-3">
+                        <div class="col-lg-8 mb-3">
                             <label class="form-label">Titre</label>
                             {{ form.titre }}
                             {{ form.titre.errors }}
                         </div>
-                        <div class="col-lg-3 mb-3">
-                            <label class="form-label">Année académique</label>
-                            {{ form.annee_academique }}
-                            {{ form.annee_academique.errors }}
-                        </div>
-                        <div class="col-lg-3 mb-3">
+                        <div class="col-lg-4 mb-3">
                             <label class="form-label">Semestre</label>
                             {{ form.semestre }}
                             {{ form.semestre.errors }}
@@ -143,12 +128,8 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'prestation:horaire_list' %}" class="btn btn-secondary">Annuler</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-save"></i> Enregistrer
-                        </button>
-                    </div>
+                    {% url 'prestation:horaire_list' as cancel_url %}
+                    {% include "components/form_actions.html" with cancel_url=cancel_url %}
                 </form>
             </div>
         </div>

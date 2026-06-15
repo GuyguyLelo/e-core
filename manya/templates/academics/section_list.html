@@ -2,12 +2,11 @@
 {% load static %}
 
 {% block title %}Sections - e-Core{% endblock %}
-
 {% block page_title %}Sections{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Structure Académique</a></li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'academics:section_list' %}">Structure</a></li>
 <li class="breadcrumb-item f-w-400 active">Sections</li>
 {% endblock %}
 
@@ -15,77 +14,47 @@
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5>Liste des Sections</h5>
-        <a href="{% url 'academics:section_create' %}" class="btn btn-primary">
-          <i class="fa fa-plus"></i> Nouvelle Section
-        </a>
-      </div>
+      {% url 'academics:section_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Sections" toolbar_subtitle="Organisation académique de premier niveau" create_url=create_url create_label="Nouvelle section" %}
       <div class="card-body">
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-          {% endfor %}
-        {% endif %}
+        {% include "components/messages.html" %}
+        {% include "components/list_count_banner.html" with items=sections count_label="section(s)" banner_icon="fa-sitemap" %}
 
         <div class="table-responsive">
-          <table class="table table-hover">
+          <table class="table table-hover align-middle mb-0">
             <thead>
               <tr>
                 <th>Code</th>
                 <th>Nom</th>
                 <th>Statut</th>
-                <th>Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {% for section in sections %}
               <tr>
-                <td><strong>{{ section.code }}</strong></td>
+                <td><span class="fw-semibold text-primary">{{ section.code }}</span></td>
                 <td>{{ section.nom }}</td>
                 <td>
                   {% if section.active %}
-                    <span class="badge badge-light-success">Active</span>
+                    <span class="badge badge-success">Active</span>
                   {% else %}
-                    <span class="badge badge-light-danger">Inactive</span>
+                    <span class="badge badge-danger">Inactive</span>
                   {% endif %}
                 </td>
-                <td>
-                  <div class="btn-group" role="group">
-                    <a href="{% url 'academics:section_update' section.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                      <i class="fa fa-edit"></i>
-                    </a>
-                    <a href="{% url 'academics:section_delete' section.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                      <i class="fa fa-trash"></i>
-                    </a>
-                  </div>
+                <td class="text-end">
+                  {% url 'academics:section_update' section.pk as edit_link %}
+                  {% url 'academics:section_delete' section.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
                 </td>
               </tr>
               {% empty %}
-              <tr>
-                <td colspan="4" class="text-center text-muted">Aucune section enregistrée</td>
-              </tr>
+              <tr><td colspan="4" class="text-center text-muted py-5">Aucune section enregistrée</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
-        {% if sections.has_other_pages %}
-        <nav aria-label="Page navigation">
-          <ul class="pagination justify-content-center">
-            {% if sections.has_previous %}
-              <li class="page-item"><a class="page-link" href="?page={{ sections.previous_page_number }}">Précédent</a></li>
-            {% endif %}
-            <li class="page-item active"><span class="page-link">Page {{ sections.number }} sur {{ sections.paginator.num_pages }}</span></li>
-            {% if sections.has_next %}
-              <li class="page-item"><a class="page-link" href="?page={{ sections.next_page_number }}">Suivant</a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        {% endif %}
+        {% include "components/pagination.html" with items=sections %}
       </div>
     </div>
   </div>

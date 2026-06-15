@@ -1,105 +1,116 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Étudiants - Gestion Académique LMD{% endblock %}
+{% block title %}Étudiants - e-Core{% endblock %}
 
 {% block page_title %}Étudiants{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Étudiants</a></li>
-<li class="breadcrumb-item f-w-400 active">Liste des étudiants</li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Étudiants</a></li>
+<li class="breadcrumb-item f-w-400 active">Liste</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Liste des Étudiants</h5>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'students:student_import' %}" class="btn btn-success">
-                        <i class="fa fa-file-excel-o"></i> Importer Excel
-                    </a>
-                    <a href="{% url 'students:student_create' %}" class="btn btn-primary">
-                        <i class="fa fa-plus"></i> Nouvel Étudiant
-                    </a>
-                </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'students:student_create' as create_student_url %}
+      {% url 'students:student_import' as import_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Liste des étudiants" toolbar_subtitle="Parcours, inscriptions et dossiers" create_url=create_student_url create_label="Nouvel étudiant" secondary_url=import_url secondary_label="Importer Excel" secondary_icon="fa-file-excel-o" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+
+        <form method="get" class="ecore-filter-bar ecore-filter-bar--compact">
+          <div class="ecore-filter-row">
+            <div class="ecore-filter-field ecore-filter-field--search">
+              <label class="form-label" for="{{ filter_form.q.id_for_label }}">Rechercher</label>
+              {{ filter_form.q }}
             </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>N° Étudiant</th>
-                                <th>Nom</th>
-                                <th>Prénom</th>
-                                <th>Email</th>
-                                <th>Téléphone</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for student in students %}
-                            <tr>
-                                <td><strong>{{ student.numero_etudiant }}</strong></td>
-                                <td>{{ student.nom }}</td>
-                                <td>{{ student.prenom }}</td>
-                                <td>{{ student.email }}</td>
-                                <td>{{ student.telephone|default:"-" }}</td>
-                                <td>
-                                    <span class="badge badge-{% if student.statut == 'actif' %}success{% elif student.statut == 'diplome' %}info{% else %}danger{% endif %}">
-                                        {{ student.get_statut_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-sm btn-info" title="Voir">
-                                            <i class="fa fa-eye"></i>
-                                        </a>
-                                        <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'students:student_delete' student.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">Aucun étudiant enregistré</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if students.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if students.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ students.previous_page_number }}">Précédent</a></li>
-                        {% endif %}
-                        <li class="page-item active"><span class="page-link">Page {{ students.number }} sur {{ students.paginator.num_pages }}</span></li>
-                        {% if students.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ students.next_page_number }}">Suivant</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
+            <div class="ecore-filter-field">
+              <label class="form-label" for="{{ filter_form.filiere.id_for_label }}">Filière</label>
+              {{ filter_form.filiere }}
             </div>
+            <div class="ecore-filter-field">
+              <label class="form-label" for="{{ filter_form.statut.id_for_label }}">Statut</label>
+              {{ filter_form.statut }}
+            </div>
+            <div class="ecore-filter-field ecore-filter-field--actions">
+              <button type="submit" class="btn btn-outline-primary btn-icon" title="Filtrer">
+                <i class="fa fa-filter"></i>
+              </button>
+              {% if has_filters %}
+              <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary btn-icon" title="Réinitialiser">
+                <i class="fa fa-times"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+
+        <div class="ecore-info-banner d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <span><i class="fa fa-users me-2"></i>{{ students.paginator.count }} étudiant{{ students.paginator.count|pluralize }} enregistré{{ students.paginator.count|pluralize }}</span>
         </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>N° Étudiant</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Filière</th>
+                <th>Téléphone</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in students %}
+              <tr>
+                <td><span class="fw-semibold text-primary">{{ student.numero_etudiant }}</span></td>
+                <td>{{ student.nom }}</td>
+                <td>{{ student.prenom }}</td>
+                <td>
+                  {% if student.filiere_courante %}
+                    <span class="fw-semibold">{{ student.filiere_courante.code }}</span>
+                    <span class="text-muted small d-block">{{ student.filiere_courante.nom }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>{{ student.telephone|default:"—" }}</td>
+                <td>
+                  <span class="badge badge-{% if student.statut == 'actif' %}success{% elif student.statut == 'diplome' %}info{% else %}danger{% endif %}">
+                    {{ student.get_statut_display }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% url 'students:student_detail' student.pk as detail_link %}
+                  {% url 'students:student_update' student.pk as edit_link %}
+                  {% url 'students:student_delete' student.pk as del_link %}
+                  {% include "components/table_actions.html" with detail_url=detail_link update_url=edit_link delete_url=del_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-5">
+                  <i class="fa fa-users fa-2x mb-2 d-block opacity-50"></i>
+                  {% if has_filters %}
+                  Aucun étudiant ne correspond aux critères sélectionnés
+                  {% else %}
+                  Aucun étudiant enregistré
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% include "components/pagination.html" with items=students query_string=filter_query %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

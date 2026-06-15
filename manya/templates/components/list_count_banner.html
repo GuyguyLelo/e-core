@@ -1,0 +1,6 @@
+{% if items %}
+<div class="ecore-info-banner mb-4">
+  <i class="fa {{ banner_icon|default:'fa-list' }} me-2"></i>
+  {{ items.paginator.count }} {{ count_label|default:"élément(s)" }}
+</div>
+{% endif %}

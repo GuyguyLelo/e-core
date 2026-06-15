@@ -8,7 +8,7 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
 <li class="breadcrumb-item"><a href="{% url 'prestation:prestation_depuis_horaire' %}">Saisie depuis l'horaire</a></li>
-<li class="breadcrumb-item active">Nouvelle saisie</li>
+<li class="breadcrumb-item f-w-400 active">Nouvelle saisie</li>
 {% endblock %}
 
 {% block extra_css %}
@@ -33,7 +33,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="card-header ecore-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0">Critères d'affichage de l'horaire</h5>
                 <a href="{% url 'prestation:prestation_depuis_horaire' %}" class="btn btn-secondary btn-sm">
                     <i class="fa fa-arrow-left"></i> Retour à la liste
@@ -116,7 +116,7 @@
              data-can-cancel="{% if peut_annuler %}1{% else %}0{% endif %}"
              data-msg-blocage-ajout="{{ msg_blocage_ajout|default:'' }}"
              data-msg-blocage-annulation="{{ msg_blocage_annulation|default:'' }}">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="card-header ecore-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h6 class="mb-0">
                     {% if mode_modification %}
                     Modification de la fiche — lignes validées
@@ -191,7 +191,7 @@
 {% elif request.GET.numero_fiche or request.GET.section or request.GET.jour %}
 <div class="row">
     <div class="col-12">
-        <div class="alert alert-info mb-0">
+        <div class="alert alert-info ecore-alert mb-0" role="alert">
             Corrigez les critères ci-dessus ou vérifiez qu'un horaire actif existe pour la section et le jour choisis.
         </div>
     </div>
@@ -199,7 +199,7 @@
 {% else %}
 <div class="row">
     <div class="col-12">
-        <div class="alert alert-info mb-0">
+        <div class="alert alert-info ecore-alert mb-0" role="alert">
             Renseignez le numéro de fiche, la section et le jour, puis cliquez sur <strong>Afficher</strong>.
             Choisissez ensuite la <strong>date de la prestation</strong> indiquée sur la fiche avant de valider les lignes.
         </div>

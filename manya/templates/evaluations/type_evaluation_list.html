@@ -1,85 +1,66 @@
 {% extends "layout/master.html" %}
 {% load static %}
 
-{% block title %}Types d'Évaluation - e-Core{% endblock %}
-
-{% block page_title %}Types d'Évaluation{% endblock %}
+{% block title %}Types d'évaluation - e-Core{% endblock %}
+{% block page_title %}Types d'évaluation{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}"> <i data-feather="home"> </i></a></li>
-<li class="breadcrumb-item"><a href="#">Évaluations</a></li>
-<li class="breadcrumb-item f-w-400 active">Types d'évaluation</li>
+<li class="breadcrumb-item"><a href="{% url 'home' %}"><i data-feather="home"></i></a></li>
+<li class="breadcrumb-item"><a href="{% url 'evaluations:evaluation_list' %}">Évaluations</a></li>
+<li class="breadcrumb-item f-w-400 active">Types</li>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Liste des Types d'Évaluation</h5>
-                <a href="{% url 'evaluations:type_evaluation_create' %}" class="btn btn-primary">
-                    <i class="fa fa-plus"></i> Nouveau Type
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Code</th>
-                                <th>Nom</th>
-                                <th>Coefficient</th>
-                                <th>Note max</th>
-                                <th>Ordre</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for type in types %}
-                            <tr>
-                                <td><strong>{{ type.code }}</strong></td>
-                                <td>{{ type.nom }}</td>
-                                <td>{{ type.coefficient }}</td>
-                                <td>{{ type.note_max }}/20</td>
-                                <td>{{ type.ordre }}</td>
-                                <td>
-                                    {% if type.active %}
-                                        <span class="badge badge-light-success">Active</span>
-                                    {% else %}
-                                        <span class="badge badge-light-danger">Inactive</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'evaluations:type_evaluation_update' type.pk %}" class="btn btn-sm btn-warning" title="Modifier">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'evaluations:type_evaluation_delete' type.pk %}" class="btn btn-sm btn-danger" title="Supprimer">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">Aucun type d'évaluation enregistré</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  <div class="col-12">
+    <div class="card">
+      {% url 'evaluations:type_evaluation_create' as create_url %}
+      {% include "components/page_toolbar.html" with toolbar_title="Types d'évaluation" toolbar_subtitle="CC, examen, TP, etc." create_url=create_url create_label="Nouveau type" %}
+      <div class="card-body">
+        {% include "components/messages.html" %}
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Coefficient</th>
+                <th>Note max</th>
+                <th>Ordre</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for type in types %}
+              <tr>
+                <td><span class="fw-semibold text-primary">{{ type.code }}</span></td>
+                <td>{{ type.nom }}</td>
+                <td>{{ type.coefficient }}</td>
+                <td>{{ type.note_max }}/20</td>
+                <td>{{ type.ordre }}</td>
+                <td>
+                  {% if type.active %}
+                    <span class="badge badge-success">Active</span>
+                  {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% url 'evaluations:type_evaluation_update' type.pk as edit_link %}
+                  {% url 'evaluations:type_evaluation_delete' type.pk as del_link %}
+                  {% include "components/table_actions.html" with update_url=edit_link delete_url=del_link %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-5">Aucun type enregistré</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

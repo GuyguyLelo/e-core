@@ -1,0 +1,37 @@
+"""Constantes partagées pour l'application students."""
+
+NATIONALITE_DEFAULT = 'Congolaise'
+
+NATIONALITE_CHOICES = [
+    (NATIONALITE_DEFAULT, NATIONALITE_DEFAULT),
+    ('Algérienne', 'Algérienne'),
+    ('Angolaise', 'Angolaise'),
+    ('Béninoise', 'Béninoise'),
+    ('Burkinabè', 'Burkinabè'),
+    ('Burundaise', 'Burundaise'),
+    ('Camerounaise', 'Camerounaise'),
+    ('Centrafricaine', 'Centrafricaine'),
+    ('Comorienne', 'Comorienne'),
+    ('Djiboutienne', 'Djiboutienne'),
+    ('Égyptienne', 'Égyptienne'),
+    ('Éthiopienne', 'Éthiopienne'),
+    ('Française', 'Française'),
+    ('Gabonaise', 'Gabonaise'),
+    ('Gambienne', 'Gambienne'),
+    ('Ghanéenne', 'Ghanéenne'),
+    ('Guinéenne', 'Guinéenne'),
+    ('Ivoirienne', 'Ivoirienne'),
+    ('Malienne', 'Malienne'),
+    ('Marocaine', 'Marocaine'),
+    ('Mauritanienne', 'Mauritanienne'),
+    ('Nigériane', 'Nigériane'),
+    ('Nigérienne', 'Nigérienne'),
+    ('Ougandaise', 'Ougandaise'),
+    ('Rwandaise', 'Rwandaise'),
+    ('Sénégalaise', 'Sénégalaise'),
+    ('Soudanaise', 'Soudanaise'),
+    ('Tchadienne', 'Tchadienne'),
+    ('Togolaise', 'Togolaise'),
+    ('Tunisienne', 'Tunisienne'),
+    ('Autre', 'Autre'),
+]
