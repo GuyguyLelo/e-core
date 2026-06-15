@@ -153,9 +153,12 @@ class Classe(models.Model):
 # ========== MODÈLES LMD ==========
 
 class Semestre(models.Model):
-    """Semestre LMD (30 crédits ECTS par semestre)"""
-    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name='semestres', verbose_name="Promotion")
-    numero = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)], verbose_name="Numéro")
+    """Semestre LMD (catalogue : S1, S2, … — indépendant des promotions)"""
+    numero = models.IntegerField(
+        unique=True,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        verbose_name="Numéro",
+    )
     code = models.CharField(max_length=20, verbose_name="Code")
     nom = models.CharField(max_length=200, verbose_name="Nom")
     credits_ects = models.IntegerField(default=30, validators=[MinValueValidator(1), MaxValueValidator(60)], verbose_name="Crédits ECTS")
@@ -168,17 +171,16 @@ class Semestre(models.Model):
     class Meta:
         verbose_name = "Semestre"
         verbose_name_plural = "Semestres"
-        unique_together = [['promotion', 'numero']]
-        ordering = ['promotion', 'numero']
+        ordering = ['numero']
 
     def __str__(self):
         return f"{self.code} - {self.nom}"
 
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = f"{self.promotion.code}-S{self.numero}"
+            self.code = f"S{self.numero}"
         if not self.nom:
-            self.nom = f"Semestre {self.numero} - {self.promotion.nom}"
+            self.nom = f"Semestre {self.numero}"
         super().save(*args, **kwargs)
 
 

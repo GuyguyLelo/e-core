@@ -34,9 +34,10 @@ class ParametresLMDForm(forms.ModelForm):
 class DeliberationForm(forms.ModelForm):
     class Meta:
         model = Deliberation
-        fields = ['session', 'date_deliberation', 'president_jury', 'membres_jury', 'statut', 'notes']
+        fields = ['session', 'promotion', 'date_deliberation', 'president_jury', 'membres_jury', 'statut', 'notes']
         widgets = {
             'session': forms.Select(attrs={'class': 'form-control'}),
+            'promotion': forms.Select(attrs={'class': 'form-control'}),
             'date_deliberation': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'president_jury': forms.Select(attrs={'class': 'form-control'}),
             'membres_jury': forms.SelectMultiple(attrs={'class': 'form-control', 'size': 5}),

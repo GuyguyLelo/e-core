@@ -15,7 +15,23 @@ from academics.utils import NO_ACTIVE_ANNEE_ERROR
 from .forms import TypeEvaluationForm, SessionForm, EvaluationForm, NoteForm
 
 
-def _note_selection_from_request(request):
+def _inscriptions_annee_active():
+    """Inscriptions actives de l'année académique en cours."""
+    annee = AnneeAcademique.get_active()
+    if not annee:
+        return Inscription.objects.none(), annee
+    qs = (
+        Inscription.objects.filter(
+            annee_academique=annee,
+            statut='inscrit',
+            classe__isnull=False,
+        )
+        .select_related('etudiant', 'classe', 'classe__promotion')
+        .order_by('classe__promotion__code', 'etudiant__numero_etudiant')
+    )
+    return qs, annee
+
+
     """Extrait session, cours (EC) et classe depuis GET ou POST."""
     selected = {}
     for key in ('session', 'ec', 'classe'):
@@ -230,10 +246,7 @@ def note_list(request):
             .select_related('ue')
             .order_by('ue__ordre', 'ordre', 'code')
         )
-        classes = Classe.objects.filter(
-            promotion=semestre.promotion,
-            active=True,
-        ).order_by('code')
+        classes = Classe.objects.filter(active=True).select_related('promotion').order_by('promotion__code', 'code')
 
     if selected.get('session') and selected.get('ec'):
         ec_obj = get_object_or_404(ElementConstitutif, pk=selected['ec'])
@@ -358,12 +371,9 @@ def note_delete(request, pk):
 def saisie_masse_notes(request, evaluation_id):
     """Saisie de notes pour tous les étudiants d'une évaluation"""
     evaluation = get_object_or_404(Evaluation, pk=evaluation_id)
-    # Récupérer les étudiants inscrits dans la promotion du semestre
-    semestre = evaluation.session.semestre
-    inscriptions = Inscription.objects.filter(
-        classe__promotion=semestre.promotion,
-        statut='inscrit'
-    ).select_related('etudiant', 'classe')
+    inscriptions, annee = _inscriptions_annee_active()
+    if not annee:
+        messages.error(request, NO_ACTIVE_ANNEE_ERROR)
     
     if request.method == 'POST':
         # Traiter la saisie en masse
@@ -509,11 +519,8 @@ def note_par_ec(request):
             ec_selected = get_object_or_404(ElementConstitutif, pk=ec_id)
             session = get_object_or_404(Session, pk=session_id)
 
-            # Récupérer les inscriptions de la promotion du semestre
-            inscriptions = Inscription.objects.filter(
-                classe__promotion=session.semestre.promotion,
-                statut='inscrit'
-            ).select_related('etudiant', 'classe').order_by('etudiant__numero_etudiant')
+            # Inscriptions de l'année académique active
+            inscriptions, _annee = _inscriptions_annee_active()
 
             # Récupérer les évaluations pour cet EC dans cette session
             evaluations = Evaluation.objects.filter(

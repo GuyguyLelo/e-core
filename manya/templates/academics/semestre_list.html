@@ -15,7 +15,7 @@
   <div class="col-12">
     <div class="card">
       {% url 'academics:semestre_create' as create_url %}
-      {% include "components/page_toolbar.html" with toolbar_title="Semestres" toolbar_subtitle="Découpage LMD par promotion" create_url=create_url create_label="Nouveau semestre" %}
+      {% include "components/page_toolbar.html" with toolbar_title="Semestres" toolbar_subtitle="Catalogue LMD (S1, S2, …)" create_url=create_url create_label="Nouveau semestre" %}
       <div class="card-body">
         {% include "components/messages.html" %}
         {% include "components/list_count_banner.html" with items=semestres count_label="semestre(s)" banner_icon="fa-calendar" %}
@@ -26,7 +26,6 @@
               <tr>
                 <th>Code</th>
                 <th>Nom</th>
-                <th>Promotion</th>
                 <th>Numéro</th>
                 <th>Crédits ECTS</th>
                 <th>Statut</th>
@@ -38,7 +37,6 @@
               <tr>
                 <td><span class="fw-semibold text-primary">{{ semestre.code }}</span></td>
                 <td>{{ semestre.nom }}</td>
-                <td>{{ semestre.promotion.code }}</td>
                 <td><span class="badge badge-ecore">S{{ semestre.numero }}</span></td>
                 <td>{{ semestre.credits_ects }} ECTS</td>
                 <td>
@@ -55,7 +53,7 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="7" class="text-center text-muted py-5">Aucun semestre enregistré</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-5">Aucun semestre enregistré</td></tr>
               {% endfor %}
             </tbody>
           </table>

@@ -9,36 +9,36 @@
 
 {% block form_id %}semestre-form{% endblock %}
 
-{% block form_extra_notices %}
+{% block form_main_col %}col-12 col-xl-10 col-xxl-8{% endblock %}
 
-{% endblock %}
-
-{% block form_before_fields %}
-
-{% endblock %}
-
-{% block form_main_col %}col-lg-8{% endblock %}
+{% block form_aside_wrapper %}{% endblock %}
 
 {% block form_main %}
-{% include "components/ecore_form_section_open.html" with icon="fa-sitemap" title="Rattachement" subtitle="Promotion et numéro de semestre" %}
-<div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.promotion col="col-md-8" icon="fa-graduation-cap" required=True %}
-  {% include "components/ecore_form_field.html" with field=form.numero col="col-md-4" icon="fa-sort-numeric-asc" required=True %}
+{% include "components/ecore_form_section_open.html" with icon="fa-calendar" title="Semestre" subtitle="Catalogue LMD : numéro, identification, crédits et calendrier" section_class="mb-0 ecore-form-section-compact" %}
+<div class="row g-2">
+  {% include "components/ecore_form_field.html" with field=form.numero col="col-md-3 col-lg-2" icon="fa-sort-numeric-asc" required=True help="Ex. 1 pour S1" %}
+  {% include "components/ecore_form_field.html" with field=form.credits_ects col="col-md-3 col-lg-2" icon="fa-star" required=True input_suffix="ECTS" %}
+  {% include "components/ecore_form_field.html" with field=form.code col="col-md-3 col-lg-3" icon="fa-hashtag" help="Auto si vide (S1, S2…)" %}
+  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-3 col-lg-5" icon="fa-font" help="Auto si vide" %}
 </div>
-{% include "components/ecore_form_section_close.html" %}
-{% include "components/ecore_form_section_open.html" with icon="fa-tag" title="Identification" subtitle="Code et nom (auto si vide)" %}
-<div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.code col="col-md-6" icon="fa-hashtag" help="Généré automatiquement si vide" %}
-  {% include "components/ecore_form_field.html" with field=form.nom col="col-md-6" icon="fa-font" help="Généré automatiquement si vide" %}
-</div>
-{% include "components/ecore_form_section_close.html" %}
-{% include "components/ecore_form_section_open.html" with icon="fa-star" title="Crédits" subtitle="Charge ECTS du semestre" %}
-{% include "components/ecore_form_field.html" with field=form.credits_ects col="col-md-4" icon="fa-star" required=True %}
-{% include "components/ecore_form_section_close.html" %}
-{% include "components/ecore_form_section_open.html" with icon="fa-calendar" title="Calendrier" subtitle="Dates du semestre" section_class="mb-0" %}
-<div class="row g-3">
-  {% include "components/ecore_form_field.html" with field=form.date_debut col="col-md-6" icon="fa-play" %}
-  {% include "components/ecore_form_field.html" with field=form.date_fin col="col-md-6" icon="fa-stop" %}
+<div class="row g-2 mt-1 align-items-end">
+  {% include "components/ecore_form_field.html" with field=form.date_debut col="col-md-4" icon="fa-play" %}
+  {% include "components/ecore_form_field.html" with field=form.date_fin col="col-md-4" icon="fa-stop" %}
+  <div class="col-md-4">
+    <label class="form-label d-block">Statut</label>
+    <div class="ecore-form-aside-card ecore-form-inline-switch mb-0 py-2 px-3">
+      <div class="ecore-dossier-switch">
+        <div>
+          <div class="fw-semibold small">Semestre actif</div>
+          <div class="text-muted small">Visible dans la maquette</div>
+        </div>
+        <div class="form-check form-switch mb-0">
+          {{ form.active }}
+        </div>
+      </div>
+      {% if form.active.errors %}<div class="text-danger small mt-1">{{ form.active.errors }}</div>{% endif %}
+    </div>
+  </div>
 </div>
 {% include "components/ecore_form_section_close.html" %}
 {% endblock %}
@@ -46,12 +46,4 @@
 {% block form_actions %}
 {% url 'academics:semestre_list' as cancel_url %}
 {% include "components/form_actions.html" with cancel_url=cancel_url %}
-{% endblock %}
-
-{% block form_aside %}
-{% include "components/ecore_form_aside_switch.html" with field=form.active title="Semestre actif" hint="Visible dans la maquette" %}
-{% include "components/ecore_form_aside_tips.html" with tip1="Le numéro ordonne les semestres dans la promotion" tip2="Les crédits ECTS alimentent le LMD" tip3="Les dates sont optionnelles mais utiles" %}
-{% endblock %}
-{% block form_extra_js %}
-
 {% endblock %}

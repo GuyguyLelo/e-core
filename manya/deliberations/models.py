@@ -40,8 +40,9 @@ class ParametresLMD(models.Model):
 
 
 class Deliberation(models.Model):
-    """Délibération d'un jury pour une session"""
+    """Délibération d'un jury pour une session et une promotion"""
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='deliberations', verbose_name="Session")
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name='deliberations', verbose_name="Promotion")
     date_deliberation = models.DateField(verbose_name="Date de délibération")
     president_jury = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='deliberations_president', verbose_name="Président du jury")
     membres_jury = models.ManyToManyField(User, related_name='deliberations_membre', blank=True, verbose_name="Membres du jury")
@@ -63,7 +64,7 @@ class Deliberation(models.Model):
     class Meta:
         verbose_name = "Délibération"
         verbose_name_plural = "Délibérations"
-        unique_together = [['session']]
+        unique_together = [['session', 'promotion']]
         ordering = ['-date_deliberation']
 
     def __str__(self):

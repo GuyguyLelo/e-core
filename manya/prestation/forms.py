@@ -366,7 +366,7 @@ class FichePrestationJournaliereForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-control"}),
     )
     semestre = forms.ModelChoiceField(
-        queryset=Semestre.objects.select_related("promotion").order_by("promotion__code", "numero"),
+        queryset=Semestre.objects.order_by("numero"),
         label="Semestre",
         widget=forms.Select(attrs={"class": "form-control"}),
     )
@@ -378,7 +378,7 @@ class FichePrestationJournaliereForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["semestre"].queryset = Semestre.objects.select_related("promotion").order_by("promotion__code", "numero")
+        self.fields["semestre"].queryset = Semestre.objects.order_by("numero")
 
 
 class StatistiquesPrestationEnseignementForm(forms.Form):
@@ -391,7 +391,7 @@ class StatistiquesPrestationEnseignementForm(forms.Form):
         widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
     )
     semestre = forms.ModelChoiceField(
-        queryset=Semestre.objects.select_related("promotion").order_by("promotion__code", "numero"),
+        queryset=Semestre.objects.order_by("numero"),
         label="Semestre",
         widget=forms.Select(attrs={"class": "form-control"}),
     )
@@ -403,7 +403,7 @@ class StatistiquesPrestationEnseignementForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["semestre"].queryset = Semestre.objects.select_related("promotion").order_by("promotion__code", "numero")
+        self.fields["semestre"].queryset = Semestre.objects.order_by("numero")
 
     def clean(self):
         cleaned = super().clean()
@@ -428,7 +428,7 @@ class HoraireForm(ActiveAnneeModelFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["semestre"].queryset = Semestre.objects.select_related("promotion").order_by("promotion__code", "numero")
+        self.fields["semestre"].queryset = Semestre.objects.order_by("numero")
         self.fields["classe"].queryset = Classe.objects.select_related("promotion", "promotion__filiere", "promotion__filiere__section", "local").filter(active=True).order_by("promotion__code", "code")
 
 
@@ -461,8 +461,8 @@ class HoraireLigneForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["element_constitutif"].queryset = ElementConstitutif.objects.select_related(
-            "ue", "ue__semestre", "ue__semestre__promotion", "professeur"
-        ).order_by("ue__semestre__promotion__code", "ue__ordre", "ordre", "code")
+            "ue", "ue__semestre", "professeur"
+        ).order_by("ue__semestre__numero", "ue__ordre", "ordre", "code")
         self.fields["local"].queryset = Local.objects.filter(active=True).order_by("code")
         self.fields["professeur"].queryset = Personnel.objects.all()
         self.fields["jour"].required = False

@@ -33,7 +33,7 @@
                 <option value="">— Choisir —</option>
                 {% for semestre in semestres %}
                 <option value="{{ semestre.pk }}"{% if selected.semestre == semestre.pk %} selected{% endif %}>
-                  {{ semestre.code }} — {{ semestre.promotion.nom }}
+                  {{ semestre.code }} — {{ semestre.nom }}
                 </option>
                 {% endfor %}
               </select>

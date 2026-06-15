@@ -99,9 +99,8 @@ class AnneeAcademiqueForm(forms.ModelForm):
 class SemestreForm(forms.ModelForm):
     class Meta:
         model = Semestre
-        fields = ['promotion', 'numero', 'code', 'nom', 'credits_ects', 'date_debut', 'date_fin', 'active']
+        fields = ['numero', 'code', 'nom', 'credits_ects', 'date_debut', 'date_fin', 'active']
         widgets = {
-            'promotion': forms.Select(attrs={'class': 'form-control'}),
             'numero': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 10}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code automatique si vide'}),
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom automatique si vide'}),

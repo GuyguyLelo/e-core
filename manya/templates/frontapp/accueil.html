@@ -101,14 +101,14 @@
 
   {% has_any_perm 'cards.view_card' 'cards.view_personnel' as can_cards %}
   {% if can_cards %}
-  <a href="{% url 'cards:card_list' %}" class="text-decoration-none text-reset">
+  <a href="{% url 'cards:personnel_list' %}" class="text-decoration-none text-reset">
     <div class="module-card">
       <div class="module-icon ecore-module-icon ecore-module-icon--cards">
-        <i class="fa fa-id-card"></i>
+        <i class="fa fa-address-book"></i>
       </div>
       <div>
-        <div class="module-title">Cartes PVC</div>
-        <p class="module-desc">Conception et suivi des cartes PVC du personnel.</p>
+        <div class="module-title">Gestion du personnel</div>
+        <p class="module-desc">Fiches du personnel, affectations et cartes PVC.</p>
       </div>
     </div>
   </a>

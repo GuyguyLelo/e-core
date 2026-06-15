@@ -278,7 +278,7 @@ class ProcesVerbalGenerator(PDFGenerator):
         self.deliberation = deliberation
         self.session = deliberation.session
         self.semestre = self.session.semestre
-        self.promotion = self.semestre.promotion
+        self.promotion = self.deliberation.promotion
     
     def generate(self):
         """Génère le procès-verbal"""

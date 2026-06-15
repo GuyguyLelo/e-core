@@ -26,10 +26,10 @@ class DeliberationEngine:
     7. Produire les décisions finales
     """
 
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, promotion):
         self.session = session
         self.semestre = session.semestre
-        self.promotion = self.semestre.promotion
+        self.promotion = promotion
         
         # Récupérer les paramètres LMD
         try:

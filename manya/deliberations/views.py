@@ -49,7 +49,7 @@ def parametres_lmd_update(request, pk):
 # ========== DELIBERATIONS ==========
 @login_required
 def deliberation_list(request):
-    deliberations = Deliberation.objects.select_related('session', 'president_jury').all().order_by('-date_deliberation')
+    deliberations = Deliberation.objects.select_related('session', 'promotion', 'president_jury').all().order_by('-date_deliberation')
     paginator = Paginator(deliberations, 10)
     page = request.GET.get('page')
     deliberations = paginator.get_page(page)
@@ -105,7 +105,7 @@ def deliberation_calculer(request, pk):
     
     if request.method == 'POST':
         # Utiliser le moteur de délibération
-        engine = DeliberationEngine(session)
+        engine = DeliberationEngine(session, deliberation.promotion)
         resultats = engine.traiter_tous_etudiants()
         
         # Créer les décisions du jury
@@ -114,7 +114,7 @@ def deliberation_calculer(request, pk):
             etudiant = resultat['etudiant']
             inscription = Inscription.objects.filter(
                 etudiant=etudiant,
-                classe__promotion=session.semestre.promotion,
+                classe__promotion=deliberation.promotion,
                 statut='inscrit'
             ).select_related('classe').first()
             

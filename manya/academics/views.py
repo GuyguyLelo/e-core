@@ -357,7 +357,7 @@ def api_local(request):
 # ========== SEMESTRES ==========
 @login_required
 def semestre_list(request):
-    semestres = Semestre.objects.select_related('promotion').all().order_by('promotion', 'numero')
+    semestres = Semestre.objects.all().order_by('numero')
     paginator = Paginator(semestres, 10)
     page = request.GET.get('page')
     semestres = paginator.get_page(page)

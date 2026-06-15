@@ -48,7 +48,7 @@ class Command(BaseCommand):
         annee_academique = self.create_annee_academique()
         
         # 3. Maquette LMD
-        semestre1, semestre2 = self.create_semestres(promotion)
+        semestre1, semestre2 = self.create_semestres()
         ues_s1, ues_s2 = self.create_ues(semestre1, semestre2)
         self.create_ecs(ues_s1, ues_s2)
         
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         
         # 6. Délibérations
         parametres = self.create_parametres_lmd(promotion)
-        deliberation = self.create_deliberation(session1, admin_user)
+        deliberation = self.create_deliberation(session1, promotion, admin_user)
         
         self.stdout.write(self.style.SUCCESS('\n[OK] Initialisation terminee avec succes!'))
         self.stdout.write(self.style.SUCCESS(f'\n[RESUME]'))
@@ -223,28 +223,26 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('[OK] Classe creee'))
         return classe
 
-    def create_semestres(self, promotion):
-        """Crée les semestres"""
+    def create_semestres(self):
+        """Crée les semestres du catalogue LMD"""
         semestre1, created1 = Semestre.objects.get_or_create(
-            promotion=promotion,
             numero=1,
             defaults={
-                    'code': f'{promotion.code}-S1',
+                'code': 'S1',
                 'nom': 'Semestre 1',
-                'credits_ects': Decimal('30.00'),
+                'credits_ects': 30,
                 'date_debut': date.today() - timedelta(days=120),
                 'date_fin': date.today() - timedelta(days=30),
                 'active': True
             }
         )
-        
+
         semestre2, created2 = Semestre.objects.get_or_create(
-            promotion=promotion,
             numero=2,
             defaults={
-                    'code': f'{promotion.code}-S2',
+                'code': 'S2',
                 'nom': 'Semestre 2',
-                'credits_ects': Decimal('30.00'),
+                'credits_ects': 30,
                 'date_debut': date.today() - timedelta(days=30),
                 'date_fin': date.today() + timedelta(days=120),
                 'active': True
@@ -601,10 +599,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('[OK] Parametres LMD crees'))
         return parametres
 
-    def create_deliberation(self, session, president):
+    def create_deliberation(self, session, promotion, president):
         """Crée une délibération"""
         deliberation, created = Deliberation.objects.get_or_create(
             session=session,
+            promotion=promotion,
             defaults={
                 'date_deliberation': session.date_deliberation,
                 'president_jury': president,

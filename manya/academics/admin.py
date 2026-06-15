@@ -49,8 +49,8 @@ class ClasseAdmin(admin.ModelAdmin):
 
 @admin.register(Semestre)
 class SemestreAdmin(admin.ModelAdmin):
-    list_display = ['code', 'nom', 'promotion', 'numero', 'credits_ects', 'active', 'created_at']
-    list_filter = ['promotion', 'active', 'created_at']
+    list_display = ['code', 'nom', 'numero', 'credits_ects', 'active', 'created_at']
+    list_filter = ['active', 'created_at']
     search_fields = ['code', 'nom']
 
 

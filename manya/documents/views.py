@@ -167,7 +167,7 @@ def grille_notes(request):
             return response
 
     context = {
-        'semestres': Semestre.objects.filter(active=True).select_related('promotion').order_by('-promotion', 'numero'),
+        'semestres': Semestre.objects.filter(active=True).order_by('numero'),
         'filieres': Filiere.objects.filter(active=True).order_by('code'),
         'promotions': Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere', 'ordre'),
         'selected': _document_selection_from_get(request),
@@ -234,7 +234,7 @@ def releve_notes_selection(request):
         )
 
     context = {
-        'semestres': Semestre.objects.filter(active=True).select_related('promotion').order_by('-promotion', 'numero'),
+        'semestres': Semestre.objects.filter(active=True).order_by('numero'),
         'filieres': Filiere.objects.filter(active=True).order_by('code'),
         'promotions': Promotion.objects.filter(active=True).select_related('filiere').order_by('filiere', 'ordre'),
         'inscriptions_promotion': inscriptions_promotion,

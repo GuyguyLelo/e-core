@@ -1156,6 +1156,25 @@ body.login-page {
   padding: 1.25rem;
 }
 
+.ecore-form-section-compact .ecore-form-section-header {
+  padding: 0.65rem 1rem;
+}
+
+.ecore-form-section-compact .ecore-form-section-body {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.ecore-form-inline-switch {
+  margin-bottom: 0;
+  min-height: calc(1.5em + 0.75rem + 2px);
+  display: flex;
+  align-items: center;
+}
+
+.ecore-form-inline-switch .ecore-dossier-switch {
+  width: 100%;
+}
+
 .ecore-form-aside-card {
   border: 1px solid var(--ecore-border);
   border-radius: var(--ecore-radius-lg);
